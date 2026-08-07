@@ -449,11 +449,11 @@
 </div>
 
 <!-- compare overlay -->
-<div class="ov" id="ov"><div class="ovp">
+<div class="ov" id="ov" onclick="if(event.target===this)closeCompare()"><div class="ovp">
   <div class="ovh"><h2>후보자 비교</h2>
     <span class="hint">업적을 나란히 놓고 ▲/▼ 로 순위를 조정하세요.</span>
     <button class="x" onclick="closeCompare()">✕</button></div>
-  <div class="ovg" id="ovg"></div>
+  <div class="ovg" id="ovg" onclick="if(event.target===this)closeCompare()"></div>
 </div></div>
 
 <!-- spotlight overlay -->
@@ -1250,6 +1250,39 @@ function moveCmp(id,d){
   logMove(pid(id),active,i+1,j+1,'비교 화면 이동');
   render();openCompare();
 }
+
+/* ---- drag auto-scroll (main table = window, team panel = rpanel) ---- */
+let dragPointerY=null, dragAutoScrollRAF=null;
+function trackDragPointer(e){ if(e.clientY)dragPointerY=e.clientY; }
+function autoScrollTick(){
+  if(dragPointerY===null){ dragAutoScrollRAF=null; return; }
+  const threshold=90, maxSpeed=18;
+  const vh=window.innerHeight;
+  if(dragId!==null){
+    if(dragPointerY<threshold){
+      window.scrollBy(0,-Math.min(maxSpeed,(threshold-dragPointerY)/3));
+    }else if(dragPointerY>vh-threshold){
+      window.scrollBy(0,Math.min(maxSpeed,(dragPointerY-(vh-threshold))/3));
+    }
+  }
+  if(teamDragId!==null){
+    const rp=document.getElementById('rpanel');
+    if(rp){
+      const rect=rp.getBoundingClientRect();
+      if(dragPointerY<rect.top+70 && dragPointerY>rect.top-20){
+        rp.scrollTop-=Math.min(maxSpeed,(rect.top+70-dragPointerY)/3);
+      }else if(dragPointerY>rect.bottom-70 && dragPointerY<rect.bottom+20){
+        rp.scrollTop+=Math.min(maxSpeed,(dragPointerY-(rect.bottom-70))/3);
+      }
+    }
+  }
+  dragAutoScrollRAF=requestAnimationFrame(autoScrollTick);
+}
+function startDragAutoScroll(){ if(!dragAutoScrollRAF)dragAutoScrollRAF=requestAnimationFrame(autoScrollTick); }
+function stopDragAutoScroll(){ dragPointerY=null; if(dragAutoScrollRAF){cancelAnimationFrame(dragAutoScrollRAF);dragAutoScrollRAF=null;} }
+document.addEventListener('dragover',trackDragPointer);
+document.addEventListener('dragstart',startDragAutoScroll);
+document.addEventListener('dragend',stopDragAutoScroll);
 
 /* ---- drag ---- */
 let dragId=null;
