@@ -169,7 +169,7 @@
 
   /* rank table */
   .rtable{background:var(--panel);border:1px solid var(--line);border-radius:16px;overflow:visible;box-shadow:var(--sh);}
-  .rt-head,.rt-row{display:grid;grid-template-columns:6.6rem 1fr 6.5rem 6rem 7rem 2fr 2.4rem;align-items:center;gap:.6rem;padding:.5rem .8rem;}
+  .rt-head,.rt-row{display:grid;grid-template-columns:6.6rem 1fr 7.5rem 6.5rem 7.5rem 2.4rem;align-items:center;gap:.6rem;padding:.4rem .8rem;}
   .rt-select{display:flex;align-items:center;gap:.5rem;height:100%;cursor:pointer;margin:-.5rem 0;padding:.5rem 0;}
   .rt-head .rt-select{cursor:pointer;}
   .rt-head{position:sticky;top:10.15rem;z-index:35;background:#fafbfd;border-bottom:1px solid var(--line);color:var(--muted2);font-size:.74rem;font-weight:800;letter-spacing:.2px;}
@@ -202,9 +202,6 @@
   .chip{display:inline-block;padding:.08rem .5rem;border-radius:6px;color:#fff;font-weight:700;font-size:.72rem;letter-spacing:.1px;}
   .stars{color:var(--star);letter-spacing:-1px;font-size:.78rem;}
   .stars .off{color:#dfe3ea;}
-  .ach{font-size:.78rem;color:#4a525f;}
-  .ach div{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-  .ach div::before{content:"· ";color:var(--muted);}
   .memo-btn{border:1px solid var(--line);background:#fff;border-radius:9px;width:1.7rem;height:1.7rem;cursor:pointer;color:var(--muted2);display:grid;place-items:center;margin:0 auto;transition:border-color .12s ease,background .12s ease,color .12s ease;}
   .memo-btn:hover{border-color:#c3cffb;background:var(--blue-soft);color:var(--blue);}
   .memo-btn.has{color:var(--blue);border-color:#c3cffb;background:var(--blue-soft);}
@@ -901,7 +898,7 @@ function renderMain(){
       <span>순위</span>
     </div>
     <div>이름</div>
-    <div>팀</div><div>직급/년차</div><div>작년평가</div><div>주요 성과 요약</div><div class="cc">메모</div>
+    <div>팀</div><div>직급/년차</div><div>작년평가</div><div class="cc">메모</div>
   </div>`;
 
   let rows=''; let prevShownEllipsis=false;
@@ -939,7 +936,6 @@ function renderMain(){
     const inCmp = picked.has(id);
     const locked = i < (locks[active]||0);
     const cls=["rt-row",inACut?"acut":"",zone.cls,selId===id?"sel":"",inCmp?"incmp":"",isMatch?"match":"",isDim?"dim":"",locked?"locked":""].join(' ');
-    const achHtml=(p.ach||[]).slice(0,3).map(a=>`<div>${esc(a)}</div>`).join('');
     rows+=`<div class="${cls}" draggable="${locked?'false':'true'}" data-id="${id}" onclick="handleRowClick(event,${id})">
       <div class="rt-select" onclick="event.stopPropagation();togglePick(${id},event)">
         <input type="checkbox" ${inCmp?'checked':''} title="선택 (비교/교체 대상)">
@@ -950,7 +946,6 @@ function renderMain(){
       <div class="team">${esc(p.team)}</div>
       <div class="rc">${active} / ${p.yr}년차</div>
       <div class="prevcell"><span class="chip" style="background:${gColor(p.prev)}">${p.prev}</span>${stars(p.prev)}</div>
-      <div class="ach">${achHtml}</div>
       <div class="cc" onclick="event.stopPropagation()"><button class="memo-btn ${memos[id]?'has':''}" onclick="focusMemo(${id})" title="메모">✎</button></div>
     </div>`;
   });
@@ -1087,15 +1082,12 @@ function renderRPanel(){
       const dispG=x.g==='S'?'A':x.g;
       const dispCount=dispG==='A'?(t.S||0)+(t.A||0):(t[dispG]||0);
       const gradeShare=pct(dispCount,t.total), zone=boundaryInfo(x.rankNo,s.n);
-      const gradeText=zone.key?zone.label.replace(' 경계',''):dispG;
-      const gradeColor=zone.key?zone.color:gColor(dispG);
-      const shareText=zone.key?'경계':gradeShare+'%';
       const locked=x.rankNo<=lockN;
-      return `<div class="team-row ${selId===x.id?'sel':''} ${zone.cls} ${picked.has(x.id)?'incmp':''} ${locked?'locked':''}" draggable="${locked?'false':'true'}" data-id="${x.id}" onclick="handleRowClick(event,${x.id})" title="전체 ${x.rankNo}위 · ${zone.label||dispG} · 클릭 = 상세 보기 · Shift+클릭 = 비교 담기/빼기 · 드래그 = 팀 내 순위 이동 · ${esc(x.p.name)}">
+      return `<div class="team-row ${selId===x.id?'sel':''} ${zone.cls} ${picked.has(x.id)?'incmp':''} ${locked?'locked':''}" draggable="${locked?'false':'true'}" data-id="${x.id}" onclick="handleRowClick(event,${x.id})" title="전체 ${x.rankNo}위 · ${dispG} · ${zone.label?zone.label+' 대상':''} · 클릭 = 상세 보기 · Shift+클릭 = 비교 담기/빼기 · 드래그 = 팀 내 순위 이동 · ${esc(x.p.name)}">
         <span class="grip">${locked?'🔒':'⋮⋮'}</span>
         <span class="rank">${x.rankNo}위</span>
         <span class="name">${esc(x.p.name)}${x.p.sRec?' ⭐':''}${x.p.cFlag?' 🚩':''}</span>
-        <span class="share"><span class="chip" style="background:${gradeColor}">${gradeText}</span> ${shareText}</span>
+        <span class="share"><span class="chip" style="background:${gColor(dispG)}">${dispG}</span> ${gradeShare}%</span>
       </div>`;
     }).join('');
     const bStatus=t.B<t.recB?'부족':t.B>t.recB?'과다':'적정';
