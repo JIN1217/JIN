@@ -1,0 +1,1268 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>상반기 평가 세션</title>
+<style>
+  :root{
+    --ink:#1e2530; --bg:#f4f6f9; --panel:#ffffff; --line:#e4e8ef; --line2:#eef1f6;
+    --muted:#8b93a1; --muted2:#6b7482; --txt:#2b3340;
+    --blue:#2b6ef2; --blue-soft:#eaf1fe;
+    --s:#8b5cf6; --a:#2b6ef2; --bp:#3f9d6b; --b:#e08a2b; --c:#d64545;
+    --green-line:#3f9d6b; --a-fill:#eef5ee; --buffer:#fdf3e0; --buffer-line:#e08a2b;
+    --ab-fill:#e8f7f4; --ab-line:#1f9d8a; --bb-fill:#fff1df; --bb-line:#d9822b;
+    --ok:#2f9e5f; --warn:#d64545; --over:#c98a2a;
+    --star:#f5a623;
+    --fs:14px;
+    --right-w:45rem;
+    --sh:0 1px 2px rgba(30,37,48,.04),0 1px 3px rgba(30,37,48,.06);
+  }
+  *{box-sizing:border-box;}
+  html{font-size:var(--fs);}
+  body{margin:0;background:var(--bg);color:var(--txt);
+    font-family:-apple-system,BlinkMacSystemFont,"Malgun Gothic","Apple SD Gothic Neo",sans-serif;
+    font-size:.86rem;line-height:1.45;}
+
+  /* top bar */
+  .topbar{background:var(--ink);color:#eef1f6;height:3.3rem;display:flex;align-items:center;
+    padding:0 1.2rem;gap:1rem;position:sticky;top:0;z-index:60;}
+  .topbar .brand{font-size:1rem;font-weight:800;letter-spacing:-.2px;}
+  .topbar .grow{flex:1;}
+  .topbar button{border:1px solid rgba(255,255,255,.16);background:rgba(255,255,255,.08);
+    color:#eef1f6;border-radius:7px;padding:.4rem .85rem;font-size:.8rem;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:.35rem;}
+  .topbar button:hover{background:rgba(255,255,255,.16);}
+  .topbar button.primary{background:var(--blue);border-color:var(--blue);}
+  .topbar button.primary:hover{background:#1f5fe0;}
+  .topbar .zoom{display:flex;align-items:center;gap:.2rem;}
+  .topbar .zoom span{font-size:.72rem;color:#aeb6c4;min-width:2.4rem;text-align:center;}
+
+  /* top banner: cut summary + search */
+  .topbanner{background:var(--panel);border-bottom:1px solid var(--line);padding:.5rem 1.2rem;
+    display:flex;gap:1rem;align-items:center;position:sticky;top:3.3rem;z-index:55;min-height:2.9rem;}
+  .tb-empty{color:var(--muted);font-size:.82rem;flex:1;}
+  .rank-tabs{display:flex;align-items:center;gap:.35rem;flex:none;}
+  .rank-tab{border:1px solid var(--line);background:#f8fafc;color:var(--muted2);border-radius:8px;padding:.38rem .72rem;font-size:.8rem;font-weight:800;cursor:pointer;display:inline-flex;align-items:center;gap:.35rem;}
+  .rank-tab:hover{border-color:#cdd5e2;background:#fff;}
+  .rank-tab.active{background:var(--blue);border-color:var(--blue);color:#fff;box-shadow:var(--sh);}
+  .rank-tab .cnt{font-size:.68rem;border-radius:12px;padding:.05rem .38rem;background:rgba(43,110,242,.1);color:inherit;}
+  .rank-tab.active .cnt{background:rgba(255,255,255,.22);}
+  .tb-cuts{display:flex;align-items:center;gap:.5rem;flex-wrap:wrap;flex:1;min-width:26rem;}
+  .tb-tag{font-size:.8rem;color:var(--txt);padding:.25rem .6rem;border-radius:20px;
+    background:color-mix(in srgb,var(--tc) 12%,#fff);border:1px solid color-mix(in srgb,var(--tc) 35%,#fff);white-space:nowrap;}
+  .tb-tag b{color:var(--tc);}
+  .tb-arrow{color:var(--muted);font-size:.8rem;}
+  .tb-search{display:flex;align-items:center;gap:.3rem;}
+  .tb-search input{border:1px solid var(--line);border-radius:8px;padding:.4rem .7rem;font-size:.82rem;width:12rem;}
+  .tb-search input:focus{outline:none;border-color:var(--blue);}
+  .tb-x{border:none;background:none;color:var(--muted);cursor:pointer;font-size:.9rem;}
+  .rt-row.match{box-shadow:inset 0 0 0 2px var(--blue);}
+  .rt-row.dim{opacity:.4;}
+  .rt-row.incmp{box-shadow:inset 3px 0 0 var(--blue);}
+  .rt-row.sel{background:var(--blue-soft);}
+  .cmp-dot{color:var(--blue);font-weight:800;margin-right:.25rem;}
+
+  /* settings modal */
+  .set-grid{display:grid;grid-template-columns:1fr 1fr;gap:1rem 1.4rem;margin:.6rem 0 .2rem;}
+  .set-field{display:flex;flex-direction:column;gap:.3rem;}
+  .set-field label{font-size:.8rem;font-weight:700;color:var(--muted2);}
+  .set-field .with{display:flex;align-items:center;gap:.4rem;}
+  .set-field input{border:1px solid var(--line);border-radius:7px;padding:.45rem .6rem;font-size:.9rem;width:100%;font-variant-numeric:tabular-nums;}
+  .set-field .unit{color:var(--muted);font-size:.82rem;}
+  .set-field .live{font-size:.74rem;color:var(--blue);font-weight:700;}
+  .set-sum{background:var(--bg);border-radius:8px;padding:.6rem .8rem;font-size:.8rem;margin-top:.4rem;display:flex;justify-content:space-between;}
+  .set-sum.bad{background:#fdeaea;color:var(--warn);font-weight:700;}
+  .set-note{font-size:.75rem;color:var(--muted);margin-top:.5rem;}
+
+  /* layout */
+  .layout{display:grid;grid-template-columns:minmax(0,1fr) .7rem minmax(30rem,var(--right-w));gap:0;align-items:start;}
+  .side{display:none;}
+  main{padding:1rem 1.1rem 5rem;min-width:0;}
+  .splitter{position:sticky;top:6rem;height:calc(100vh - 6rem);z-index:30;cursor:col-resize;display:flex;justify-content:center;align-items:stretch;background:linear-gradient(90deg,transparent,rgba(30,37,48,.03),transparent);}
+  .splitter::before{content:"";width:1px;background:var(--line);transition:width .12s,background .12s;}
+  .splitter:hover::before,.splitter:focus-visible::before,body.resizing .splitter::before{width:4px;background:var(--blue);}
+  body.resizing{cursor:col-resize;user-select:none;}
+  .rpanel{background:var(--panel);border-left:1px solid var(--line);
+    position:sticky;top:6rem;height:calc(100vh - 6rem);overflow-y:auto;padding:.75rem .75rem 4rem;}
+
+  /* sidebar */
+  .side h4{font-size:.74rem;letter-spacing:.4px;color:var(--muted);margin:0 0 .55rem;font-weight:800;}
+  .side .sect{margin-bottom:1.4rem;}
+  .rank-item{display:flex;justify-content:space-between;align-items:center;padding:.5rem .7rem;
+    border-radius:8px;cursor:pointer;margin-bottom:.15rem;font-weight:600;}
+  .rank-item:hover{background:var(--bg);}
+  .rank-item.active{background:var(--blue);color:#fff;box-shadow:var(--sh);}
+  .rank-item .cnt{font-size:.72rem;background:#eef1f6;color:var(--muted2);border-radius:20px;padding:.1rem .5rem;font-weight:700;}
+  .rank-item.active .cnt{background:rgba(255,255,255,.22);color:#fff;}
+
+  .leg{display:flex;align-items:center;gap:.5rem;padding:.22rem 0;font-size:.8rem;}
+  .leg i{width:.85rem;height:.85rem;border-radius:3px;flex:none;}
+
+  table.teamq{width:100%;border-collapse:collapse;font-size:.76rem;}
+  table.teamq th{color:var(--muted);font-weight:700;text-align:right;padding:.3rem .2rem;border-bottom:1px solid var(--line);}
+  table.teamq th:first-child{text-align:left;}
+  table.teamq td{padding:.3rem .2rem;text-align:right;border-bottom:1px solid var(--line2);}
+  table.teamq td:first-child{text-align:left;font-weight:600;}
+  table.teamq tr.total td{font-weight:800;border-top:2px solid var(--line);border-bottom:none;padding-top:.4rem;}
+  .st{font-weight:800;font-size:.72rem;}
+  .st.ok{color:var(--ok);} .st.warn{color:var(--warn);} .st.over{color:var(--over);} .st.mid{color:var(--muted2);}
+  .side .foot-note{font-size:.68rem;color:var(--muted);margin-top:.5rem;}
+
+  /* main head */
+  .mhead{display:flex;align-items:baseline;gap:.8rem;margin-bottom:.7rem;}
+  .mhead .t{font-size:1.25rem;font-weight:800;}
+  .mhead .n{color:var(--muted2);font-size:.85rem;}
+  .mhead .stage{margin-left:auto;color:var(--muted2);font-size:.82rem;}
+  .mhead .stage b{color:var(--blue);}
+
+  .cards{display:grid;grid-template-columns:repeat(4,1fr) 1.6fr;gap:.7rem;margin-bottom:.9rem;}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:11px;padding:.7rem .85rem;box-shadow:var(--sh);}
+  .card .k{font-size:.74rem;color:var(--muted2);font-weight:700;margin-bottom:.3rem;}
+  .card .v{font-size:1.5rem;font-weight:800;line-height:1;}
+  .card .v small{font-size:.8rem;font-weight:700;color:var(--muted2);margin-left:.15rem;}
+  .card.accent .k{color:var(--buffer-line);}
+  .card.accent .v{color:var(--buffer-line);}
+  .card.next .k{color:var(--blue);}
+  .card.next .v{color:var(--blue);font-size:1rem;padding-top:.3rem;}
+  .card.info{background:#f0f7f1;border-color:#d3e7d9;}
+  .card.info .k{color:var(--bp);}
+  .card.info .txt{font-size:.76rem;color:#3d5546;line-height:1.5;}
+
+  .toolbar{display:flex;align-items:center;gap:.5rem;margin-bottom:.5rem;}
+  .toolbar .hint{color:var(--muted);font-size:.8rem;display:flex;align-items:center;gap:.35rem;}
+  .toolbar .grow{flex:1;}
+  .tbtn{border:1px solid var(--line);background:var(--panel);border-radius:8px;padding:.4rem .8rem;
+    font-size:.8rem;font-weight:700;cursor:pointer;color:var(--txt);display:inline-flex;align-items:center;gap:.35rem;}
+  .tbtn:hover{border-color:#cdd5e2;}
+  .tbtn:disabled{opacity:.45;cursor:default;}
+  .tbtn.on{background:var(--blue-soft);border-color:#bcd4fb;color:var(--blue);}
+  .seg{display:inline-flex;align-items:center;border:1px solid var(--line);background:#f8fafc;border-radius:8px;padding:.15rem;gap:.15rem;flex:none;}
+  .seg button{border:none;background:transparent;border-radius:6px;padding:.34rem .7rem;font-size:.78rem;font-weight:800;color:var(--muted2);cursor:pointer;}
+  .seg button.on{background:var(--panel);color:var(--blue);box-shadow:var(--sh);}
+  .main-sticky{position:sticky;top:6.2rem;z-index:45;background:var(--bg);padding:.75rem 0 .55rem;margin:-.75rem 0 .55rem;border-bottom:1px solid rgba(226,232,240,.86);box-shadow:0 10px 18px rgba(15,23,42,.04);}
+  .main-sticky .toolbar{margin-bottom:.55rem;}
+  .main-sticky .mhead{margin-bottom:0;}
+
+  /* summary / stats */
+  .stats-view{display:grid;gap:.9rem;}
+  .stats-head{margin-bottom:0;}
+  .stats-kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:.7rem;}
+  .stat-kpi{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:.75rem .85rem;box-shadow:var(--sh);}
+  .stat-kpi .k{font-size:.72rem;color:var(--muted2);font-weight:800;margin-bottom:.3rem;}
+  .stat-kpi .v{font-size:1.45rem;line-height:1;font-weight:850;font-variant-numeric:tabular-nums;}
+  .stat-kpi .sub{font-size:.75rem;color:var(--muted);margin-top:.35rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .stats-grid{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(18rem,.9fr);gap:.9rem;}
+  .stats-card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:.9rem 1rem;box-shadow:var(--sh);min-width:0;}
+  .stats-card h3{margin:0 0 .7rem;font-size:.92rem;color:var(--txt);}
+  .stats-card .note{font-size:.74rem;color:var(--muted);margin-top:.45rem;}
+  .dist-list{display:grid;gap:.55rem;}
+  .dist-row{display:grid;grid-template-columns:3.2rem 1fr 4.4rem;gap:.7rem;align-items:center;font-size:.8rem;}
+  .dist-row .lab{font-weight:800;display:flex;align-items:center;gap:.35rem;}
+  .dist-row .dot{width:.65rem;height:.65rem;border-radius:2px;background:var(--gc);display:inline-block;}
+  .dist-row .num{text-align:right;color:var(--muted2);font-variant-numeric:tabular-nums;}
+  .bar-track{height:.55rem;background:var(--bg);border-radius:20px;overflow:hidden;}
+  .bar-fill{height:100%;width:var(--w);background:var(--gc);border-radius:20px;}
+  .stat-table{width:100%;border-collapse:collapse;font-size:.78rem;}
+  .stat-table th{color:var(--muted);font-size:.72rem;text-align:right;padding:.42rem .35rem;border-bottom:1px solid var(--line);font-weight:800;}
+  .stat-table th:first-child,.stat-table td:first-child{text-align:left;}
+  .stat-table td{padding:.46rem .35rem;text-align:right;border-bottom:1px solid var(--line2);vertical-align:middle;}
+  .stat-table tr:last-child td{border-bottom:none;}
+  .mini-meter{height:.4rem;background:var(--bg);border-radius:12px;overflow:hidden;margin-top:.2rem;}
+  .mini-meter i{display:block;height:100%;width:var(--w);background:var(--gc);border-radius:12px;}
+  .boundary-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.7rem;}
+  .boundary-col{border:1px solid var(--line2);border-radius:10px;overflow:hidden;}
+  .boundary-col h4{margin:0;padding:.55rem .7rem;background:#fafbfd;border-bottom:1px solid var(--line2);font-size:.78rem;}
+  .boundary-row{display:grid;grid-template-columns:3.1rem 1fr 4rem;gap:.5rem;align-items:center;padding:.5rem .7rem;border-bottom:1px solid var(--line2);font-size:.8rem;}
+  .boundary-row:last-child{border-bottom:none;}
+  .boundary-row .rank{font-weight:850;font-variant-numeric:tabular-nums;}
+  .boundary-row .person{min-width:0;}
+  .boundary-row .person b{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .boundary-row .person span{display:block;color:var(--muted2);font-size:.72rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .boundary-row .grade{text-align:right;}
+
+  /* rank table */
+  .rtable{background:var(--panel);border:1px solid var(--line);border-radius:12px;overflow:visible;box-shadow:var(--sh);}
+  .rt-head,.rt-row{display:grid;grid-template-columns:1.4rem 3.6rem 1fr 6.5rem 6rem 7rem 2fr 2.4rem;align-items:center;gap:.6rem;padding:.5rem .8rem;}
+  .rt-head{position:sticky;top:10.15rem;z-index:35;background:#fafbfd;border-bottom:1px solid var(--line);color:var(--muted2);font-size:.74rem;font-weight:800;letter-spacing:.2px;}
+  .rt-head .cc{text-align:center;}
+  .rt-row{border-bottom:1px solid var(--line2);cursor:grab;position:relative;}
+  .rt-row:last-child{border-bottom:none;}
+  .rt-row:hover{background:#f5f8ff;box-shadow:inset 0 0 0 1px #d9e6fb;}
+  .rt-row.dragging{opacity:.35;}
+  .rt-row.over{box-shadow:inset 0 2px 0 var(--blue);}
+  .rt-row.sel{background:var(--blue-soft);}
+  .rt-row.acut{background:var(--a-fill);}
+  .rt-row.buffer{background:var(--buffer);}
+  .rt-row.ab-boundary{background:var(--ab-fill);box-shadow:inset 3px 0 0 var(--ab-line);}
+  .rt-row.bb-boundary{background:var(--bb-fill);box-shadow:inset 3px 0 0 var(--bb-line);}
+  .rt-row.ellipsis{justify-items:center;color:var(--muted);cursor:default;padding:.3rem;grid-template-columns:1fr;text-align:center;}
+
+  .grip{color:#c3cad6;font-size:.95rem;text-align:center;}
+  .rt-row .rk{font-weight:800;font-size:1rem;text-align:center;font-variant-numeric:tabular-nums;}
+  .rt-row .rk .tag{display:block;font-size:.6rem;color:var(--buffer-line);font-weight:800;}
+  .cc{text-align:center;}
+  .cc input{width:1rem;height:1rem;cursor:pointer;}
+  .nm{font-weight:700;}
+  .team{color:var(--muted2);font-size:.82rem;}
+  .rc{font-size:.8rem;color:var(--muted2);}
+  .prevcell{display:flex;align-items:center;gap:.35rem;font-size:.78rem;}
+  .chip{display:inline-block;padding:.05rem .45rem;border-radius:4px;color:#fff;font-weight:700;font-size:.72rem;}
+  .stars{color:var(--star);letter-spacing:-1px;font-size:.78rem;}
+  .stars .off{color:#dfe3ea;}
+  .ach{font-size:.78rem;color:#4a525f;}
+  .ach div{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .ach div::before{content:"· ";color:var(--muted);}
+  .memo-btn{border:1px solid var(--line);background:#fff;border-radius:6px;width:1.7rem;height:1.7rem;cursor:pointer;color:var(--muted2);display:grid;place-items:center;margin:0 auto;}
+  .memo-btn.has{color:var(--blue);border-color:#bcd4fb;background:var(--blue-soft);}
+
+  /* cut line marker */
+  .cutline{position:relative;height:0;}
+  .cutline .lab{position:absolute;right:.6rem;top:-.7rem;background:var(--panel);padding:0 .4rem;font-size:.72rem;font-weight:800;}
+  .cutline.a .lab{color:var(--green-line);}
+  .cutline.a hr{border:none;border-top:2px solid var(--green-line);margin:0;}
+  .cutline.buf .lab{color:var(--buffer-line);}
+  .cutline.buf hr{border:none;border-top:2px dashed var(--buffer-line);margin:0;}
+  .cutline.ab .lab{color:var(--ab-line);}
+  .cutline.ab hr{border:none;border-top:2px dashed var(--ab-line);margin:0;}
+  .cutline.bb .lab{color:var(--bb-line);}
+  .cutline.bb hr{border:none;border-top:2px dashed var(--bb-line);margin:0;}
+
+  .band-tag{position:absolute;right:-6.6rem;top:50%;transform:translateY(-50%);width:6rem;text-align:center;
+    font-size:.72rem;font-weight:800;color:var(--buffer-line);}
+
+  /* right panel */
+  .rpanel h4{font-size:.78rem;color:var(--muted);letter-spacing:.4px;margin:0 0 .7rem;font-weight:800;display:flex;align-items:center;}
+  .rpanel h4 .x{margin-left:auto;background:none;border:none;color:var(--muted);cursor:pointer;font-size:1rem;}
+  .prof{display:flex;gap:.7rem;align-items:center;margin-bottom:.9rem;}
+  .prof .ph{width:3.2rem;height:3.2rem;border-radius:50%;background:#e6ebf3;display:grid;place-items:center;color:var(--muted);font-size:1.4rem;flex:none;}
+  .prof .nm{font-size:1.05rem;font-weight:800;display:flex;align-items:center;gap:.4rem;flex-wrap:wrap;}
+  .prof .meta{color:var(--muted2);font-size:.8rem;margin-top:.15rem;}
+  .prof .join{color:var(--muted);font-size:.74rem;margin-top:.1rem;}
+  .rbox{border:1px solid var(--line);border-radius:10px;padding:.75rem .85rem;margin-bottom:.7rem;}
+  .rbox .row{display:flex;justify-content:space-between;align-items:center;padding:.28rem 0;font-size:.82rem;}
+  .rbox .row .lab{color:var(--muted2);}
+  .rbox .row .link{color:var(--blue);font-weight:700;cursor:pointer;font-size:.78rem;}
+  .aisum .cap{font-size:.74rem;color:var(--muted);margin-bottom:.4rem;font-weight:700;}
+  .aisum ol{margin:0;padding-left:1.1rem;font-size:.82rem;line-height:1.65;}
+  .accord{border:1px solid var(--line);border-radius:10px;margin-bottom:.7rem;}
+  .accord summary{padding:.6rem .85rem;font-weight:700;font-size:.82rem;cursor:pointer;list-style:none;display:flex;justify-content:space-between;}
+  .accord summary::after{content:"▾";color:var(--muted);}
+  .accord[open] summary::after{content:"▴";}
+  .accord .in{padding:0 .85rem .8rem;font-size:.82rem;color:#4a525f;white-space:pre-wrap;line-height:1.6;}
+  .cmp-slot{border:1px dashed var(--line);border-radius:10px;padding:.8rem;text-align:center;color:var(--muted);font-size:.8rem;}
+  .cmp-slot .add{margin-top:.5rem;border:1px solid var(--blue);color:var(--blue);background:var(--blue-soft);border-radius:8px;padding:.4rem .9rem;font-weight:700;cursor:pointer;font-size:.8rem;}
+  .cmp-list{display:flex;flex-direction:column;gap:.4rem;}
+  .cmp-list .c{display:flex;align-items:center;gap:.5rem;background:var(--bg);border-radius:8px;padding:.4rem .6rem;font-size:.8rem;}
+  .cmp-list .c .r{font-weight:800;}
+  .cmp-list .c button{margin-left:auto;border:none;background:none;color:var(--muted);cursor:pointer;}
+  .cmp-open{width:100%;margin-top:.5rem;background:var(--blue);color:#fff;border:none;border-radius:8px;padding:.5rem;font-weight:700;cursor:pointer;font-size:.82rem;}
+  textarea.memo{width:100%;height:5rem;border:1px solid var(--line);border-radius:8px;padding:.5rem;font-size:.82rem;resize:vertical;font-family:inherit;}
+  .memo-save{margin-top:.4rem;float:right;background:var(--blue);color:#fff;border:none;border-radius:7px;padding:.4rem 1rem;font-weight:700;cursor:pointer;font-size:.8rem;}
+  .empty-rp{color:var(--muted);text-align:center;padding:3rem 1rem;font-size:.82rem;}
+
+  /* team ranking panel */
+  .team-panel{display:block;min-height:calc(100vh - 10rem);}
+  .team-panel h4{margin:0 0 .45rem;}
+  .team-panel .subline{font-size:.72rem;color:var(--muted2);margin-bottom:.55rem;display:flex;justify-content:space-between;gap:.5rem;flex-wrap:wrap;}
+  .team-overview{border:1px solid var(--line);border-radius:10px;padding:.55rem .65rem;margin-bottom:.65rem;background:#fafbfd;}
+  .team-overview .label{font-size:.72rem;color:var(--muted);font-weight:800;margin-bottom:.35rem;}
+  .team-list{display:grid;grid-template-columns:repeat(auto-fit,minmax(13rem,1fr));gap:.55rem;align-items:start;}
+  .team-card{border:1px solid var(--line);border-radius:10px;background:#fff;overflow:hidden;}
+  .team-card-head{padding:.48rem .55rem;border-bottom:1px solid var(--line2);display:flex;align-items:center;gap:.45rem;}
+  .team-card-head b{font-size:.82rem;white-space:normal;line-height:1.25;}
+  .team-card-head span{margin-left:auto;color:var(--muted2);font-size:.68rem;font-weight:800;white-space:nowrap;}
+  .team-ratio{display:grid;grid-template-columns:repeat(2,1fr);gap:.2rem;padding:.38rem .45rem;border-bottom:1px solid var(--line2);}
+  .team-ratio span{font-size:.66rem;color:var(--muted2);background:color-mix(in srgb,var(--gc) 10%,#fff);border:1px solid color-mix(in srgb,var(--gc) 24%,#fff);border-radius:6px;padding:.16rem .22rem;text-align:center;white-space:nowrap;}
+  .team-ratio b{color:var(--gc);}
+  .team-stack{display:flex;height:.34rem;background:var(--bg);overflow:hidden;}
+  .team-stack i{height:100%;width:var(--w);background:var(--gc);}
+  .team-rank{display:grid;}
+  .team-row{border:none;background:#fff;border-bottom:1px solid var(--line2);display:grid;grid-template-columns:2.8rem minmax(0,1fr) 3.6rem 2.8rem;align-items:center;gap:.35rem;padding:.32rem .48rem;text-align:left;cursor:pointer;font:inherit;color:var(--txt);}
+  .team-row:last-child{border-bottom:none;}
+  .team-row:hover{background:#f5f8ff;box-shadow:inset 0 0 0 1px #d9e6fb;}
+  .team-row.sel{background:var(--blue-soft);}
+  .team-row.ab-boundary{background:var(--ab-fill);box-shadow:inset 3px 0 0 var(--ab-line);}
+  .team-row.bb-boundary{background:var(--bb-fill);box-shadow:inset 3px 0 0 var(--bb-line);}
+  .team-row.incmp{box-shadow:inset 3px 0 0 var(--blue);background:color-mix(in srgb,var(--blue) 7%,#fff);}
+  .team-row .rank{font-weight:850;font-variant-numeric:tabular-nums;color:var(--muted2);font-size:.72rem;white-space:nowrap;}
+  .team-row .name{font-weight:800;white-space:normal;overflow:visible;text-overflow:clip;line-height:1.25;word-break:keep-all;}
+  .team-row .share{text-align:right;color:var(--muted2);font-size:.68rem;white-space:nowrap;}
+  .team-moves{display:flex;gap:.15rem;justify-content:flex-end;}
+  .team-moves button{border:1px solid var(--line);background:#fff;color:var(--muted2);border-radius:5px;width:1.25rem;height:1.25rem;font-size:.62rem;font-weight:900;line-height:1;cursor:pointer;padding:0;}
+  .team-moves button:hover:not(:disabled){border-color:#bcd4fb;background:var(--blue-soft);color:var(--blue);}
+  .team-moves button:disabled{opacity:.25;cursor:default;}
+
+  /* floating detail */
+  .detail-backdrop{position:fixed;inset:0;background:rgba(30,37,48,.16);z-index:125;display:none;}
+  .detail-backdrop.show{display:block;}
+  .detail-float{position:absolute;right:1rem;top:6.6rem;bottom:3.5rem;width:min(27rem,calc(100vw - 2rem));background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:1rem;overflow:auto;box-shadow:0 24px 70px rgba(30,37,48,.28);}
+
+  /* bottom bar */
+  .bottombar{position:fixed;left:0;right:0;bottom:0;height:2.9rem;background:var(--panel);
+    border-top:1px solid var(--line);display:flex;align-items:center;gap:1.1rem;padding:0 1.2rem;z-index:58;box-shadow:0 -2px 10px rgba(30,37,48,.05);}
+  .bottombar .leg{font-size:.76rem;}
+  .bottombar .grow{flex:1;}
+  .bottombar .save{color:var(--ok);font-weight:700;font-size:.8rem;display:flex;align-items:center;gap:.35rem;}
+  .bottombar .dot{width:.55rem;height:.55rem;border-radius:50%;background:var(--ok);}
+  .bottombar .status{font-size:.82rem;}
+  .bottombar .status b{color:var(--buffer-line);}
+  .pick-actions{display:flex;align-items:center;gap:.45rem;border:1px solid var(--line);background:#f8fafc;border-radius:9px;padding:.25rem .35rem .25rem .6rem;min-height:2.1rem;}
+  .pick-actions.empty{opacity:.58;}
+  .pick-summary{font-size:.78rem;color:var(--muted2);font-weight:800;white-space:nowrap;min-width:4.6rem;}
+  .pick-action-btn{border:1px solid var(--line);background:#fff;border-radius:7px;padding:.34rem .75rem;font-size:.78rem;font-weight:850;color:var(--txt);cursor:pointer;}
+  .pick-action-btn:hover:not(:disabled){border-color:#bcd4fb;background:var(--blue-soft);color:var(--blue);}
+  .pick-action-btn.primary{background:var(--blue);border-color:var(--blue);color:#fff;}
+  .pick-action-btn.primary:hover:not(:disabled){background:#1f5fe0;color:#fff;}
+  .pick-action-btn:disabled{opacity:.42;cursor:default;}
+
+  /* compare overlay */
+  .ov{position:fixed;inset:0;background:rgba(30,37,48,.58);z-index:130;display:none;}
+  .ov.show{display:block;}
+  .ovp{position:absolute;inset:3vh 3vw;background:var(--bg);border-radius:14px;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 30px 80px rgba(0,0,0,.4);}
+  .ovh{background:var(--ink);color:#eef1f6;padding:.85rem 1.4rem;display:flex;align-items:center;gap:1rem;}
+  .ovh h2{margin:0;font-size:1.1rem;}
+  .ovh .hint{font-size:.8rem;color:#aeb6c4;}
+  .ovh .x{margin-left:auto;background:rgba(255,255,255,.12);border:none;color:#eef1f6;width:2.1rem;height:2.1rem;border-radius:6px;cursor:pointer;font-size:1rem;}
+  .ovg{flex:1;display:grid;gap:1rem;padding:1.3rem;overflow:auto;grid-auto-flow:column;grid-auto-columns:minmax(19rem,1fr);}
+  .ovcard{background:var(--panel);border:1px solid var(--line);border-radius:12px;display:flex;flex-direction:column;overflow:hidden;box-shadow:var(--sh);}
+  .ovcard .t{padding:.9rem 1.1rem;border-bottom:3px solid var(--line);display:flex;gap:.6rem;align-items:flex-start;}
+  .ovcard .t .rk{font-size:1.7rem;font-weight:800;line-height:1;}
+  .ovcard .t .nm{font-size:1.15rem;font-weight:800;}
+  .ovcard .t .tm{font-size:.8rem;color:var(--muted2);}
+  .ovcard .meta{display:flex;gap:.4rem;padding:.7rem 1.1rem;flex-wrap:wrap;border-bottom:1px solid var(--line);}
+  .ovcard .meta .m{background:var(--bg);border-radius:6px;padding:.3rem .6rem;font-size:.8rem;}
+  .ovcard .body{padding:1rem 1.1rem;font-size:.9rem;line-height:1.65;white-space:pre-wrap;overflow:auto;flex:1;}
+  .ovcard .foot{padding:.65rem 1.1rem;border-top:1px solid var(--line);display:flex;gap:.5rem;}
+  .ovcard .foot button{flex:1;padding:.5rem;border-radius:7px;border:1px solid var(--line);background:#fff;font-weight:700;cursor:pointer;font-size:.82rem;}
+  .ovcard .foot .up{border-color:var(--blue);color:var(--blue);}
+  .ovcard .foot .dn{border-color:var(--b);color:var(--b);}
+
+  /* paste modal */
+  .mbg{position:fixed;inset:0;background:rgba(30,37,48,.5);z-index:140;display:none;place-items:center;}
+  .mbg.show{display:grid;}
+  .modal{background:var(--panel);border-radius:12px;padding:1.4rem;width:42rem;max-width:92vw;box-shadow:0 20px 60px rgba(0,0,0,.3);}
+  .modal h2{margin:0 0 .4rem;font-size:1.1rem;}
+  .modal p{margin:0 0 .8rem;color:var(--muted2);font-size:.82rem;}
+  .modal textarea{width:100%;height:13rem;border:1px solid var(--line);border-radius:8px;padding:.7rem;font-family:ui-monospace,Menlo,monospace;font-size:.76rem;resize:vertical;}
+  .modal .act{display:flex;gap:.5rem;justify-content:flex-end;margin-top:.8rem;}
+  .btn{padding:.5rem 1.2rem;border-radius:7px;border:1px solid var(--line);background:#fff;font-weight:700;cursor:pointer;font-size:.82rem;}
+  .btn.primary{background:var(--blue);color:#fff;border-color:var(--blue);}
+  .modal code{background:var(--bg);padding:.05rem .3rem;border-radius:4px;font-size:.72rem;}
+  .empty-main{text-align:center;padding:5rem;color:var(--muted);}
+  @media (max-width:1200px){
+    :root{--right-w:34rem;}
+    .layout{grid-template-columns:minmax(0,1fr) .65rem minmax(26rem,var(--right-w));}
+    .cards,.stats-kpis{grid-template-columns:repeat(2,minmax(0,1fr));}
+    .stats-grid,.boundary-list{grid-template-columns:1fr;}
+    .toolbar,.topbanner{flex-wrap:wrap;}
+    .tb-cuts{min-width:0;}
+  }
+  @media (max-width:760px){
+    .layout{grid-template-columns:1fr;}
+    .side{display:none;}
+    .splitter{display:none;}
+    .rpanel{position:static;height:70vh;min-height:28rem;border-left:none;border-right:none;border-bottom:1px solid var(--line);}
+    .detail-float{top:4.4rem;right:.6rem;bottom:.6rem;width:calc(100vw - 1.2rem);}
+    .cards,.stats-kpis{grid-template-columns:1fr;}
+    .topbar{height:auto;min-height:3.3rem;flex-wrap:wrap;padding:.7rem 1rem;}
+    .topbanner{position:static;}
+    .main-sticky,.rt-head{position:static;top:auto;}
+    .bottombar{position:static;height:auto;flex-wrap:wrap;padding:.8rem 1rem;}
+    .pick-actions{width:100%;justify-content:flex-end;}
+  }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <span class="brand">상반기 평가 세션</span>
+  <span class="grow"></span>
+  <div class="zoom">
+    <button onclick="zoom(-1)">A−</button><span id="zl">100%</span><button onclick="zoom(1)">A+</button>
+  </div>
+  <button onclick="toggleFull()" id="fsBtn">⛶ 전체화면</button>
+  <button onclick="openHist()">↻ 변경 이력</button>
+  <button class="primary" onclick="saveSession()">✓ 세션 종료 및 저장</button>
+</div>
+
+<div class="topbanner" id="topbanner"></div>
+
+<div class="layout">
+  <!-- sidebar -->
+  <div class="side">
+    <div class="sect">
+      <h4>직급 선택</h4>
+      <div id="rankList"></div>
+    </div>
+    <div class="sect">
+      <h4>평가 구간 안내</h4>
+      <div class="leg"><i style="background:var(--s)"></i>S (5% 이내)</div>
+      <div class="leg"><i style="background:var(--a)"></i>A (20%)</div>
+      <div class="leg"><i style="background:var(--bp)"></i>B+ (65%)</div>
+      <div class="leg"><i style="background:var(--b)"></i>B (10%)</div>
+      <div class="leg"><i style="background:var(--c)"></i>C (절대평가)</div>
+    </div>
+    <div class="sect">
+      <h4>팀별 하위(B) 할당 현황</h4>
+      <div id="teamq"></div>
+      <div class="foot-note">* 권장(B): 팀 인원의 약 10%</div>
+    </div>
+  </div>
+
+  <!-- main -->
+  <main id="main"></main>
+
+  <div class="splitter" id="splitter" role="separator" aria-label="좌우 영역 폭 조절" aria-orientation="vertical" tabindex="0" title="좌우 영역 폭 조절"></div>
+
+  <!-- right panel -->
+  <div class="rpanel" id="rpanel"></div>
+</div>
+
+<div class="detail-backdrop" id="detailBackdrop" onclick="closeDetail(event)">
+  <aside class="detail-float" id="detailPanel" onclick="event.stopPropagation()"></aside>
+</div>
+
+<!-- bottom bar -->
+<div class="bottombar">
+  <span class="leg" style="display:flex;align-items:center;gap:.3rem"><i style="width:.8rem;height:.8rem;border-radius:3px;background:var(--a-fill);border:1px solid var(--green-line);display:inline-block"></i>A권역 확정</span>
+  <span class="leg" style="display:flex;align-items:center;gap:.3rem"><i style="width:.8rem;height:.8rem;border-radius:3px;background:var(--ab-fill);border:1px solid var(--ab-line);display:inline-block"></i>A/B+ 경계</span>
+  <span class="leg" style="display:flex;align-items:center;gap:.3rem"><i style="width:.8rem;height:.8rem;border-radius:3px;background:var(--bb-fill);border:1px solid var(--bb-line);display:inline-block"></i>B+/B 경계</span>
+  <span class="leg" style="display:flex;align-items:center;gap:.3rem">⭐ S 추천 후보</span>
+  <span class="leg" style="display:flex;align-items:center;gap:.3rem">C 후보</span>
+  <span class="grow"></span>
+  <div class="pick-actions empty" id="pickActions">
+    <span class="pick-summary">선택 0명</span>
+    <button class="pick-action-btn" disabled>비교</button>
+    <button class="pick-action-btn" disabled>교체</button>
+  </div>
+  <button class="tbtn" onclick="undo()" id="undoBtn">↶ 되돌리기</button>
+  <button class="tbtn" onclick="redo()" id="redoBtn">↷ 다시 실행</button>
+  <button class="tbtn" onclick="clearSaved()" title="저장 데이터 삭제">🗑 초기화</button>
+  <span class="save" id="saveState"><span class="dot"></span>자동 저장 중</span>
+  <span class="status" id="statusMsg"></span>
+</div>
+
+<!-- compare overlay -->
+<div class="ov" id="ov"><div class="ovp">
+  <div class="ovh"><h2>후보자 비교</h2>
+    <span class="hint">업적을 나란히 놓고 ▲/▼ 로 순위를 조정하세요.</span>
+    <button class="x" onclick="closeCompare()">✕</button></div>
+  <div class="ovg" id="ovg"></div>
+</div></div>
+
+<!-- paste modal -->
+<div class="mbg" id="mbg"><div class="modal">
+  <h2>평가 대상자 입력</h2>
+  <p>엑셀에서 아래 열 순서로 복사해 붙여넣으세요. 첫 줄이 머리글이면 자동 무시됩니다.<br>
+  <code>직급 · 이름 · 팀 · 직급/년차 · 작년평가 · 최근3년(A,B+,A) · 주요성과(줄바꿈은 / 로 구분) · 상세성과 · 입사일</code></p>
+  <textarea id="pasteBox" placeholder="대리	김철수	MS운영	4	A	A,A,B+	Cleverse 구축 PM/장애 Zero 달성/운영 자동화 개선	상세 성과 서술...	2020-03-02"></textarea>
+  <div class="act">
+    <button class="btn" onclick="loadSample()">샘플 데이터</button>
+    <button class="btn" onclick="closePaste()">취소</button>
+    <button class="btn primary" onclick="applyPaste()">불러오기</button>
+  </div>
+</div></div>
+
+<!-- settings modal -->
+<div class="mbg" id="sbg"><div class="modal">
+  <h2>세션 설정</h2>
+  <p>담당·직급별로 비중이 다릅니다. 현재 <b id="setRankLbl"></b> 인원(<b id="setN"></b>명) 기준으로 조정하면 경계가 즉시 재계산됩니다.</p>
+  <div class="set-grid" id="setGrid"></div>
+  <div class="set-sum" id="setSum"></div>
+  <div class="set-field" style="margin-top:1rem;max-width:12rem">
+    <label>경계 후보군 (전사 후보) 수</label>
+    <div class="with"><input type="number" id="setBuffer" min="0" max="20" oninput="previewSettings()"><span class="unit">명</span></div>
+  </div>
+  <div class="set-field" style="margin-top:.9rem;max-width:12rem">
+    <label>비교 최대 인원</label>
+    <div class="with"><input type="number" id="setMaxCmp" min="2" max="8" oninput="previewSettings()"><span class="unit">명</span></div>
+  </div>
+  <div class="set-note">* S·A·B+·B 합은 100%가 되어야 합니다. C는 절대평가로 별도 처리됩니다.<br>* 이 설정은 모든 직급에 공통 적용됩니다.</div>
+  <div class="act">
+    <button class="btn" onclick="resetSettings()">기본값 복원</button>
+    <button class="btn" onclick="closeSettings()">취소</button>
+    <button class="btn primary" id="setApply" onclick="applySettings()">적용</button>
+  </div>
+</div></div>
+
+<script>
+const RANKS=["사원","대리","과장","차장"];
+const GRADES=[
+  {key:"S",color:"var(--s)"},
+  {key:"A",color:"var(--a)"},
+  {key:"B+",color:"var(--bp)"},
+  {key:"B",color:"var(--b)"},
+  {key:"C",color:"var(--c)"},
+];
+// 조정 가능한 설정 (담당별 비중이 다르므로 세션 중 변경)
+const DEFAULT_CFG={ ratio:{S:5,A:20,"B+":65,B:10}, buffer:3, maxCompare:4 };
+let cfg=JSON.parse(JSON.stringify(DEFAULT_CFG));
+
+let people=[], order={}, active="대리", selId=null;
+let picked=new Set(), memos={}, fs=14;
+let undoStack=[], redoStack=[];
+let query="";  // 검색어
+let mainView="rank";
+
+/* ---- data ---- */
+function loadSample(){
+  const teams=["MS운영","플랫폼개발","클라우드","ERP","그룹웨어","보안","기타"];
+  const p3=[["A","A","B+"],["A","B+","A"],["B+","A","B+"],["A","A","A"],["B+","B+","B+"],["B","B+","B+"],["B+","B","B+"]];
+  const achLib=[
+    ["Cleverse 구축 PM","장애 Zero 달성","운영 자동화 개선"],
+    ["신기능 API 개발 주도","성능 개선 30% 달성","고객사 기술지원 우수"],
+    ["클라우드 마이그레이션 PM","비용 절감 2.5억","보안 강화 프로젝트 주도"],
+    ["시스템 고도화","배치 처리 성능 개선"],
+    ["Teams 운영 안정화","사용자 만족도 향상"],
+    ["ERP 모듈 기능 개선","데이터 품질 향상"],
+    ["클라우드 비용 최적화","모니터링 체계 구축"],
+    ["보안 취약점 개선","보안 교육 프로그램 운영"],
+    ["그룹웨어 기능 개선","사용자 가이드 제작"],
+    ["내부 시스템 개선","코드 리팩토링"],
+  ];
+  const detailLib=[
+    "① ERP 모듈 기능 개선 및 성능 향상\n② 데이터 품질 개선 프로젝트 주도\n③ 업무 프로세스 자동화 구축\n④ 사용자 교육 및 매뉴얼 개선",
+    "① 신규 API 3종 설계 및 배포\n② 응답속도 30% 단축\n③ 사내 시스템 10종 연동 표준화",
+    "① 온프레미스 → 클라우드 전환 총괄\n② 인프라 비용 연 2.5억 절감\n③ 보안 아키텍처 재설계",
+  ];
+  const arr=[]; let id=1;
+  RANKS.forEach(rk=>{
+    const n= rk==="사원"?120 : rk==="대리"?108 : rk==="과장"?95 : 77;
+    for(let i=0;i<n;i++){
+      const three=p3[i%p3.length];
+      arr.push({id:id++,rank:rk,
+        name:["김철수","이영희","박민수","최지훈","정하늘","유재석","강아름","이민호","오세훈","정수빈","한지민","서강준","윤아","조인성","김태리","박서준"][i%16]+(i>15?(Math.floor(i/16)+1):""),
+        team:teams[i%teams.length],
+        yr:((i%6)+2),
+        prev:three[0], three:three,
+        ach:achLib[i%achLib.length],
+        detail:detailLib[i%detailLib.length],
+        join:`20${String(24-(i%6)).padStart(2,'0')}-0${(i%9)+1}-${String((i%27)+1).padStart(2,'0')}`,
+        sRec:false});
+    }
+  });
+  document.getElementById('pasteBox').value=arr.map(p=>[p.rank,p.name,p.team,p.yr,p.prev,p.three.join(','),p.ach.join('/'),p.detail.replace(/\n/g,' '),p.join].join('\t')).join('\n');
+}
+function applyPaste(){
+  const raw=document.getElementById('pasteBox').value.trim();
+  if(!raw){closePaste();return;}
+  const lines=raw.split(/\r?\n/).filter(l=>l.trim());
+  const out=[]; let id=1;
+  lines.forEach((l,idx)=>{
+    const c=l.split('\t').map(x=>x.trim());
+    if(idx===0&&/직급|이름|년차|평가/.test(l)&&!RANKS.includes(c[0]))return;
+    if(c.length<2)return;
+    let rank=c[0]; if(!RANKS.includes(rank))rank=active;
+    const three=(c[5]||c[4]||"").split(',').map(x=>x.trim()).filter(Boolean);
+    out.push({id:id++,rank,name:c[1]||"이름없음",team:c[2]||"-",yr:parseInt(c[3])||0,
+      prev:c[4]||three[0]||"-",three:three.length?three:[c[4]||"-"],
+      ach:(c[6]||"").split('/').map(x=>x.trim()).filter(Boolean),
+      detail:c[7]||"",join:c[8]||"",sRec:false});
+  });
+  people=out; picked.clear(); selId=null; undoStack=[]; redoStack=[];
+  rebuild(); closePaste(); persist(); render();
+}
+function rebuild(){
+  order={};
+  RANKS.forEach(rk=>{ order[rk]=people.filter(p=>p.rank===rk)
+    .sort((a,b)=>ps(b.prev)-ps(a.prev)||b.yr-a.yr).map(p=>p.id); });
+}
+function ps(g){return ({S:5,A:4,"B+":3,B:2,C:1})[g]||0;}
+function pid(id){return people.find(p=>p.id===id);}
+
+/* ---- quotas (조정 가능한 비율 기반) ---- */
+function quotas(n){
+  const r=cfg.ratio;
+  const s=Math.floor(n*r.S/100);
+  const a=Math.round(n*r.A/100);
+  const b=Math.round(n*r.B/100);
+  return {S:s,A:a,"B+":n-s-a-b,B:b,C:0};
+}
+function bounds(n){const q=quotas(n);return{q,aEnd:q.S+q.A,bStart:n-q.B};}
+function gradeAt(i,n){const{q}=bounds(n);let acc=0;for(const g of["S","A","B+","B"]){if(i>=acc&&i<acc+q[g])return g;acc+=q[g];}return"C";}
+function gColor(g){const f=GRADES.find(x=>x.key===g);return f?f.color:"#999";}
+
+/* ---- history ---- */
+function snapshot(){undoStack.push(JSON.stringify(order[active]));if(undoStack.length>60)undoStack.shift();redoStack=[];}
+function undo(){if(!undoStack.length)return;redoStack.push(JSON.stringify(order[active]));order[active]=JSON.parse(undoStack.pop());persist();render();}
+function redo(){if(!redoStack.length)return;undoStack.push(JSON.stringify(order[active]));order[active]=JSON.parse(redoStack.pop());persist();render();}
+
+/* ---- auto-save / restore (localStorage) ---- */
+const LS_KEY="evalSession.v1";
+let saveTimer=null, lastSaved=null, canPersist=true;
+function persist(){
+  if(!canPersist)return;
+  clearTimeout(saveTimer);
+  saveTimer=setTimeout(()=>{
+    try{
+      const payload={people,order,active,cfg,memos,savedAt:Date.now()};
+      localStorage.setItem(LS_KEY,JSON.stringify(payload));
+      lastSaved=payload.savedAt;
+      flashSaved();
+    }catch(e){ canPersist=false; markNoPersist(); }
+  },400);
+}
+function restore(){
+  let raw=null;
+  try{ raw=localStorage.getItem(LS_KEY); }
+  catch(e){ canPersist=false; markNoPersist(); return false; }
+  if(!raw)return false;
+  try{
+    const d=JSON.parse(raw);
+    if(!d.people||!d.people.length)return false;
+    people=d.people; order=d.order||{}; active=RANKS.includes(d.active)?d.active:active;
+    if(d.cfg)cfg={...cfg,...d.cfg}; memos=d.memos||{}; lastSaved=d.savedAt||null;
+    // 정합성 보정: order 누락 직급 재생성
+    RANKS.forEach(rk=>{ if(!order[rk]) order[rk]=people.filter(p=>p.rank===rk).map(p=>p.id); });
+    return true;
+  }catch(e){ return false; }
+}
+function clearSaved(){
+  if(!confirm("저장된 세션을 삭제하고 초기화할까요? 되돌릴 수 없습니다."))return;
+  try{ localStorage.removeItem(LS_KEY); }catch(e){}
+  people=[];order={};picked.clear();selId=null;memos={};undoStack=[];redoStack=[];query="";mainView="rank";
+  render();
+}
+function flashSaved(){
+  const el=document.getElementById('saveState');
+  if(!el)return;
+  el.innerHTML='<span class="dot"></span>저장됨 '+fmtTime(lastSaved);
+}
+function markNoPersist(){
+  const el=document.getElementById('saveState');
+  if(el)el.innerHTML='<span class="dot" style="background:var(--warn)"></span>자동저장 불가 (파일을 PC에 저장 후 열면 동작)';
+}
+function fmtTime(t){ if(!t)return''; const d=new Date(t); return `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}:${String(d.getSeconds()).padStart(2,'0')}`; }
+
+/* ---- render ---- */
+function render(){renderBanner();renderRankList();renderTeamQ();renderMain();renderRPanel();renderBottom();}
+
+function renderBanner(){
+  const el=document.getElementById('topbanner');
+  const rankTabs=`<div class="rank-tabs">${RANKS.map(rk=>`<button class="rank-tab ${rk===active?'active':''}" onclick="setRank('${rk}')"><span>${rk}</span><span class="cnt">${(order[rk]||[]).length}명</span></button>`).join('')}</div>`;
+  if(!people.length){ el.innerHTML=`${rankTabs}<div class="tb-empty">데이터를 입력하면 컷 위치가 표시됩니다.</div>`; return; }
+  const ids=order[active],n=ids.length,{q}=bounds(n),r=boundaryRanges(n);
+  const sRec=ids.filter(id=>pid(id).sRec).length;
+  el.innerHTML=`${rankTabs}
+    <div class="tb-cuts">
+      <span class="tb-tag" style="--tc:var(--a)"><b>A권역</b> 1~${r.aEnd}위</span>
+      <span class="tb-arrow">→</span>
+      <span class="tb-tag" style="--tc:var(--ab-line)"><b>A/B+ 경계</b> ${r.abFrom}~${r.abTo}위</span>
+      <span class="tb-arrow">→</span>
+      <span class="tb-tag" style="--tc:var(--bp)"><b>B+ 잠정</b> ${r.abTo+1}~${Math.max(r.abTo,r.bbFrom-1)}위</span>
+      <span class="tb-arrow">→</span>
+      <span class="tb-tag" style="--tc:var(--bb-line)"><b>B+/B 경계</b> ${r.bbFrom}~${r.bbTo}위</span>
+      <span class="tb-arrow">·</span>
+      <span class="tb-tag" style="--tc:var(--s)"><b>S추천</b> ${sRec}/${q.S}명</span>
+    </div>
+    <div class="tb-search">
+      <input id="searchBox" placeholder="이름·팀 검색" value="${esc(query)}"
+        oninput="query=this.value;renderMain()" onkeydown="if(event.key==='Enter')jumpFirst()">
+      ${query?`<button class="tb-x" onclick="query='';document.getElementById('searchBox').value='';renderMain()">✕</button>`:''}
+    </div>`;
+}function jumpFirst(){
+  const row=document.querySelector('.rt-row.match');
+  if(row)row.scrollIntoView({behavior:'smooth',block:'center'});
+}
+
+function renderRankList(){
+  document.getElementById('rankList').innerHTML=RANKS.map(rk=>{
+    const c=(order[rk]||[]).length;
+    return `<div class="rank-item ${rk===active?'active':''}" onclick="setRank('${rk}')">
+      <span>${rk}</span><span class="cnt">${c}명</span></div>`;
+  }).join('');
+}
+function setRank(rk){active=rk;picked.clear();selId=null;undoStack=[];redoStack=[];render();}
+
+function renderTeamQ(){
+  const tq=document.getElementById('teamq');
+  if(!people.length){tq.innerHTML='<div class="foot-note">데이터 없음</div>';return;}
+  const ids=order[active],n=ids.length,teams={};
+  ids.forEach((id,i)=>{const p=pid(id);teams[p.team]=teams[p.team]||{total:0,b:0};teams[p.team].total++;if(gradeAt(i,n)==="B")teams[p.team].b++;});
+  let tot={total:0,b:0,rec:0};
+  let rows=Object.entries(teams).sort((a,b)=>b[1].total-a[1].total).map(([t,v])=>{
+    const rec=Math.round(v.total*0.10);
+    tot.total+=v.total;tot.b+=v.b;tot.rec+=rec;
+    let st,cls;
+    if(v.b<rec){st="부족";cls="warn";}else if(v.b>rec){st="과다";cls="over";}else{st="적정";cls="ok";}
+    return `<tr><td>${esc(t)}</td><td>${v.total}</td><td>${rec}</td><td>${v.b}</td><td class="st ${cls}">${st}</td></tr>`;
+  }).join('');
+  tq.innerHTML=`<table class="teamq">
+    <tr><th>팀명</th><th>인원</th><th>권장</th><th>현재</th><th>현황</th></tr>
+    ${rows}
+    <tr class="total"><td>총계</td><td>${tot.total}</td><td>${tot.rec}</td><td>${tot.b}</td><td></td></tr>
+  </table>`;
+}
+
+function stars(g){const v=ps(g);let s='';for(let i=0;i<5;i++)s+=`<span class="${i<v?'':'off'}">★</span>`;return `<span class="stars">${s}</span>`;}
+function pct(v,n){return n?Math.round(v/n*100):0;}
+function boundaryInfo(rankNo,n){
+  const {aEnd,bStart}=bounds(n);
+  const abTo=Math.min(n,aEnd+cfg.buffer);
+  const bbFrom=Math.max(1,bStart-cfg.buffer+1);
+  const bbTo=Math.min(n,bStart+cfg.buffer);
+  if(rankNo>aEnd&&rankNo<=abTo)return{key:'ab',label:'A/B+ 경계',cls:'ab-boundary',color:'var(--ab-line)'};
+  if(rankNo>=bbFrom&&rankNo<=bbTo)return{key:'bb',label:'B+/B 경계',cls:'bb-boundary',color:'var(--bb-line)'};
+  return{key:'',label:'',cls:'',color:''};
+}
+function boundaryRanges(n){
+  const {aEnd,bStart}=bounds(n);
+  return{aEnd,bStart,abFrom:aEnd+1,abTo:Math.min(n,aEnd+cfg.buffer),bbFrom:Math.max(1,bStart-cfg.buffer+1),bbTo:Math.min(n,bStart+cfg.buffer)};
+}
+function gradeCountsFor(rk){
+  const ids=order[rk]||[],n=ids.length,counts={S:0,A:0,"B+":0,B:0,C:0};
+  ids.forEach((id,i)=>{counts[gradeAt(i,n)]++;});
+  return counts;
+}
+function rankSummary(rk){
+  const ids=order[rk]||[],n=ids.length,{q,aEnd,bStart}=bounds(n),counts=gradeCountsFor(rk);
+  const teams={},prev={S:0,A:0,"B+":0,B:0,C:0,"-":0};
+  ids.forEach((id,i)=>{
+    const p=pid(id),g=gradeAt(i,n);
+    teams[p.team]=teams[p.team]||{team:p.team,total:0,S:0,A:0,"B+":0,B:0,C:0,recB:0};
+    teams[p.team].total++; teams[p.team][g]++;
+    prev[p.prev]=prev[p.prev]==null?1:prev[p.prev]+1;
+  });
+  Object.values(teams).forEach(t=>{t.recB=Math.round(t.total*.10);});
+  return {
+    rk,ids,n,q,aEnd,bStart,counts,prev,
+    teams:Object.values(teams).sort((a,b)=>b.total-a.total),
+    sRec:ids.filter(id=>pid(id).sRec).length,
+    memo:ids.filter(id=>memos[id]).length,
+    avgYr:n?(ids.reduce((sum,id)=>sum+(pid(id).yr||0),0)/n):0
+  };
+}
+function renderToolbar(){
+  const stats=mainView==="stats";
+  return `<div class="toolbar">
+    <div class="seg" role="group" aria-label="화면 선택">
+      <button class="${!stats?'on':''}" onclick="setMainView('rank')">순위 조정</button>
+      <button class="${stats?'on':''}" onclick="setMainView('stats')">요약/통계</button>
+    </div>
+    <span class="hint">${stats?'직급·팀·등급 분포를 한 화면에서 확인합니다.':'⋮⋮ 드래그 = 순위 이동 · 클릭 = 상세 보기 · Shift+클릭 = 비교 담기/빼기'}</span>
+    <span class="grow"></span>
+    ${stats?'':`<button class="tbtn ${onlyBoundary?'on':''}" onclick="toggleBoundary()">◎ 경계구간만 보기</button>`}
+    <button class="tbtn" onclick="openSettings()">⚙ 설정</button>
+    <button class="tbtn" onclick="openPaste()">▤ 데이터 입력</button>
+    <button class="tbtn" onclick="exportCsv()">↧ CSV</button>
+  </div>`;
+}
+function renderDist(counts,total){
+  return `<div class="dist-list">${GRADES.map(g=>{
+    const n=counts[g.key]||0,p=pct(n,total);
+    return `<div class="dist-row" style="--gc:${g.color};--w:${p}%">
+      <div class="lab"><span class="dot"></span>${g.key}</div>
+      <div class="bar-track"><div class="bar-fill"></div></div>
+      <div class="num">${n}명 · ${p}%</div>
+    </div>`;
+  }).join('')}</div>`;
+}
+function renderStatsScreen(){
+  const s=rankSummary(active);
+  const all=RANKS.map(rankSummary);
+  const total=people.length;
+  const totalS=people.filter(p=>p.sRec).length;
+  const totalMemo=people.filter(p=>memos[p.id]).length;
+  const teamRows=s.teams.map(t=>{
+    const status=t.B<t.recB?["부족","warn"]:t.B>t.recB?["과다","over"]:["적정","ok"];
+    return `<tr>
+      <td><b>${esc(t.team)}</b><div class="mini-meter" style="--w:${pct(t.B,t.total)}%;--gc:var(--b)"><i></i></div></td>
+      <td>${t.total}</td><td>${t.recB}</td><td>${t.B}</td><td class="st ${status[1]}">${status[0]}</td>
+    </tr>`;
+  }).join('');
+  const rankRows=all.map(x=>`<tr>
+    <td><b>${x.rk}</b></td><td>${x.n}</td><td>${x.q.S}</td><td>${x.q.A}</td><td>${x.q["B+"]}</td><td>${x.q.B}</td><td>${x.sRec}</td>
+  </tr>`).join('');
+  const boundaryRows=(title,from,to)=>`<div class="boundary-col"><h4>${title}</h4>${
+    s.ids.slice(from,to).map(id=>{
+      const p=pid(id),rn=s.ids.indexOf(id)+1,g=gradeAt(rn-1,s.n);
+      return `<div class="boundary-row">
+        <div class="rank">${rn}위</div>
+        <div class="person"><b>${esc(p.name)}${p.sRec?' ⭐':''}</b><span>${esc(p.team)} · ${p.yr}년차</span></div>
+        <div class="grade"><span class="chip" style="background:${gColor(g)}">${g}</span></div>
+      </div>`;
+    }).join('') || '<div class="empty-rp" style="padding:1rem">대상 없음</div>'
+  }</div>`;
+
+  return `<div class="stats-view">
+    <div class="mhead stats-head">
+      <span class="t">${active} 요약/통계</span><span class="n">전체 ${s.n}명 · 평균 ${s.avgYr.toFixed(1)}년차</span>
+      <span class="stage">전체 직급 ${total}명 · S추천 ${totalS}명 · 메모 ${totalMemo}건</span>
+    </div>
+    <div class="stats-kpis">
+      <div class="stat-kpi"><div class="k">현재 직급 인원</div><div class="v">${s.n}</div><div class="sub">${active} 기준</div></div>
+      <div class="stat-kpi"><div class="k">A권역 목표</div><div class="v">${s.q.S+s.q.A}</div><div class="sub">S ${s.q.S}명 + A ${s.q.A}명</div></div>
+      <div class="stat-kpi"><div class="k">전사 후보</div><div class="v">${cfg.buffer}</div><div class="sub">${s.aEnd+1}~${s.aEnd+cfg.buffer}위</div></div>
+      <div class="stat-kpi"><div class="k">S 추천 현황</div><div class="v">${s.sRec}/${s.q.S}</div><div class="sub">현재 직급 추천 수</div></div>
+    </div>
+    <div class="stats-grid">
+      <section class="stats-card"><h3>최종 등급 분포</h3>${renderDist(s.counts,s.n)}<div class="note">현재 순위와 설정 비율을 기준으로 자동 계산됩니다.</div></section>
+      <section class="stats-card"><h3>작년 평가 분포</h3>${renderDist(s.prev,s.n)}<div class="note">대상자 원본 데이터의 작년 평가 기준입니다.</div></section>
+    </div>
+    <div class="stats-grid">
+      <section class="stats-card"><h3>팀별 B 할당 점검</h3><table class="stat-table">
+        <tr><th>팀</th><th>인원</th><th>권장</th><th>현재</th><th>현황</th></tr>${teamRows}
+      </table></section>
+      <section class="stats-card"><h3>직급별 현황</h3><table class="stat-table">
+        <tr><th>직급</th><th>인원</th><th>S</th><th>A</th><th>B+</th><th>B</th><th>S추천</th></tr>${rankRows}
+      </table></section>
+    </div>
+    <section class="stats-card"><h3>경계 후보 확인</h3>
+      <div class="boundary-list">
+        ${boundaryRows('A컷 주변 / 전사 후보',Math.max(0,s.aEnd-3),Math.min(s.n,s.aEnd+cfg.buffer+3))}
+        ${boundaryRows('B컷 주변',Math.max(0,s.bStart-3),s.n)}
+      </div>
+    </section>
+  </div>`;
+}
+
+function renderMain(){
+  const m=document.getElementById('main');
+  if(!people.length){
+    m.innerHTML=`<div class="empty-main">평가 대상자 데이터가 없습니다.<br><br>
+      <button class="btn primary" onclick="openPaste()">데이터 입력하기</button></div>`;return;
+  }
+  const ids=order[active],n=ids.length,{q,aEnd,bStart}=bounds(n);
+  const toolbar=renderToolbar();
+  if(mainView==="stats"){
+    m.innerHTML=`<div class="main-sticky">${toolbar}</div>`+renderStatsScreen();
+    return;
+  }
+
+  const head=`<div class="mhead">
+    <span class="t">${active}</span><span class="n">전체 ${n}명</span>
+    <span class="stage">S ${q.S} · A ${q.A} · B+ ${q["B+"]} · B ${q.B}</span>
+  </div>`;
+
+  const th=`<div class="rt-head">
+    <div></div><div class="cc">순위</div><div>이름</div>
+    <div>팀</div><div>직급/년차</div><div>작년평가</div><div>주요 성과 요약</div><div class="cc">메모</div>
+  </div>`;
+
+  let rows=''; let prevShownEllipsis=false;
+  ids.forEach((id,i)=>{
+    const rankNo=i+1, g=gradeAt(i,n), zone=boundaryInfo(rankNo,n), ranges=boundaryRanges(n);
+    const inACut=rankNo<=aEnd;
+    // boundary-only compaction (show top area around A cut + B area)
+    if(onlyBoundary){
+      const showA = rankNo>=aEnd-4 && rankNo<=ranges.abTo+1;
+      const showB = rankNo>=ranges.bbFrom-1 && rankNo<=ranges.bbTo+1;
+      const showTop = rankNo<=3;
+      if(!(showA||showB||showTop)){
+        if(!prevShownEllipsis){rows+=`<div class="rt-row ellipsis">⋮</div>`;prevShownEllipsis=true;}
+        return;
+      }
+      prevShownEllipsis=false;
+    }
+    // 경계 구간 표식: 등급 확정이 아니라 경계 대상임을 표시
+    if(rankNo===ranges.abFrom){
+      rows+=`<div class="cutline ab"><hr><span class="lab">A/B+ 경계구간 (${ranges.abFrom}~${ranges.abTo}위)</span></div>`;
+    }
+    if(rankNo===ranges.abTo+1){
+      rows+=`<div class="cutline ab"><hr><span class="lab">A/B+ 경계 종료 (${ranges.abTo}위)</span></div>`;
+    }
+    if(rankNo===ranges.bbFrom){
+      rows+=`<div class="cutline bb"><hr><span class="lab">B+/B 경계구간 (${ranges.bbFrom}~${ranges.bbTo}위)</span></div>`;
+    }
+    if(rankNo===bStart+1){
+      rows+=`<div class="cutline bb"><hr><span class="lab">B 기준선 (${bStart}위)</span></div>`;
+    }
+    const p=pid(id);
+    const q=query.trim().toLowerCase();
+    const isMatch = q && (p.name.toLowerCase().includes(q)||p.team.toLowerCase().includes(q));
+    const isDim = q && !isMatch;
+    const inCmp = picked.has(id);
+    const cls=["rt-row",inACut?"acut":"",zone.cls,selId===id?"sel":"",inCmp?"incmp":"",isMatch?"match":"",isDim?"dim":""].join(' ');
+    const achHtml=(p.ach||[]).slice(0,3).map(a=>`<div>${esc(a)}</div>`).join('');
+    rows+=`<div class="${cls}" draggable="true" data-id="${id}" onclick="handleRowClick(event,${id})">
+      <div class="grip">⋮⋮</div>
+      <div class="rk">${rankNo}${zone.key?`<span class="tag" style="color:${zone.color}">${zone.label}</span>`:''}</div>
+      <div class="nm">${inCmp?'<span class="cmp-dot" title="비교 목록에 담김">⇄</span>':''}${esc(p.name)}${p.sRec?' ⭐':''}</div>
+      <div class="team">${esc(p.team)}</div>
+      <div class="rc">${active} / ${p.yr}년차</div>
+      <div class="prevcell"><span class="chip" style="background:${gColor(p.prev)}">${p.prev}</span>${stars(p.prev)}</div>
+      <div class="ach">${achHtml}</div>
+      <div class="cc" onclick="event.stopPropagation()"><button class="memo-btn ${memos[id]?'has':''}" onclick="focusMemo(${id})" title="메모">✎</button></div>
+    </div>`;
+  });
+
+  m.innerHTML=`<div class="main-sticky">${toolbar}${head}</div><div class="rtable">${th}${rows}</div>`;
+  wireDrag();
+}
+
+let onlyBoundary=false;
+function toggleBoundary(){onlyBoundary=!onlyBoundary;render();}
+function setMainView(view){mainView=view;renderMain();renderBottom();}
+
+function handleRowClick(e,id){
+  if(e&&e.shiftKey){
+    e.preventDefault();
+    e.stopPropagation();
+    pickRow(id);
+    return;
+  }
+  const hadPicked=picked.size>0;
+  if(hadPicked){
+    picked.clear();
+    closeDetail();
+    render();
+    return;
+  }
+  viewRow(id);
+}
+function viewRow(id){ selId=id; renderFloatingDetail(); document.querySelectorAll('.rt-row').forEach(r=>r.classList.toggle('sel',+r.dataset.id===id)); document.querySelectorAll('.team-row').forEach(r=>r.classList.toggle('sel',+r.dataset.id===id)); }
+function pickRow(id){
+  if(picked.has(id)){
+    picked.delete(id);
+  }else{
+    if(picked.size>=cfg.maxCompare){
+      alert(`비교는 최대 ${cfg.maxCompare}명까지 가능합니다.\n(설정에서 인원을 조정할 수 있습니다.)`);
+      return;
+    }else{
+      picked.add(id);
+    }
+  }
+  render();
+}
+function swapPickedRanks(){
+  const ids=order[active]||[];
+  const pair=ids.filter(id=>picked.has(id));
+  if(pair.length!==2){alert('순위를 교체하려면 Shift+클릭으로 2명을 선택하세요.');return;}
+  const a=ids.indexOf(pair[0]),b=ids.indexOf(pair[1]);
+  if(a<0||b<0||a===b)return;
+  snapshot();
+  [ids[a],ids[b]]=[ids[b],ids[a]];
+  persist();
+  const ovOpen=document.getElementById('ov').classList.contains('show');
+  render();
+  if(ovOpen)openCompare();
+}
+function moveTeamRank(id,d){
+  const ids=order[active]||[],p=pid(id);
+  if(!p)return;
+  const teamIds=ids.filter(x=>pid(x).team===p.team);
+  const ti=teamIds.indexOf(id),target=teamIds[ti+d];
+  if(!target)return;
+  const a=ids.indexOf(id),b=ids.indexOf(target);
+  if(a<0||b<0)return;
+  snapshot();
+  [ids[a],ids[b]]=[ids[b],ids[a]];
+  persist();
+  render();
+}
+function togglePick(id,e){if(e)e.stopPropagation();pickRow(id);}
+function toggleSFromPanel(id){pid(id).sRec=!pid(id).sRec;persist();render();}
+function focusMemo(id){selId=id;renderFloatingDetail();setTimeout(()=>{const t=document.getElementById('memoBox');if(t)t.focus();},50);}
+
+/* ---- right panel ---- */
+function renderTeamRatio(counts,total){
+  const keys=["S","A","B+","B"];
+  const chips=`<div class="team-ratio">${keys.map(g=>{
+    const n=counts[g]||0,p=pct(n,total);
+    return `<span style="--gc:${gColor(g)}"><b>${g}</b> ${p}%</span>`;
+  }).join('')}</div>`;
+  const stack=`<div class="team-stack">${keys.map(g=>`<i style="--gc:${gColor(g)};--w:${pct(counts[g]||0,total)}%"></i>`).join('')}</div>`;
+  return chips+stack;
+}
+function renderRPanel(){
+  const rp=document.getElementById('rpanel');
+  if(!rp)return;
+  if(!people.length){
+    rp.innerHTML=`<div class="team-panel"><h4>팀별 순위표</h4><div class="empty-rp">데이터를 입력하면<br>팀별 순위와 평가 비중이 표시됩니다.</div></div>`;
+    renderFloatingDetail();
+    return;
+  }
+  const s=rankSummary(active), keys=["S","A","B+","B"];
+  const teamCards=s.teams.map(t=>{
+    const teamRows=s.ids.map((id,i)=>({id,rankNo:i+1,p:pid(id),g:gradeAt(i,s.n)})).filter(x=>x.p.team===t.team);
+    const rows=teamRows.map(x=>{
+      const gradeShare=pct(t[x.g]||0,t.total), zone=boundaryInfo(x.rankNo,s.n);
+      const gradeText=zone.key?zone.label.replace(' 경계',''):x.g;
+      const gradeColor=zone.key?zone.color:gColor(x.g);
+      const shareText=zone.key?'경계':gradeShare+'%';
+      const teamIndex=teamRows.indexOf(x);
+      return `<div class="team-row ${selId===x.id?'sel':''} ${zone.cls} ${picked.has(x.id)?'incmp':''}" data-id="${x.id}" onclick="handleRowClick(event,${x.id})" title="전체 ${x.rankNo}위 · ${zone.label||x.g} · 클릭 = 상세 보기 · Shift+클릭 = 비교 담기/빼기 · ${esc(x.p.name)}">
+        <span class="rank">${x.rankNo}위</span>
+        <span class="name">${esc(x.p.name)}${x.p.sRec?' ⭐':''}</span>
+        <span class="share"><span class="chip" style="background:${gradeColor}">${gradeText}</span> ${shareText}</span>
+        <span class="team-moves" onclick="event.stopPropagation()"><button onclick="moveTeamRank(${x.id},-1)" ${teamIndex===0?'disabled':''} title="팀 내 위로">▲</button><button onclick="moveTeamRank(${x.id},1)" ${teamIndex===teamRows.length-1?'disabled':''} title="팀 내 아래로">▼</button></span>
+      </div>`;
+    }).join('');
+    const bStatus=t.B<t.recB?'부족':t.B>t.recB?'과다':'적정';
+    return `<section class="team-card">
+      <div class="team-card-head"><b>${esc(t.team)}</b><span>${t.total}명 · B ${t.B}/${t.recB} ${bStatus}</span></div>
+      ${renderTeamRatio(t,t.total)}
+      <div class="team-rank">${rows}</div>
+    </section>`;
+  }).join('');
+  rp.innerHTML=`<div class="team-panel">
+    <h4>팀별 순위표</h4>
+    <div class="subline"><span>${active} ${s.n}명 · 좌측 전체순위 기준 자동 반영</span><span>S ${s.q.S} · A ${s.q.A} · B+ ${s.q["B+"]} · B ${s.q.B}</span></div>
+    <div class="team-overview"><div class="label">전체 평가 비중</div>${renderTeamRatio(s.counts,s.n)}</div>
+    <div class="team-list">${teamCards}</div>
+  </div>`;
+  renderFloatingDetail();
+}
+function renderFloatingDetail(){
+  const bg=document.getElementById('detailBackdrop'), panel=document.getElementById('detailPanel');
+  if(!bg||!panel)return;
+  if(!selId||!people.length){bg.classList.remove('show');panel.innerHTML='';return;}
+  const p=pid(selId), ids=order[active]||[], rankNo=ids.indexOf(selId)+1, n=ids.length;
+  if(!p||rankNo<1){bg.classList.remove('show');panel.innerHTML='';return;}
+  const {aEnd}=bounds(n), zone=boundaryInfo(rankNo,n);
+  const cmpItems=[...picked].filter(id=>id!==undefined);
+  panel.innerHTML=`
+  <h4>후보자 상세 정보 <button class="x" onclick="closeDetail()">✕</button></h4>
+  <div class="prof">
+    <div class="ph">👤</div>
+    <div>
+      <div class="nm">${esc(p.name)} ${zone.key?`<span class="chip" style="background:${zone.color}">${rankNo}위 ${zone.label}</span>`:`<span class="chip" style="background:${gColor(gradeAt(rankNo-1,n))}">${rankNo}위</span>`}</div>
+      <div class="meta">${esc(p.team)} | ${active} (${p.yr}년차)</div>
+      <div class="join">입사일: ${esc(p.join||'-')}</div>
+    </div>
+  </div>
+  <div class="rbox">
+    <div class="row"><span class="lab">작년 평가</span><span class="chip" style="background:${gColor(p.prev)}">${p.prev}</span></div>
+    <div class="row"><span class="lab">최근 3년 평가</span><span>${(p.three||[]).map(g=>`<span class="chip" style="background:${gColor(g)};margin-left:.2rem">${g}</span>`).join('')}</span></div>
+    <div class="row"><span class="lab">평가 이력</span><span class="link">전체보기 ›</span></div>
+  </div>
+  <div class="rbox aisum">
+    <div class="cap">주요 성과 <span style="color:var(--muted)">(AI 요약)</span></div>
+    <ol>${(p.ach||[]).map(a=>`<li>${esc(a)}</li>`).join('')||'<li>요약 없음</li>'}</ol>
+  </div>
+  <details class="accord"><summary>상세 성과 내용</summary><div class="in">${esc(p.detail||'상세 내용 없음')}</div></details>
+  <div class="rbox">
+    <div style="font-weight:700;margin-bottom:.5rem;font-size:.82rem">S등급 추천</div>
+    <button class="cmp-open" style="background:${p.sRec?'var(--s)':'var(--blue-soft)'};color:${p.sRec?'#fff':'var(--blue)'};margin-top:0" onclick="toggleSFromPanel(${p.id})">${p.sRec?'⭐ S 추천 지정됨 (해제)':'⭐ S등급으로 추천'}</button>
+  </div>
+  <div class="rbox">
+    <div style="font-weight:700;margin-bottom:.5rem;font-size:.82rem">비교 대상 <span style="color:var(--muted);font-weight:500">(최대 ${cfg.maxCompare}명 · Shift+클릭으로 추가/제외)</span></div>
+    ${cmpItems.length? `<div class="cmp-list">${cmpItems.map(id=>{const q=pid(id),rn=ids.indexOf(id)+1;return `<div class="c"><span class="r">${rn}위</span> ${esc(q.name)} <button onclick="picked.delete(${id});render()">✕</button></div>`;}).join('')}</div>`
+      : `<div class="cmp-slot">비교 목록이 비어 있습니다.<br>목록에서 Shift+클릭하면 담깁니다.</div>`}
+  </div>
+  <div class="rbox">
+    <div style="font-weight:700;margin-bottom:.5rem;font-size:.82rem">메모</div>
+    <textarea class="memo" id="memoBox" placeholder="메모를 입력하세요..." oninput="memos[${p.id}]=this.value;persist()">${esc(memos[p.id]||'')}</textarea>
+    <button class="memo-save" onclick="render()">저장</button>
+    <div style="clear:both"></div>
+  </div>`;
+  bg.classList.add('show');
+}
+function closeDetail(e){
+  if(e&&e.currentTarget&&e.target!==e.currentTarget)return;
+  selId=null;
+  const bg=document.getElementById('detailBackdrop'), panel=document.getElementById('detailPanel');
+  if(bg)bg.classList.remove('show');
+  if(panel)panel.innerHTML='';
+  document.querySelectorAll('.rt-row').forEach(r=>r.classList.remove('sel'));
+  document.querySelectorAll('.team-row').forEach(r=>r.classList.remove('sel'));
+}
+/* ---- compare overlay ---- */
+function openCompare(){
+  if(picked.size<1)return;
+  const ids=order[active].filter(id=>picked.has(id));const n=order[active].length;
+  document.getElementById('ovg').innerHTML=ids.map(id=>{
+    const p=pid(id),rn=order[active].indexOf(id)+1,g=gradeAt(rn-1,n);
+    return `<div class="ovcard">
+      <div class="t" style="border-bottom-color:${gColor(g)}">
+        <div class="rk">${rn}</div>
+        <div><div class="nm">${esc(p.name)}</div><div class="tm">${esc(p.team)}</div></div>
+        <span class="chip" style="background:${gColor(g)};align-self:center;margin-left:auto">${g}</span>
+      </div>
+      <div class="meta">
+        <span class="m">년차 <b>${p.yr}</b></span>
+        <span class="m">작년 <b>${p.prev}</b></span>
+        <span class="m">3년 <b>${(p.three||[]).join('·')}</b></span>
+        <span class="m">S추천 <b>${p.sRec?'○':'—'}</b></span>
+      </div>
+      <div class="body">${(p.ach||[]).map(a=>'· '+esc(a)).join('\n')}\n\n${esc(p.detail||'')}</div>
+      <div class="foot"><button class="up" onclick="moveCmp(${id},-1)">▲ 위로</button><button class="dn" onclick="moveCmp(${id},1)">▼ 아래로</button></div>
+    </div>`;
+  }).join('');
+  document.getElementById('ov').classList.add('show');
+}
+function closeCompare(){document.getElementById('ov').classList.remove('show');}
+function moveCmp(id,d){const l=order[active],i=l.indexOf(id),j=i+d;if(j<0||j>=l.length)return;snapshot();[l[i],l[j]]=[l[j],l[i]];persist();render();openCompare();}
+
+/* ---- drag ---- */
+let dragId=null;
+function wireDrag(){
+  document.querySelectorAll('.rt-row[draggable]').forEach(row=>{
+    row.addEventListener('dragstart',()=>{dragId=+row.dataset.id;row.classList.add('dragging');});
+    row.addEventListener('dragend',()=>{row.classList.remove('dragging');document.querySelectorAll('.rt-row').forEach(r=>r.classList.remove('over'));});
+    row.addEventListener('dragover',e=>{e.preventDefault();row.classList.add('over');});
+    row.addEventListener('dragleave',()=>row.classList.remove('over'));
+    row.addEventListener('drop',e=>{e.preventDefault();const t=+row.dataset.id;if(dragId===null||dragId===t)return;
+      snapshot();const l=order[active],f=l.indexOf(dragId),to=l.indexOf(t);l.splice(f,1);l.splice(to,0,dragId);persist();render();});
+  });
+}
+
+/* ---- bottom ---- */
+function renderBottom(){
+  document.getElementById('undoBtn').disabled=!undoStack.length;
+  document.getElementById('redoBtn').disabled=!redoStack.length;
+  renderPickActions();
+  if(!people.length){document.getElementById('statusMsg').innerHTML='';return;}
+  const ids=order[active],n=ids.length,{aEnd}=bounds(n);
+  if(mainView==="stats"){document.getElementById('statusMsg').innerHTML=`총 ${n}명 &nbsp; <b>${active} 요약/통계 확인 중</b>`;return;}
+  document.getElementById('statusMsg').innerHTML=`총 ${n}명 &nbsp; <b>현재 ${aEnd}~${aEnd+cfg.buffer}위 순위 조정 중</b>`;
+}
+function renderPickActions(){
+  const el=document.getElementById('pickActions');
+  if(!el)return;
+  const ids=order[active]||[];
+  const chosen=ids.filter(id=>picked.has(id));
+  const names=chosen.map(id=>pid(id)?.name).filter(Boolean).join(' · ');
+  el.className='pick-actions'+(chosen.length?'':' empty');
+  el.innerHTML=`<span class="pick-summary" title="${esc(names||'선택 없음')}">선택 ${chosen.length}명</span>
+    <button class="pick-action-btn primary" onclick="openCompare()" ${chosen.length?'':'disabled'}>비교</button>
+    <button class="pick-action-btn" onclick="swapPickedRanks()" ${chosen.length===2?'':'disabled'}>교체</button>`;
+}
+
+/* ---- misc ---- */
+function exportCsv(){
+  if(!people.length){alert('데이터 없음');return;}
+  let rows=[["직급","최종순위","등급","S추천","이름","팀","년차","작년평가","최근3년","주요성과","메모"]];
+  RANKS.forEach(rk=>{const ids=order[rk]||[],n=ids.length;ids.forEach((id,i)=>{const p=pid(id);
+    rows.push([rk,i+1,gradeAt(i,n),p.sRec?"Y":"",p.name,p.team,p.yr,p.prev,(p.three||[]).join('·'),`"${(p.ach||[]).join(' / ')}"`,`"${(memos[id]||'').replace(/"/g,'""')}"`]);});});
+  const csv="﻿"+rows.map(r=>r.join(',')).join('\n');
+  const b=new Blob([csv],{type:'text/csv;charset=utf-8'}),u=URL.createObjectURL(b);
+  const a=document.createElement('a');a.href=u;a.download=`평가결과_${new Date().toISOString().slice(0,10)}.csv`;a.click();URL.revokeObjectURL(u);
+}
+function saveSession(){persist();exportCsv();alert('세션 결과를 CSV로 내보냈습니다.\n작업 내용은 이 브라우저에 자동 저장되어, 새로고침·창 닫기 후 다시 열어도 복원됩니다.');}
+function openHist(){alert(`변경 이력: 되돌리기 ${undoStack.length}건 / 다시실행 ${redoStack.length}건 가능\n(하단 되돌리기·다시실행 버튼 사용)`);}
+function toggleFull(){if(!document.fullscreenElement){document.documentElement.requestFullscreen();document.getElementById('fsBtn').textContent='⛶ 전체화면 종료';}else{document.exitFullscreen();document.getElementById('fsBtn').textContent='⛶ 전체화면';}}
+function zoom(d){fs=Math.max(11,Math.min(20,fs+d));document.documentElement.style.setProperty('--fs',fs+'px');document.getElementById('zl').textContent=Math.round(fs/14*100)+'%';}
+function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
+function openPaste(){document.getElementById('mbg').classList.add('show');}
+function closePaste(){document.getElementById('mbg').classList.remove('show');}
+
+/* ---- resizable layout ---- */
+const RIGHT_W_KEY="evalSession.rightWidth";
+function clampRightWidth(px){
+  const minRight=420;
+  const minMain=520;
+  const maxRight=Math.max(minRight,window.innerWidth-minMain);
+  return Math.max(minRight,Math.min(maxRight,px));
+}
+function setRightWidth(px,save=true){
+  const next=clampRightWidth(px);
+  document.documentElement.style.setProperty('--right-w',next+'px');
+  if(save){try{localStorage.setItem(RIGHT_W_KEY,String(next));}catch(e){}}
+}
+function restoreRightWidth(){
+  try{const raw=localStorage.getItem(RIGHT_W_KEY);if(raw)setRightWidth(parseInt(raw,10),false);}catch(e){}
+}
+function initSplitter(){
+  const sp=document.getElementById('splitter');
+  if(!sp)return;
+  sp.addEventListener('pointerdown',e=>{
+    if(window.innerWidth<=760)return;
+    e.preventDefault();
+    document.body.classList.add('resizing');
+    try{sp.setPointerCapture(e.pointerId);}catch(err){}
+    const move=ev=>setRightWidth(window.innerWidth-ev.clientX);
+    const up=()=>{
+      document.body.classList.remove('resizing');
+      window.removeEventListener('pointermove',move);
+      window.removeEventListener('pointerup',up);
+    };
+    window.addEventListener('pointermove',move);
+    window.addEventListener('pointerup',up,{once:true});
+  });
+  sp.addEventListener('keydown',e=>{
+    if(e.key!=="ArrowLeft"&&e.key!=="ArrowRight")return;
+    e.preventDefault();
+    const raw=getComputedStyle(document.documentElement).getPropertyValue('--right-w').trim();
+    const current=raw.endsWith('rem')?parseFloat(raw)*parseFloat(getComputedStyle(document.documentElement).fontSize):parseFloat(raw)||720;
+    setRightWidth(current+(e.key==="ArrowLeft"?24:-24));
+  });
+  window.addEventListener('resize',()=>{
+    const raw=getComputedStyle(document.documentElement).getPropertyValue('--right-w').trim();
+    const current=raw.endsWith('rem')?parseFloat(raw)*parseFloat(getComputedStyle(document.documentElement).fontSize):parseFloat(raw)||720;
+    setRightWidth(current,false);
+  });
+}
+
+/* ---- settings ---- */
+let draftRatio={};
+function openSettings(){
+  draftRatio={...cfg.ratio};
+  const n=(order[active]||[]).length;
+  document.getElementById('setRankLbl').textContent=active;
+  document.getElementById('setN').textContent=n;
+  document.getElementById('setBuffer').value=cfg.buffer;
+  document.getElementById('setMaxCmp').value=cfg.maxCompare;
+  const grid=document.getElementById('setGrid');
+  grid.innerHTML=["S","A","B+","B"].map(g=>`
+    <div class="set-field">
+      <label style="color:${gColor(g)}">${g} 등급 비중</label>
+      <div class="with">
+        <input type="number" id="r_${g}" min="0" max="100" step="1" value="${cfg.ratio[g]}" oninput="onRatioInput('${g}',this.value)">
+        <span class="unit">%</span>
+        <span class="live" id="live_${g}"></span>
+      </div>
+    </div>`).join('');
+  previewSettings();
+  document.getElementById('sbg').classList.add('show');
+}
+function onRatioInput(g,v){ draftRatio[g]=parseFloat(v)||0; previewSettings(); }
+function previewSettings(){
+  const n=(order[active]||[]).length||100;
+  const sum=["S","A","B+","B"].reduce((a,g)=>a+(draftRatio[g]||0),0);
+  // live 인원 표시
+  ["S","A","B+","B"].forEach(g=>{
+    const cnt = g==="B+" ? n-Math.floor(n*(draftRatio.S||0)/100)-Math.round(n*(draftRatio.A||0)/100)-Math.round(n*(draftRatio.B||0)/100)
+      : g==="S"? Math.floor(n*(draftRatio.S||0)/100)
+      : Math.round(n*(draftRatio[g]||0)/100);
+    const el=document.getElementById('live_'+g); if(el)el.textContent=`≈ ${cnt}명`;
+  });
+  const sumEl=document.getElementById('setSum');
+  const ok=Math.abs(sum-100)<0.01;
+  sumEl.className='set-sum'+(ok?'':' bad');
+  sumEl.innerHTML=`<span>S+A+B+ +B 합계</span><span>${sum}% ${ok?'✓':'→ 100%가 되어야 적용됩니다'}</span>`;
+  document.getElementById('setApply').disabled=!ok;
+  document.getElementById('setApply').style.opacity=ok?'1':'.5';
+}
+function applySettings(){
+  const sum=["S","A","B+","B"].reduce((a,g)=>a+(draftRatio[g]||0),0);
+  if(Math.abs(sum-100)>=0.01){ alert('비중 합계가 100%가 아닙니다.'); return; }
+  cfg.ratio={...draftRatio};
+  cfg.buffer=Math.max(0,parseInt(document.getElementById('setBuffer').value)||0);
+  cfg.maxCompare=Math.max(2,parseInt(document.getElementById('setMaxCmp').value)||4);
+  // 비교 목록이 새 상한 초과 시 잘라냄
+  if(picked.size>cfg.maxCompare){ picked=new Set([...picked].slice(0,cfg.maxCompare)); }
+  persistCfg(); closeSettings(); render();
+}
+function resetSettings(){ draftRatio={...DEFAULT_CFG.ratio};
+  document.getElementById('setBuffer').value=DEFAULT_CFG.buffer;
+  document.getElementById('setMaxCmp').value=DEFAULT_CFG.maxCompare;
+  ["S","A","B+","B"].forEach(g=>{const el=document.getElementById('r_'+g);if(el)el.value=DEFAULT_CFG.ratio[g];});
+  previewSettings();
+}
+function closeSettings(){ document.getElementById('sbg').classList.remove('show'); }
+function persistCfg(){ try{ localStorage.setItem("evalSession.cfg",JSON.stringify(cfg)); }catch(e){} }
+function restoreCfg(){ try{ const r=localStorage.getItem("evalSession.cfg"); if(r){cfg={...cfg,...JSON.parse(r)};} }catch(e){} }
+document.addEventListener('keydown',e=>{
+  if(e.key==='Escape'){closeCompare();closePaste();closeSettings();closeDetail();}
+  if((e.ctrlKey||e.metaKey)&&e.key==='z'){e.preventDefault();undo();}
+  if((e.ctrlKey||e.metaKey)&&(e.key==='y'||(e.shiftKey&&e.key==='z'))){e.preventDefault();redo();}
+});
+
+/* ---- boot: 저장된 세션 복원 ---- */
+(function boot(){
+  restoreCfg();
+  restoreRightWidth();
+  const restored=restore();
+  render();
+  initSplitter();
+  if(restored){
+    const el=document.getElementById('saveState');
+    if(el)el.innerHTML='<span class="dot"></span>이전 세션 복원됨 '+fmtTime(lastSaved);
+  }else if(!canPersist){
+    markNoPersist();
+  }
+})();
+</script>
+</body>
+</html>
