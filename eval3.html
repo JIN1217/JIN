@@ -75,6 +75,10 @@
   .set-sum{background:var(--bg);border-radius:8px;padding:.6rem .8rem;font-size:.8rem;margin-top:.4rem;display:flex;justify-content:space-between;}
   .set-sum.bad{background:#fdeaea;color:var(--warn);font-weight:700;}
   .set-note{font-size:.75rem;color:var(--muted);margin-top:.5rem;}
+  .color-grid{display:flex;gap:.7rem;margin-top:.4rem;flex-wrap:wrap;}
+  .color-field{display:flex;flex-direction:column;align-items:center;gap:.3rem;}
+  .color-field input[type=color]{width:2.6rem;height:2.6rem;border:1px solid var(--line);border-radius:10px;padding:2px;cursor:pointer;background:none;}
+  .color-field span{font-size:.72rem;color:var(--muted2);font-weight:700;}
 
   /* layout */
   .layout{display:grid;grid-template-columns:minmax(0,1fr) .7rem minmax(30rem,var(--right-w));gap:0;align-items:start;}
@@ -165,7 +169,9 @@
 
   /* rank table */
   .rtable{background:var(--panel);border:1px solid var(--line);border-radius:16px;overflow:visible;box-shadow:var(--sh);}
-  .rt-head,.rt-row{display:grid;grid-template-columns:1.5rem 1.4rem 3.6rem 1fr 6.5rem 6rem 7rem 2fr 2.4rem;align-items:center;gap:.6rem;padding:.5rem .8rem;}
+  .rt-head,.rt-row{display:grid;grid-template-columns:6.6rem 1fr 6.5rem 6rem 7rem 2fr 2.4rem;align-items:center;gap:.6rem;padding:.5rem .8rem;}
+  .rt-select{display:flex;align-items:center;gap:.5rem;height:100%;cursor:pointer;margin:-.5rem 0;padding:.5rem 0;}
+  .rt-head .rt-select{cursor:pointer;}
   .rt-head{position:sticky;top:10.15rem;z-index:35;background:#fafbfd;border-bottom:1px solid var(--line);color:var(--muted2);font-size:.74rem;font-weight:800;letter-spacing:.2px;}
   .rt-head .cc{text-align:center;}
   .rt-row{border-bottom:1px solid var(--line2);cursor:grab;position:relative;transition:transform .12s ease,box-shadow .12s ease;}
@@ -485,6 +491,10 @@
     <label>비교 최대 인원</label>
     <div class="with"><input type="number" id="setMaxCmp" min="2" max="8" oninput="previewSettings()"><span class="unit">명</span></div>
   </div>
+  <div class="set-field" style="margin-top:1rem">
+    <label>등급 색상</label>
+    <div class="color-grid" id="colorGrid"></div>
+  </div>
   <div class="set-note">* S·A·B+·B 합은 100%가 되어야 합니다. C는 절대평가로 별도 처리됩니다.<br>* 이 설정은 모든 직급에 공통 적용됩니다.</div>
   <div class="act">
     <button class="btn" onclick="resetSettings()">기본값 복원</button>
@@ -512,9 +522,16 @@ const GRADES=[
   {key:"B",color:"var(--b)"},
   {key:"C",color:"var(--c)"},
 ];
+const GRADE_VARS={S:'--s',A:'--a',"B+":'--bp',B:'--b',C:'--c'};
 // 조정 가능한 설정 (담당별 비중이 다르므로 세션 중 변경)
-const DEFAULT_CFG={ ratio:{S:5,A:20,"B+":65,B:10}, buffer:3, maxCompare:4 };
+const DEFAULT_CFG={ ratio:{S:5,A:20,"B+":65,B:10}, buffer:3, maxCompare:4,
+  colors:{S:'#8b7fd6',A:'#4f7fe6',"B+":'#4ba37c',B:'#d99a4a',C:'#d16b6b'} };
 let cfg=JSON.parse(JSON.stringify(DEFAULT_CFG));
+function applyGradeColors(colors){
+  Object.keys(GRADE_VARS).forEach(k=>{
+    if(colors&&colors[k])document.documentElement.style.setProperty(GRADE_VARS[k],colors[k]);
+  });
+}
 
 let people=[], order={}, active="차장", selId=null;
 let picked=new Set(), memos={}, fs=14;
@@ -632,6 +649,7 @@ function restore(){
     if(!d.people||!d.people.length)return false;
     people=d.people; order=d.order||{}; active=RANKS.includes(d.active)?d.active:active;
     if(d.cfg)cfg={...cfg,...d.cfg}; memos=d.memos||{}; locks=d.locks||{}; changeLog=d.changeLog||[]; lastSaved=d.savedAt||null;
+    applyGradeColors(cfg.colors);
     people.forEach(p=>{ if(p.cFlag===undefined)p.cFlag=false; if(p.cNote===undefined)p.cNote=""; });
     // 정합성 보정: order 누락 직급 재생성
     RANKS.forEach(rk=>{ if(!order[rk]) order[rk]=people.filter(p=>p.rank===rk).map(p=>p.id); });
@@ -669,6 +687,7 @@ function importStateFile(ev){
     if(!confirm(`"${file.name}" (저장 시각: ${stamp}) 상태로 되돌릴까요?\n현재 화면의 조정 내용은 사라집니다.`)){ ev.target.value=''; return; }
     people=d.people; order=d.order||{}; active=RANKS.includes(d.active)?d.active:active;
     if(d.cfg)cfg={...cfg,...d.cfg}; memos=d.memos||{}; locks=d.locks||{}; changeLog=d.changeLog||[];
+    applyGradeColors(cfg.colors);
     people.forEach(p=>{ if(p.cFlag===undefined)p.cFlag=false; if(p.cNote===undefined)p.cNote=""; });
     RANKS.forEach(rk=>{ if(!order[rk]) order[rk]=people.filter(p=>p.rank===rk).map(p=>p.id); });
     picked.clear(); selId=null; undoStack=[]; redoStack=[];
@@ -869,8 +888,11 @@ function renderMain(){
   const allIds=order[active]||[];
   const allChecked=allIds.length>0 && allIds.every(id=>picked.has(id));
   const th=`<div class="rt-head">
-    <div class="cc"><input type="checkbox" ${allChecked?'checked':''} onclick="toggleSelectAll(event)" title="전체 선택/해제"></div>
-    <div></div><div class="cc">순위</div><div>이름</div>
+    <div class="rt-select" onclick="toggleSelectAll(event)">
+      <input type="checkbox" ${allChecked?'checked':''} title="전체 선택/해제">
+      <span>순위</span>
+    </div>
+    <div>이름</div>
     <div>팀</div><div>직급/년차</div><div>작년평가</div><div>주요 성과 요약</div><div class="cc">메모</div>
   </div>`;
 
@@ -911,9 +933,11 @@ function renderMain(){
     const cls=["rt-row",inACut?"acut":"",zone.cls,selId===id?"sel":"",inCmp?"incmp":"",isMatch?"match":"",isDim?"dim":"",locked?"locked":""].join(' ');
     const achHtml=(p.ach||[]).slice(0,3).map(a=>`<div>${esc(a)}</div>`).join('');
     rows+=`<div class="${cls}" draggable="${locked?'false':'true'}" data-id="${id}" onclick="handleRowClick(event,${id})">
-      <div class="cc" onclick="event.stopPropagation()"><input type="checkbox" ${inCmp?'checked':''} onclick="togglePick(${id},event)" title="선택 (비교/교체 대상)"></div>
-      <div class="grip">${locked?'🔒':'⋮⋮'}</div>
-      <div class="rk">${rankNo}${zone.key?`<span class="tag" style="color:${zone.color}">${zone.label}</span>`:''}</div>
+      <div class="rt-select" onclick="event.stopPropagation();togglePick(${id},event)">
+        <input type="checkbox" ${inCmp?'checked':''} title="선택 (비교/교체 대상)">
+        <span class="grip">${locked?'🔒':'⋮⋮'}</span>
+        <span class="rk">${rankNo}${zone.key?`<span class="tag" style="color:${zone.color}">${zone.label}</span>`:''}</span>
+      </div>
       <div class="nm">${esc(p.name)}${p.sRec?' ⭐':''}${p.cFlag?' 🚩':''}</div>
       <div class="team">${esc(p.team)}</div>
       <div class="rc">${active} / ${p.yr}년차</div>
@@ -1391,8 +1415,10 @@ function initSplitter(){
 
 /* ---- settings ---- */
 let draftRatio={};
+let draftColors={};
 function openSettings(){
   draftRatio={...cfg.ratio};
+  draftColors={...cfg.colors};
   const n=(order[active]||[]).length;
   document.getElementById('setRankLbl').textContent=active;
   document.getElementById('setN').textContent=n;
@@ -1408,9 +1434,16 @@ function openSettings(){
         <span class="live" id="live_${g}"></span>
       </div>
     </div>`).join('');
+  const colorGrid=document.getElementById('colorGrid');
+  colorGrid.innerHTML=["S","A","B+","B","C"].map(g=>`
+    <div class="color-field">
+      <input type="color" id="col_${g}" value="${draftColors[g]}" oninput="onColorInput('${g}',this.value)" title="${g} 등급 색상">
+      <span>${g}</span>
+    </div>`).join('');
   previewSettings();
   document.getElementById('sbg').classList.add('show');
 }
+function onColorInput(g,v){ draftColors[g]=v; applyGradeColors(draftColors); }
 function onRatioInput(g,v){ draftRatio[g]=parseFloat(v)||0; previewSettings(); }
 function previewSettings(){
   const n=(order[active]||[]).length||100;
@@ -1433,19 +1466,27 @@ function applySettings(){
   const sum=["S","A","B+","B"].reduce((a,g)=>a+(draftRatio[g]||0),0);
   if(Math.abs(sum-100)>=0.01){ alert('비중 합계가 100%가 아닙니다.'); return; }
   cfg.ratio={...draftRatio};
+  cfg.colors={...draftColors};
   cfg.buffer=Math.max(0,parseInt(document.getElementById('setBuffer').value)||0);
   cfg.maxCompare=Math.max(2,parseInt(document.getElementById('setMaxCmp').value)||4);
   // 비교 목록이 새 상한 초과 시 잘라냄
   if(picked.size>cfg.maxCompare){ picked=new Set([...picked].slice(0,cfg.maxCompare)); }
-  persistCfg(); closeSettings(); render();
+  applyGradeColors(cfg.colors);
+  persistCfg(); persist(); closeSettings(); render();
 }
 function resetSettings(){ draftRatio={...DEFAULT_CFG.ratio};
+  draftColors={...DEFAULT_CFG.colors};
   document.getElementById('setBuffer').value=DEFAULT_CFG.buffer;
   document.getElementById('setMaxCmp').value=DEFAULT_CFG.maxCompare;
   ["S","A","B+","B"].forEach(g=>{const el=document.getElementById('r_'+g);if(el)el.value=DEFAULT_CFG.ratio[g];});
+  ["S","A","B+","B","C"].forEach(g=>{const el=document.getElementById('col_'+g);if(el)el.value=DEFAULT_CFG.colors[g];});
+  applyGradeColors(draftColors);
   previewSettings();
 }
-function closeSettings(){ document.getElementById('sbg').classList.remove('show'); }
+function closeSettings(){
+  document.getElementById('sbg').classList.remove('show');
+  applyGradeColors(cfg.colors);
+}
 function persistCfg(){ try{ localStorage.setItem("evalSession.cfg",JSON.stringify(cfg)); }catch(e){} }
 function restoreCfg(){ try{ const r=localStorage.getItem("evalSession.cfg"); if(r){cfg={...cfg,...JSON.parse(r)};} }catch(e){} }
 document.addEventListener('keydown',e=>{
@@ -1457,6 +1498,7 @@ document.addEventListener('keydown',e=>{
 /* ---- boot: 저장된 세션 복원 ---- */
 (function boot(){
   restoreCfg();
+  applyGradeColors(cfg.colors);
   restoreRightWidth();
   const restored=restore();
   render();
