@@ -76,7 +76,6 @@
 
   /* layout */
   .layout{display:grid;grid-template-columns:minmax(0,1fr) .7rem minmax(30rem,var(--right-w));gap:0;align-items:start;}
-  .side{display:none;}
   main{padding:1rem 1.1rem 5rem;min-width:0;}
   .splitter{position:sticky;top:6rem;height:calc(100vh - 6rem);z-index:30;cursor:col-resize;display:flex;justify-content:center;align-items:stretch;background:linear-gradient(90deg,transparent,rgba(30,37,48,.03),transparent);}
   .splitter::before{content:"";width:1px;background:var(--line);transition:width .12s,background .12s;}
@@ -85,28 +84,10 @@
   .rpanel{background:var(--panel);border-left:1px solid var(--line);
     position:sticky;top:6rem;height:calc(100vh - 6rem);overflow-y:auto;padding:.75rem .75rem 4rem;}
 
-  /* sidebar */
-  .side h4{font-size:.74rem;letter-spacing:.4px;color:var(--muted);margin:0 0 .55rem;font-weight:800;}
-  .side .sect{margin-bottom:1.4rem;}
-  .rank-item{display:flex;justify-content:space-between;align-items:center;padding:.5rem .7rem;
-    border-radius:8px;cursor:pointer;margin-bottom:.15rem;font-weight:600;}
-  .rank-item:hover{background:var(--bg);}
-  .rank-item.active{background:var(--blue);color:#fff;box-shadow:var(--sh);}
-  .rank-item .cnt{font-size:.72rem;background:#eef1f6;color:var(--muted2);border-radius:20px;padding:.1rem .5rem;font-weight:700;}
-  .rank-item.active .cnt{background:rgba(255,255,255,.22);color:#fff;}
-
   .leg{display:flex;align-items:center;gap:.5rem;padding:.22rem 0;font-size:.8rem;}
   .leg i{width:.85rem;height:.85rem;border-radius:3px;flex:none;}
-
-  table.teamq{width:100%;border-collapse:collapse;font-size:.76rem;}
-  table.teamq th{color:var(--muted);font-weight:700;text-align:right;padding:.3rem .2rem;border-bottom:1px solid var(--line);}
-  table.teamq th:first-child{text-align:left;}
-  table.teamq td{padding:.3rem .2rem;text-align:right;border-bottom:1px solid var(--line2);}
-  table.teamq td:first-child{text-align:left;font-weight:600;}
-  table.teamq tr.total td{font-weight:800;border-top:2px solid var(--line);border-bottom:none;padding-top:.4rem;}
   .st{font-weight:800;font-size:.72rem;}
   .st.ok{color:var(--ok);} .st.warn{color:var(--warn);} .st.over{color:var(--over);} .st.mid{color:var(--muted2);}
-  .side .foot-note{font-size:.68rem;color:var(--muted);margin-top:.5rem;}
 
   /* main head */
   .mhead{display:flex;align-items:baseline;gap:.8rem;margin-bottom:.7rem;}
@@ -192,6 +173,9 @@
   .rt-row.over{box-shadow:inset 0 2px 0 var(--blue);}
   .rt-row.sel{background:var(--blue-soft);}
   .rt-row.acut{background:var(--a-fill);}
+  .rt-row.locked{cursor:default;opacity:.72;}
+  .rt-row.locked:hover{background:none;box-shadow:none;}
+  .rt-row.locked .grip{color:var(--muted2);}
   .rt-row.buffer{background:var(--buffer);}
   .rt-row.ab-boundary{background:var(--ab-fill);box-shadow:inset 3px 0 0 var(--ab-line);}
   .rt-row.bb-boundary{background:var(--bb-fill);box-shadow:inset 3px 0 0 var(--bb-line);}
@@ -325,6 +309,10 @@
   .ovh .x{margin-left:auto;background:rgba(255,255,255,.12);border:none;color:#eef1f6;width:2.1rem;height:2.1rem;border-radius:6px;cursor:pointer;font-size:1rem;}
   .ovg{flex:1;display:grid;gap:1rem;padding:1.3rem;overflow:auto;grid-auto-flow:column;grid-auto-columns:minmax(19rem,1fr);}
   .ovcard{background:var(--panel);border:1px solid var(--line);border-radius:12px;display:flex;flex-direction:column;overflow:hidden;box-shadow:var(--sh);}
+  .ovcard{cursor:grab;}
+  .ovcard.locked{cursor:default;opacity:.75;}
+  .ovcard.dragging{opacity:.35;}
+  .ovcard.over{box-shadow:inset 0 0 0 3px var(--blue);}
   .ovcard .t{padding:.9rem 1.1rem;border-bottom:3px solid var(--line);display:flex;gap:.6rem;align-items:flex-start;}
   .ovcard .t .rk{font-size:1.7rem;font-weight:800;line-height:1;}
   .ovcard .t .nm{font-size:1.15rem;font-weight:800;}
@@ -382,33 +370,15 @@
   </div>
   <button onclick="toggleFull()" id="fsBtn">⛶ 전체화면</button>
   <button onclick="openHist()">↻ 변경 이력</button>
+  <button onclick="triggerImportState()">📂 파일에서 불러오기</button>
+  <button onclick="exportStateFile()">💾 파일로 저장</button>
+  <input type="file" id="stateFileInput" accept="application/json" style="display:none" onchange="importStateFile(event)">
   <button class="primary" onclick="saveSession()">✓ 세션 종료 및 저장</button>
 </div>
 
 <div class="topbanner" id="topbanner"></div>
 
 <div class="layout">
-  <!-- sidebar -->
-  <div class="side">
-    <div class="sect">
-      <h4>직급 선택</h4>
-      <div id="rankList"></div>
-    </div>
-    <div class="sect">
-      <h4>평가 구간 안내</h4>
-      <div class="leg"><i style="background:var(--s)"></i>S (5% 이내)</div>
-      <div class="leg"><i style="background:var(--a)"></i>A (20%)</div>
-      <div class="leg"><i style="background:var(--bp)"></i>B+ (65%)</div>
-      <div class="leg"><i style="background:var(--b)"></i>B (10%)</div>
-      <div class="leg"><i style="background:var(--c)"></i>C (절대평가)</div>
-    </div>
-    <div class="sect">
-      <h4>팀별 하위(B) 할당 현황</h4>
-      <div id="teamq"></div>
-      <div class="foot-note">* 권장(B): 팀 인원의 약 10%</div>
-    </div>
-  </div>
-
   <!-- main -->
   <main id="main"></main>
 
@@ -428,7 +398,7 @@
   <span class="leg" style="display:flex;align-items:center;gap:.3rem"><i style="width:.8rem;height:.8rem;border-radius:3px;background:var(--ab-fill);border:1px solid var(--ab-line);display:inline-block"></i>A/B+ 경계</span>
   <span class="leg" style="display:flex;align-items:center;gap:.3rem"><i style="width:.8rem;height:.8rem;border-radius:3px;background:var(--bb-fill);border:1px solid var(--bb-line);display:inline-block"></i>B+/B 경계</span>
   <span class="leg" style="display:flex;align-items:center;gap:.3rem">⭐ S 추천 후보</span>
-  <span class="leg" style="display:flex;align-items:center;gap:.3rem">C 후보</span>
+  <span class="leg" style="display:flex;align-items:center;gap:.3rem">🚩 C 후보</span>
   <span class="grow"></span>
   <div class="pick-actions empty" id="pickActions">
     <span class="pick-summary">선택 0명</span>
@@ -448,6 +418,14 @@
     <span class="hint">업적을 나란히 놓고 ▲/▼ 로 순위를 조정하세요.</span>
     <button class="x" onclick="closeCompare()">✕</button></div>
   <div class="ovg" id="ovg"></div>
+</div></div>
+
+<!-- spotlight overlay -->
+<div class="ov" id="spot" onclick="if(event.target===this)closeSpotlight()"><div class="ovp">
+  <div class="ovh"><h2>크게 보기</h2>
+    <span class="hint">회의실 전체에서 잘 보이도록 확대 표시합니다 · Esc 또는 배경 클릭으로 닫기</span>
+    <button class="x" onclick="closeSpotlight()">✕</button></div>
+  <div id="spotBody" style="flex:1;overflow:auto;padding:2rem;display:flex;justify-content:center"></div>
 </div></div>
 
 <!-- paste modal -->
@@ -485,8 +463,18 @@
   </div>
 </div></div>
 
+<!-- history modal -->
+<div class="mbg" id="hbg"><div class="modal" style="width:38rem">
+  <h2>변경 이력</h2>
+  <p>드래그·순위 교체·팀 내 이동 시 자동으로 기록됩니다 (최신순, 별도 메모 입력 불필요).</p>
+  <div id="histList" style="max-height:24rem;overflow:auto;border:1px solid var(--line);border-radius:8px"></div>
+  <div class="act">
+    <button class="btn primary" onclick="closeHist()">닫기</button>
+  </div>
+</div></div>
+
 <script>
-const RANKS=["사원","대리","과장","차장"];
+const RANKS=["차장","과장","대리","사원"];
 const GRADES=[
   {key:"S",color:"var(--s)"},
   {key:"A",color:"var(--a)"},
@@ -498,11 +486,13 @@ const GRADES=[
 const DEFAULT_CFG={ ratio:{S:5,A:20,"B+":65,B:10}, buffer:3, maxCompare:4 };
 let cfg=JSON.parse(JSON.stringify(DEFAULT_CFG));
 
-let people=[], order={}, active="대리", selId=null;
+let people=[], order={}, active="차장", selId=null;
 let picked=new Set(), memos={}, fs=14;
 let undoStack=[], redoStack=[];
 let query="";  // 검색어
 let mainView="rank";
+let locks={};      // 직급별 잠금 인원 수 (상위 N명 확정)
+let changeLog=[];  // 순위 변경 자동 이력
 
 /* ---- data ---- */
 function loadSample(){
@@ -538,7 +528,7 @@ function loadSample(){
         ach:achLib[i%achLib.length],
         detail:detailLib[i%detailLib.length],
         join:`20${String(24-(i%6)).padStart(2,'0')}-0${(i%9)+1}-${String((i%27)+1).padStart(2,'0')}`,
-        sRec:false});
+        sRec:false,cFlag:false,cNote:""});
     }
   });
   document.getElementById('pasteBox').value=arr.map(p=>[p.rank,p.name,p.team,p.yr,p.prev,p.three.join(','),p.ach.join('/'),p.detail.replace(/\n/g,' '),p.join].join('\t')).join('\n');
@@ -557,7 +547,7 @@ function applyPaste(){
     out.push({id:id++,rank,name:c[1]||"이름없음",team:c[2]||"-",yr:parseInt(c[3])||0,
       prev:c[4]||three[0]||"-",three:three.length?three:[c[4]||"-"],
       ach:(c[6]||"").split('/').map(x=>x.trim()).filter(Boolean),
-      detail:c[7]||"",join:c[8]||"",sRec:false});
+      detail:c[7]||"",join:c[8]||"",sRec:false,cFlag:false,cNote:""});
   });
   people=out; picked.clear(); selId=null; undoStack=[]; redoStack=[];
   rebuild(); closePaste(); persist(); render();
@@ -595,7 +585,7 @@ function persist(){
   clearTimeout(saveTimer);
   saveTimer=setTimeout(()=>{
     try{
-      const payload={people,order,active,cfg,memos,savedAt:Date.now()};
+      const payload={people,order,active,cfg,memos,locks,changeLog,savedAt:Date.now()};
       localStorage.setItem(LS_KEY,JSON.stringify(payload));
       lastSaved=payload.savedAt;
       flashSaved();
@@ -611,7 +601,8 @@ function restore(){
     const d=JSON.parse(raw);
     if(!d.people||!d.people.length)return false;
     people=d.people; order=d.order||{}; active=RANKS.includes(d.active)?d.active:active;
-    if(d.cfg)cfg={...cfg,...d.cfg}; memos=d.memos||{}; lastSaved=d.savedAt||null;
+    if(d.cfg)cfg={...cfg,...d.cfg}; memos=d.memos||{}; locks=d.locks||{}; changeLog=d.changeLog||[]; lastSaved=d.savedAt||null;
+    people.forEach(p=>{ if(p.cFlag===undefined)p.cFlag=false; if(p.cNote===undefined)p.cNote=""; });
     // 정합성 보정: order 누락 직급 재생성
     RANKS.forEach(rk=>{ if(!order[rk]) order[rk]=people.filter(p=>p.rank===rk).map(p=>p.id); });
     return true;
@@ -620,8 +611,41 @@ function restore(){
 function clearSaved(){
   if(!confirm("저장된 세션을 삭제하고 초기화할까요? 되돌릴 수 없습니다."))return;
   try{ localStorage.removeItem(LS_KEY); }catch(e){}
-  people=[];order={};picked.clear();selId=null;memos={};undoStack=[];redoStack=[];query="";mainView="rank";
+  people=[];order={};picked.clear();selId=null;memos={};undoStack=[];redoStack=[];query="";mainView="rank";locks={};changeLog=[];
   render();
+}
+function currentStatePayload(){
+  return {people,order,active,cfg,memos,locks,changeLog,savedAt:Date.now()};
+}
+function exportStateFile(){
+  if(!people.length){alert('저장할 데이터가 없습니다.');return;}
+  const payload=currentStatePayload();
+  const json=JSON.stringify(payload,null,0);
+  const b=new Blob([json],{type:'application/json;charset=utf-8'}),u=URL.createObjectURL(b);
+  const d=new Date();
+  const stamp=`${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}_${String(d.getHours()).padStart(2,'0')}${String(d.getMinutes()).padStart(2,'0')}${String(d.getSeconds()).padStart(2,'0')}`;
+  const a=document.createElement('a');a.href=u;a.download=`평가세션_${stamp}.json`;a.click();URL.revokeObjectURL(u);
+}
+function triggerImportState(){ document.getElementById('stateFileInput').click(); }
+function importStateFile(ev){
+  const file=ev.target.files&&ev.target.files[0];
+  if(!file)return;
+  const reader=new FileReader();
+  reader.onload=()=>{
+    let d;
+    try{ d=JSON.parse(reader.result); }catch(e){ alert('올바른 세션 파일이 아닙니다.'); ev.target.value=''; return; }
+    if(!d||!Array.isArray(d.people)||!d.people.length){ alert('올바른 세션 파일이 아닙니다.'); ev.target.value=''; return; }
+    const stamp=d.savedAt?new Date(d.savedAt).toLocaleString():'알 수 없는 시각';
+    if(!confirm(`"${file.name}" (저장 시각: ${stamp}) 상태로 되돌릴까요?\n현재 화면의 조정 내용은 사라집니다.`)){ ev.target.value=''; return; }
+    people=d.people; order=d.order||{}; active=RANKS.includes(d.active)?d.active:active;
+    if(d.cfg)cfg={...cfg,...d.cfg}; memos=d.memos||{}; locks=d.locks||{}; changeLog=d.changeLog||[];
+    people.forEach(p=>{ if(p.cFlag===undefined)p.cFlag=false; if(p.cNote===undefined)p.cNote=""; });
+    RANKS.forEach(rk=>{ if(!order[rk]) order[rk]=people.filter(p=>p.rank===rk).map(p=>p.id); });
+    picked.clear(); selId=null; undoStack=[]; redoStack=[];
+    persist(); persistCfg(); render();
+    ev.target.value='';
+  };
+  reader.readAsText(file);
 }
 function flashSaved(){
   const el=document.getElementById('saveState');
@@ -635,7 +659,7 @@ function markNoPersist(){
 function fmtTime(t){ if(!t)return''; const d=new Date(t); return `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}:${String(d.getSeconds()).padStart(2,'0')}`; }
 
 /* ---- render ---- */
-function render(){renderBanner();renderRankList();renderTeamQ();renderMain();renderRPanel();renderBottom();}
+function render(){renderBanner();renderMain();renderRPanel();renderBottom();}
 
 function renderBanner(){
   const el=document.getElementById('topbanner');
@@ -643,6 +667,7 @@ function renderBanner(){
   if(!people.length){ el.innerHTML=`${rankTabs}<div class="tb-empty">데이터를 입력하면 컷 위치가 표시됩니다.</div>`; return; }
   const ids=order[active],n=ids.length,{q}=bounds(n),r=boundaryRanges(n);
   const sRec=ids.filter(id=>pid(id).sRec).length;
+  const cCnt=ids.filter(id=>pid(id).cFlag).length;
   el.innerHTML=`${rankTabs}
     <div class="tb-cuts">
       <span class="tb-tag" style="--tc:var(--a)"><b>A권역</b> 1~${r.aEnd}위</span>
@@ -654,6 +679,7 @@ function renderBanner(){
       <span class="tb-tag" style="--tc:var(--bb-line)"><b>B+/B 경계</b> ${r.bbFrom}~${r.bbTo}위</span>
       <span class="tb-arrow">·</span>
       <span class="tb-tag" style="--tc:var(--s)"><b>S추천</b> ${sRec}/${q.S}명</span>
+      ${cCnt?`<span class="tb-arrow">·</span><span class="tb-tag" style="--tc:var(--c)"><b>🚩 C후보</b> ${cCnt}명</span>`:''}
     </div>
     <div class="tb-search">
       <input id="searchBox" placeholder="이름·팀 검색" value="${esc(query)}"
@@ -665,34 +691,7 @@ function renderBanner(){
   if(row)row.scrollIntoView({behavior:'smooth',block:'center'});
 }
 
-function renderRankList(){
-  document.getElementById('rankList').innerHTML=RANKS.map(rk=>{
-    const c=(order[rk]||[]).length;
-    return `<div class="rank-item ${rk===active?'active':''}" onclick="setRank('${rk}')">
-      <span>${rk}</span><span class="cnt">${c}명</span></div>`;
-  }).join('');
-}
 function setRank(rk){active=rk;picked.clear();selId=null;undoStack=[];redoStack=[];render();}
-
-function renderTeamQ(){
-  const tq=document.getElementById('teamq');
-  if(!people.length){tq.innerHTML='<div class="foot-note">데이터 없음</div>';return;}
-  const ids=order[active],n=ids.length,teams={};
-  ids.forEach((id,i)=>{const p=pid(id);teams[p.team]=teams[p.team]||{total:0,b:0};teams[p.team].total++;if(gradeAt(i,n)==="B")teams[p.team].b++;});
-  let tot={total:0,b:0,rec:0};
-  let rows=Object.entries(teams).sort((a,b)=>b[1].total-a[1].total).map(([t,v])=>{
-    const rec=Math.round(v.total*0.10);
-    tot.total+=v.total;tot.b+=v.b;tot.rec+=rec;
-    let st,cls;
-    if(v.b<rec){st="부족";cls="warn";}else if(v.b>rec){st="과다";cls="over";}else{st="적정";cls="ok";}
-    return `<tr><td>${esc(t)}</td><td>${v.total}</td><td>${rec}</td><td>${v.b}</td><td class="st ${cls}">${st}</td></tr>`;
-  }).join('');
-  tq.innerHTML=`<table class="teamq">
-    <tr><th>팀명</th><th>인원</th><th>권장</th><th>현재</th><th>현황</th></tr>
-    ${rows}
-    <tr class="total"><td>총계</td><td>${tot.total}</td><td>${tot.rec}</td><td>${tot.b}</td><td></td></tr>
-  </table>`;
-}
 
 function stars(g){const v=ps(g);let s='';for(let i=0;i<5;i++)s+=`<span class="${i<v?'':'off'}">★</span>`;return `<span class="stars">${s}</span>`;}
 function pct(v,n){return n?Math.round(v/n*100):0;}
@@ -728,6 +727,7 @@ function rankSummary(rk){
     rk,ids,n,q,aEnd,bStart,counts,prev,
     teams:Object.values(teams).sort((a,b)=>b.total-a.total),
     sRec:ids.filter(id=>pid(id).sRec).length,
+    cCnt:ids.filter(id=>pid(id).cFlag).length,
     memo:ids.filter(id=>memos[id]).length,
     avgYr:n?(ids.reduce((sum,id)=>sum+(pid(id).yr||0),0)/n):0
   };
@@ -741,6 +741,7 @@ function renderToolbar(){
     </div>
     <span class="hint">${stats?'직급·팀·등급 분포를 한 화면에서 확인합니다.':'⋮⋮ 드래그 = 순위 이동 · 클릭 = 상세 보기 · Shift+클릭 = 비교 담기/빼기'}</span>
     <span class="grow"></span>
+    ${stats?'':renderLockControl()}
     ${stats?'':`<button class="tbtn ${onlyBoundary?'on':''}" onclick="toggleBoundary()">◎ 경계구간만 보기</button>`}
     <button class="tbtn" onclick="openSettings()">⚙ 설정</button>
     <button class="tbtn" onclick="openPaste()">▤ 데이터 입력</button>
@@ -762,6 +763,7 @@ function renderStatsScreen(){
   const all=RANKS.map(rankSummary);
   const total=people.length;
   const totalS=people.filter(p=>p.sRec).length;
+  const totalC=people.filter(p=>p.cFlag).length;
   const totalMemo=people.filter(p=>memos[p.id]).length;
   const teamRows=s.teams.map(t=>{
     const status=t.B<t.recB?["부족","warn"]:t.B>t.recB?["과다","over"]:["적정","ok"];
@@ -778,7 +780,7 @@ function renderStatsScreen(){
       const p=pid(id),rn=s.ids.indexOf(id)+1,g=gradeAt(rn-1,s.n);
       return `<div class="boundary-row">
         <div class="rank">${rn}위</div>
-        <div class="person"><b>${esc(p.name)}${p.sRec?' ⭐':''}</b><span>${esc(p.team)} · ${p.yr}년차</span></div>
+        <div class="person"><b>${esc(p.name)}${p.sRec?' ⭐':''}${p.cFlag?' 🚩':''}</b><span>${esc(p.team)} · ${p.yr}년차</span></div>
         <div class="grade"><span class="chip" style="background:${gColor(g)}">${g}</span></div>
       </div>`;
     }).join('') || '<div class="empty-rp" style="padding:1rem">대상 없음</div>'
@@ -787,7 +789,7 @@ function renderStatsScreen(){
   return `<div class="stats-view">
     <div class="mhead stats-head">
       <span class="t">${active} 요약/통계</span><span class="n">전체 ${s.n}명 · 평균 ${s.avgYr.toFixed(1)}년차</span>
-      <span class="stage">전체 직급 ${total}명 · S추천 ${totalS}명 · 메모 ${totalMemo}건</span>
+      <span class="stage">전체 직급 ${total}명 · S추천 ${totalS}명 · C후보 ${totalC}명 · 메모 ${totalMemo}건</span>
     </div>
     <div class="stats-kpis">
       <div class="stat-kpi"><div class="k">현재 직급 인원</div><div class="v">${s.n}</div><div class="sub">${active} 기준</div></div>
@@ -872,12 +874,13 @@ function renderMain(){
     const isMatch = q && (p.name.toLowerCase().includes(q)||p.team.toLowerCase().includes(q));
     const isDim = q && !isMatch;
     const inCmp = picked.has(id);
-    const cls=["rt-row",inACut?"acut":"",zone.cls,selId===id?"sel":"",inCmp?"incmp":"",isMatch?"match":"",isDim?"dim":""].join(' ');
+    const locked = i < (locks[active]||0);
+    const cls=["rt-row",inACut?"acut":"",zone.cls,selId===id?"sel":"",inCmp?"incmp":"",isMatch?"match":"",isDim?"dim":"",locked?"locked":""].join(' ');
     const achHtml=(p.ach||[]).slice(0,3).map(a=>`<div>${esc(a)}</div>`).join('');
-    rows+=`<div class="${cls}" draggable="true" data-id="${id}" onclick="handleRowClick(event,${id})">
-      <div class="grip">⋮⋮</div>
+    rows+=`<div class="${cls}" draggable="${locked?'false':'true'}" data-id="${id}" onclick="handleRowClick(event,${id})">
+      <div class="grip">${locked?'🔒':'⋮⋮'}</div>
       <div class="rk">${rankNo}${zone.key?`<span class="tag" style="color:${zone.color}">${zone.label}</span>`:''}</div>
-      <div class="nm">${inCmp?'<span class="cmp-dot" title="비교 목록에 담김">⇄</span>':''}${esc(p.name)}${p.sRec?' ⭐':''}</div>
+      <div class="nm">${inCmp?'<span class="cmp-dot" title="비교 목록에 담김">⇄</span>':''}${esc(p.name)}${p.sRec?' ⭐':''}${p.cFlag?' 🚩':''}</div>
       <div class="team">${esc(p.team)}</div>
       <div class="rc">${active} / ${p.yr}년차</div>
       <div class="prevcell"><span class="chip" style="background:${gColor(p.prev)}">${p.prev}</span>${stars(p.prev)}</div>
@@ -892,6 +895,27 @@ function renderMain(){
 
 let onlyBoundary=false;
 function toggleBoundary(){onlyBoundary=!onlyBoundary;render();}
+
+function renderLockControl(){
+  const lockN=locks[active]||0;
+  if(lockN>0){
+    return `<button class="tbtn on" onclick="unlockRank()" title="잠금을 해제하면 상위 구간도 다시 드래그로 조정할 수 있습니다">🔓 ${lockN}위까지 잠금 해제</button>`;
+  }
+  return `<span class="hint">🔒 잠금: 목록에서 행을 클릭해 상세 패널에서 설정</span>`;
+}
+function lockToSelected(){
+  const ids=order[active]||[];
+  if(!selId||!ids.includes(selId)){alert('먼저 잠글 마지막 순위의 행을 클릭해 선택하세요.');return;}
+  const rankNo=ids.indexOf(selId)+1;
+  if(!confirm(`${active} 1~${rankNo}위 구간을 확정하고 잠글까요?\n잠긴 구간은 드래그·교체·이동으로 순서를 바꿀 수 없습니다.`))return;
+  locks[active]=rankNo;
+  persist();render();
+}
+function unlockRank(){
+  if(!confirm(`${active} 잠금을 해제할까요?`))return;
+  locks[active]=0;
+  persist();render();
+}
 function setMainView(view){mainView=view;renderMain();renderBottom();}
 
 function handleRowClick(e,id){
@@ -930,9 +954,13 @@ function swapPickedRanks(){
   if(pair.length!==2){alert('순위를 교체하려면 Shift+클릭으로 2명을 선택하세요.');return;}
   const a=ids.indexOf(pair[0]),b=ids.indexOf(pair[1]);
   if(a<0||b<0||a===b)return;
+  const lockN=locks[active]||0;
+  if(a<lockN||b<lockN){alert('잠긴 구간에 포함된 인원은 교체할 수 없습니다.');return;}
   snapshot();
   [ids[a],ids[b]]=[ids[b],ids[a]];
   persist();
+  logMove(pid(pair[0]),active,a+1,b+1,'순위 교체');
+  logMove(pid(pair[1]),active,b+1,a+1,'순위 교체');
   const ovOpen=document.getElementById('ov').classList.contains('show');
   render();
   if(ovOpen)openCompare();
@@ -945,13 +973,28 @@ function moveTeamRank(id,d){
   if(!target)return;
   const a=ids.indexOf(id),b=ids.indexOf(target);
   if(a<0||b<0)return;
+  const lockN=locks[active]||0;
+  if(a<lockN||b<lockN){alert('잠긴 구간에 포함된 인원은 이동할 수 없습니다.');return;}
   snapshot();
   [ids[a],ids[b]]=[ids[b],ids[a]];
   persist();
+  logMove(p,active,a+1,b+1,'팀 내 이동');
   render();
 }
 function togglePick(id,e){if(e)e.stopPropagation();pickRow(id);}
 function toggleSFromPanel(id){pid(id).sRec=!pid(id).sRec;persist();render();}
+function toggleCFromPanel(id){
+  const p=pid(id);
+  if(!p.cFlag){
+    const note=prompt('C후보로 등록하는 사유(메모)를 입력하세요.',p.cNote||'');
+    if(note===null)return;
+    p.cFlag=true; p.cNote=note.trim();
+  }else{
+    if(!confirm('C후보 등록을 해제할까요?'))return;
+    p.cFlag=false;
+  }
+  persist();render();
+}
 function focusMemo(id){selId=id;renderFloatingDetail();setTimeout(()=>{const t=document.getElementById('memoBox');if(t)t.focus();},50);}
 
 /* ---- right panel ---- */
@@ -983,7 +1026,7 @@ function renderRPanel(){
       const teamIndex=teamRows.indexOf(x);
       return `<div class="team-row ${selId===x.id?'sel':''} ${zone.cls} ${picked.has(x.id)?'incmp':''}" data-id="${x.id}" onclick="handleRowClick(event,${x.id})" title="전체 ${x.rankNo}위 · ${zone.label||x.g} · 클릭 = 상세 보기 · Shift+클릭 = 비교 담기/빼기 · ${esc(x.p.name)}">
         <span class="rank">${x.rankNo}위</span>
-        <span class="name">${esc(x.p.name)}${x.p.sRec?' ⭐':''}</span>
+        <span class="name">${esc(x.p.name)}${x.p.sRec?' ⭐':''}${x.p.cFlag?' 🚩':''}</span>
         <span class="share"><span class="chip" style="background:${gradeColor}">${gradeText}</span> ${shareText}</span>
         <span class="team-moves" onclick="event.stopPropagation()"><button onclick="moveTeamRank(${x.id},-1)" ${teamIndex===0?'disabled':''} title="팀 내 위로">▲</button><button onclick="moveTeamRank(${x.id},1)" ${teamIndex===teamRows.length-1?'disabled':''} title="팀 내 아래로">▼</button></span>
       </div>`;
@@ -1012,7 +1055,7 @@ function renderFloatingDetail(){
   const {aEnd}=bounds(n), zone=boundaryInfo(rankNo,n);
   const cmpItems=[...picked].filter(id=>id!==undefined);
   panel.innerHTML=`
-  <h4>후보자 상세 정보 <button class="x" onclick="closeDetail()">✕</button></h4>
+  <h4>후보자 상세 정보 <button class="tbtn" style="margin-left:auto;margin-right:.4rem" onclick="openSpotlight(${p.id})" title="화면 전체에 크게 표시">⛶ 크게 보기</button><button class="x" onclick="closeDetail()">✕</button></h4>
   <div class="prof">
     <div class="ph">👤</div>
     <div>
@@ -1034,6 +1077,17 @@ function renderFloatingDetail(){
   <div class="rbox">
     <div style="font-weight:700;margin-bottom:.5rem;font-size:.82rem">S등급 추천</div>
     <button class="cmp-open" style="background:${p.sRec?'var(--s)':'var(--blue-soft)'};color:${p.sRec?'#fff':'var(--blue)'};margin-top:0" onclick="toggleSFromPanel(${p.id})">${p.sRec?'⭐ S 추천 지정됨 (해제)':'⭐ S등급으로 추천'}</button>
+  </div>
+  <div class="rbox">
+    <div style="font-weight:700;margin-bottom:.5rem;font-size:.82rem">C 후보 등록 <span style="color:var(--muted);font-weight:500">(징계 등 순위와 무관한 사유)</span></div>
+    <button class="cmp-open" style="background:${p.cFlag?'var(--c)':'var(--blue-soft)'};color:${p.cFlag?'#fff':'var(--blue)'};margin-top:0" onclick="toggleCFromPanel(${p.id})">${p.cFlag?'🚩 C후보 등록됨 (해제)':'🚩 C후보로 등록'}</button>
+    ${p.cFlag?`<div style="margin-top:.5rem;font-size:.78rem;color:var(--muted2);white-space:pre-wrap">${esc(p.cNote||'(사유 없음)')}</div>`:''}
+  </div>
+  <div class="rbox">
+    <div style="font-weight:700;margin-bottom:.5rem;font-size:.82rem">구간 잠금</div>
+    ${rankNo<=(locks[active]||0)
+      ? `<div style="font-size:.8rem;color:var(--muted2)">이미 확정·잠긴 구간(1~${locks[active]}위)에 포함되어 있습니다.</div>`
+      : `<button class="cmp-open" style="margin-top:0" onclick="lockToSelected()">🔒 1~${rankNo}위 확정하고 잠금${(locks[active]||0)>0?' (범위 확장)':''}</button>`}
   </div>
   <div class="rbox">
     <div style="font-weight:700;margin-bottom:.5rem;font-size:.82rem">비교 대상 <span style="color:var(--muted);font-weight:500">(최대 ${cfg.maxCompare}명 · Shift+클릭으로 추가/제외)</span></div>
@@ -1061,12 +1115,14 @@ function closeDetail(e){
 function openCompare(){
   if(picked.size<1)return;
   const ids=order[active].filter(id=>picked.has(id));const n=order[active].length;
+  const lockN=locks[active]||0;
   document.getElementById('ovg').innerHTML=ids.map(id=>{
-    const p=pid(id),rn=order[active].indexOf(id)+1,g=gradeAt(rn-1,n);
-    return `<div class="ovcard">
+    const p=pid(id),idx=order[active].indexOf(id),rn=idx+1,g=gradeAt(rn-1,n),locked=idx<lockN;
+    return `<div class="ovcard ${locked?'locked':''}" draggable="${locked?'false':'true'}" data-id="${id}">
       <div class="t" style="border-bottom-color:${gColor(g)}">
+        <span class="grip" style="cursor:${locked?'default':'grab'}">${locked?'🔒':'⋮⋮'}</span>
         <div class="rk">${rn}</div>
-        <div><div class="nm">${esc(p.name)}</div><div class="tm">${esc(p.team)}</div></div>
+        <div><div class="nm">${esc(p.name)}${p.sRec?' ⭐':''}${p.cFlag?' 🚩':''}</div><div class="tm">${esc(p.team)}</div></div>
         <span class="chip" style="background:${gColor(g)};align-self:center;margin-left:auto">${g}</span>
       </div>
       <div class="meta">
@@ -1074,26 +1130,85 @@ function openCompare(){
         <span class="m">작년 <b>${p.prev}</b></span>
         <span class="m">3년 <b>${(p.three||[]).join('·')}</b></span>
         <span class="m">S추천 <b>${p.sRec?'○':'—'}</b></span>
+        <span class="m">C후보 <b>${p.cFlag?'○':'—'}</b></span>
       </div>
       <div class="body">${(p.ach||[]).map(a=>'· '+esc(a)).join('\n')}\n\n${esc(p.detail||'')}</div>
-      <div class="foot"><button class="up" onclick="moveCmp(${id},-1)">▲ 위로</button><button class="dn" onclick="moveCmp(${id},1)">▼ 아래로</button></div>
+      <div class="foot"><button class="up" onclick="moveCmp(${id},-1)" ${locked?'disabled':''}>▲ 위로</button><button class="dn" onclick="moveCmp(${id},1)" ${locked?'disabled':''}>▼ 아래로</button></div>
     </div>`;
   }).join('');
   document.getElementById('ov').classList.add('show');
+  wireCompareDrag();
 }
 function closeCompare(){document.getElementById('ov').classList.remove('show');}
-function moveCmp(id,d){const l=order[active],i=l.indexOf(id),j=i+d;if(j<0||j>=l.length)return;snapshot();[l[i],l[j]]=[l[j],l[i]];persist();render();openCompare();}
+let dragOvId=null;
+function wireCompareDrag(){
+  document.querySelectorAll('#ovg .ovcard[draggable="true"]').forEach(card=>{
+    card.addEventListener('dragstart',()=>{dragOvId=+card.dataset.id;card.classList.add('dragging');});
+    card.addEventListener('dragend',()=>{card.classList.remove('dragging');document.querySelectorAll('#ovg .ovcard').forEach(c=>c.classList.remove('over'));});
+    card.addEventListener('dragover',e=>{e.preventDefault();card.classList.add('over');});
+    card.addEventListener('dragleave',()=>card.classList.remove('over'));
+    card.addEventListener('drop',e=>{
+      e.preventDefault();card.classList.remove('over');
+      const t=+card.dataset.id; if(dragOvId===null||dragOvId===t)return;
+      const l=order[active],lockN=locks[active]||0,f=l.indexOf(dragOvId),to=l.indexOf(t);
+      if(f<lockN||to<lockN){alert('잠긴 구간에 포함된 인원은 이동할 수 없습니다.');return;}
+      snapshot();l.splice(f,1);l.splice(to,0,dragOvId);persist();
+      logMove(pid(dragOvId),active,f+1,to+1,'비교 화면 드래그');
+      render();openCompare();
+    });
+  });
+}
+
+/* ---- spotlight (single-person full view) ---- */
+function openSpotlight(id){
+  const ids=order[active]||[], p=pid(id), rankNo=ids.indexOf(id)+1, n=ids.length;
+  if(!p||rankNo<1)return;
+  const g=gradeAt(rankNo-1,n), zone=boundaryInfo(rankNo,n), tone=zone.key?zone.color:gColor(g);
+  document.getElementById('spotBody').innerHTML=`
+    <div style="width:min(50rem,100%);background:var(--panel);border-radius:16px;box-shadow:var(--sh);overflow:hidden;align-self:flex-start">
+      <div style="padding:1.6rem 2rem;border-bottom:6px solid ${tone};display:flex;align-items:center;gap:1.4rem">
+        <div style="font-size:3.2rem;font-weight:900;line-height:1;color:${tone}">${rankNo}<span style="font-size:1.1rem;font-weight:700;color:var(--muted2)">위</span></div>
+        <div style="flex:1;min-width:0">
+          <div style="font-size:2.2rem;font-weight:800;line-height:1.25">${esc(p.name)}${p.sRec?' ⭐':''}${p.cFlag?' 🚩':''}</div>
+          <div style="font-size:1.2rem;color:var(--muted2);margin-top:.25rem">${esc(p.team)} · ${esc(active)} ${p.yr}년차</div>
+        </div>
+        <span class="chip" style="background:${tone};font-size:1.15rem;padding:.35rem 1rem">${zone.key?zone.label:g}</span>
+      </div>
+      <div style="padding:1.4rem 2rem;display:flex;gap:.7rem;flex-wrap:wrap;border-bottom:1px solid var(--line)">
+        <span style="font-size:1.05rem;padding:.5rem 1rem;background:var(--bg);border-radius:8px">작년 평가 <b style="margin-left:.3rem">${p.prev}</b></span>
+        <span style="font-size:1.05rem;padding:.5rem 1rem;background:var(--bg);border-radius:8px">최근 3년 <b style="margin-left:.3rem">${(p.three||[]).join(' · ')}</b></span>
+        <span style="font-size:1.05rem;padding:.5rem 1rem;background:var(--bg);border-radius:8px">입사일 <b style="margin-left:.3rem">${esc(p.join||'-')}</b></span>
+      </div>
+      <div style="padding:1.8rem 2rem;font-size:1.3rem;line-height:1.85;white-space:pre-wrap">${[...(p.ach||[]).map(a=>'• '+esc(a)),p.detail?esc(p.detail):''].filter(Boolean).join('\n\n')||'등록된 성과 내용이 없습니다.'}</div>
+      ${p.cFlag?`<div style="margin:0 2rem 1.8rem;padding:1rem 1.2rem;background:#fdeaea;border-radius:10px;font-size:1.1rem;color:var(--warn);font-weight:700">🚩 C후보 등록 사유: ${esc(p.cNote||'(사유 없음)')}</div>`:''}
+    </div>`;
+  document.getElementById('spot').classList.add('show');
+}
+function closeSpotlight(){const el=document.getElementById('spot'); if(el)el.classList.remove('show');}
+function moveCmp(id,d){
+  const l=order[active],i=l.indexOf(id),j=i+d;
+  if(j<0||j>=l.length)return;
+  const lockN=locks[active]||0;
+  if(i<lockN||j<lockN){alert('잠긴 구간에 포함된 인원은 이동할 수 없습니다.');return;}
+  snapshot();[l[i],l[j]]=[l[j],l[i]];persist();
+  logMove(pid(id),active,i+1,j+1,'비교 화면 이동');
+  render();openCompare();
+}
 
 /* ---- drag ---- */
 let dragId=null;
 function wireDrag(){
-  document.querySelectorAll('.rt-row[draggable]').forEach(row=>{
+  document.querySelectorAll('.rt-row[draggable="true"]').forEach(row=>{
     row.addEventListener('dragstart',()=>{dragId=+row.dataset.id;row.classList.add('dragging');});
     row.addEventListener('dragend',()=>{row.classList.remove('dragging');document.querySelectorAll('.rt-row').forEach(r=>r.classList.remove('over'));});
     row.addEventListener('dragover',e=>{e.preventDefault();row.classList.add('over');});
     row.addEventListener('dragleave',()=>row.classList.remove('over'));
-    row.addEventListener('drop',e=>{e.preventDefault();const t=+row.dataset.id;if(dragId===null||dragId===t)return;
-      snapshot();const l=order[active],f=l.indexOf(dragId),to=l.indexOf(t);l.splice(f,1);l.splice(to,0,dragId);persist();render();});
+    row.addEventListener('drop',e=>{e.preventDefault();row.classList.remove('over');const t=+row.dataset.id;if(dragId===null||dragId===t)return;
+      const l=order[active],lockN=locks[active]||0,f=l.indexOf(dragId),to=l.indexOf(t);
+      if(f<lockN||to<lockN)return;
+      snapshot();l.splice(f,1);l.splice(to,0,dragId);persist();
+      logMove(pid(dragId),active,f+1,to+1,'드래그 이동');
+      render();});
   });
 }
 
@@ -1122,15 +1237,39 @@ function renderPickActions(){
 /* ---- misc ---- */
 function exportCsv(){
   if(!people.length){alert('데이터 없음');return;}
-  let rows=[["직급","최종순위","등급","S추천","이름","팀","년차","작년평가","최근3년","주요성과","메모"]];
+  let rows=[["직급","최종순위","등급","S추천","C후보","C후보사유","이름","팀","년차","작년평가","최근3년","주요성과","메모"]];
   RANKS.forEach(rk=>{const ids=order[rk]||[],n=ids.length;ids.forEach((id,i)=>{const p=pid(id);
-    rows.push([rk,i+1,gradeAt(i,n),p.sRec?"Y":"",p.name,p.team,p.yr,p.prev,(p.three||[]).join('·'),`"${(p.ach||[]).join(' / ')}"`,`"${(memos[id]||'').replace(/"/g,'""')}"`]);});});
+    rows.push([rk,i+1,gradeAt(i,n),p.sRec?"Y":"",p.cFlag?"Y":"",`"${(p.cNote||'').replace(/"/g,'""')}"`,p.name,p.team,p.yr,p.prev,(p.three||[]).join('·'),`"${(p.ach||[]).join(' / ')}"`,`"${(memos[id]||'').replace(/"/g,'""')}"`]);});});
   const csv="﻿"+rows.map(r=>r.join(',')).join('\n');
   const b=new Blob([csv],{type:'text/csv;charset=utf-8'}),u=URL.createObjectURL(b);
   const a=document.createElement('a');a.href=u;a.download=`평가결과_${new Date().toISOString().slice(0,10)}.csv`;a.click();URL.revokeObjectURL(u);
 }
 function saveSession(){persist();exportCsv();alert('세션 결과를 CSV로 내보냈습니다.\n작업 내용은 이 브라우저에 자동 저장되어, 새로고침·창 닫기 후 다시 열어도 복원됩니다.');}
-function openHist(){alert(`변경 이력: 되돌리기 ${undoStack.length}건 / 다시실행 ${redoStack.length}건 가능\n(하단 되돌리기·다시실행 버튼 사용)`);}
+function logMove(p,rank,fromNo,toNo,type){
+  if(!p||fromNo===toNo)return;
+  changeLog.push({t:Date.now(),rank,name:p.name,team:p.team,from:fromNo,to:toNo,type});
+  if(changeLog.length>500)changeLog.shift();
+}
+function openHist(){
+  const list=document.getElementById('histList');
+  if(!changeLog.length){
+    list.innerHTML='<div style="padding:1.2rem;color:var(--muted);text-align:center;font-size:.82rem">아직 기록된 변경 이력이 없습니다.<br>드래그·교체·팀 내 이동 시 자동으로 기록됩니다.</div>';
+  }else{
+    list.innerHTML=[...changeLog].reverse().map(e=>{
+      const up=e.to<e.from;
+      return `<div style="display:flex;gap:.6rem;align-items:center;padding:.5rem .7rem;border-bottom:1px solid var(--line2);font-size:.8rem">
+        <span style="color:var(--muted2);white-space:nowrap;font-variant-numeric:tabular-nums">${fmtTime(e.t)}</span>
+        <span style="font-weight:700;background:var(--bg);border-radius:6px;padding:.05rem .4rem;white-space:nowrap">${esc(e.rank)}</span>
+        <span style="font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(e.name)}</span>
+        <span style="color:var(--muted2);white-space:nowrap">${esc(e.team||'')}</span>
+        <span style="margin-left:auto;color:${up?'var(--ok)':'var(--warn)'};font-weight:700;white-space:nowrap">${e.from}위 ${up?'↑':'↓'} ${e.to}위</span>
+        <span style="color:var(--muted);font-size:.72rem;white-space:nowrap">${esc(e.type)}</span>
+      </div>`;
+    }).join('');
+  }
+  document.getElementById('hbg').classList.add('show');
+}
+function closeHist(){document.getElementById('hbg').classList.remove('show');}
 function toggleFull(){if(!document.fullscreenElement){document.documentElement.requestFullscreen();document.getElementById('fsBtn').textContent='⛶ 전체화면 종료';}else{document.exitFullscreen();document.getElementById('fsBtn').textContent='⛶ 전체화면';}}
 function zoom(d){fs=Math.max(11,Math.min(20,fs+d));document.documentElement.style.setProperty('--fs',fs+'px');document.getElementById('zl').textContent=Math.round(fs/14*100)+'%';}
 function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
@@ -1244,7 +1383,7 @@ function closeSettings(){ document.getElementById('sbg').classList.remove('show'
 function persistCfg(){ try{ localStorage.setItem("evalSession.cfg",JSON.stringify(cfg)); }catch(e){} }
 function restoreCfg(){ try{ const r=localStorage.getItem("evalSession.cfg"); if(r){cfg={...cfg,...JSON.parse(r)};} }catch(e){} }
 document.addEventListener('keydown',e=>{
-  if(e.key==='Escape'){closeCompare();closePaste();closeSettings();closeDetail();}
+  if(e.key==='Escape'){closeCompare();closePaste();closeSettings();closeDetail();closeHist();closeSpotlight();}
   if((e.ctrlKey||e.metaKey)&&e.key==='z'){e.preventDefault();undo();}
   if((e.ctrlKey||e.metaKey)&&(e.key==='y'||(e.shiftKey&&e.key==='z'))){e.preventDefault();redo();}
 });
