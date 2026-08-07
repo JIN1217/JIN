@@ -60,9 +60,8 @@
   .tb-x:hover{color:var(--txt);}
   .rt-row.match{box-shadow:inset 0 0 0 2px var(--blue);}
   .rt-row.dim{opacity:.4;}
-  .rt-row.incmp{box-shadow:inset 3px 0 0 var(--blue);}
+  .rt-row.incmp{background:var(--blue-soft);box-shadow:inset 3px 0 0 var(--blue);}
   .rt-row.sel{background:var(--blue-soft);}
-  .cmp-dot{color:var(--blue);font-weight:800;margin-right:.25rem;}
 
   /* settings modal */
   .set-grid{display:grid;grid-template-columns:1fr 1fr;gap:1rem 1.4rem;margin:.6rem 0 .2rem;}
@@ -166,7 +165,7 @@
 
   /* rank table */
   .rtable{background:var(--panel);border:1px solid var(--line);border-radius:16px;overflow:visible;box-shadow:var(--sh);}
-  .rt-head,.rt-row{display:grid;grid-template-columns:1.4rem 3.6rem 1fr 6.5rem 6rem 7rem 2fr 2.4rem;align-items:center;gap:.6rem;padding:.5rem .8rem;}
+  .rt-head,.rt-row{display:grid;grid-template-columns:1.5rem 1.4rem 3.6rem 1fr 6.5rem 6rem 7rem 2fr 2.4rem;align-items:center;gap:.6rem;padding:.5rem .8rem;}
   .rt-head{position:sticky;top:10.15rem;z-index:35;background:#fafbfd;border-bottom:1px solid var(--line);color:var(--muted2);font-size:.74rem;font-weight:800;letter-spacing:.2px;}
   .rt-head .cc{text-align:center;}
   .rt-row{border-bottom:1px solid var(--line2);cursor:grab;position:relative;transition:transform .12s ease,box-shadow .12s ease;}
@@ -180,8 +179,8 @@
   .rt-row.locked:hover{background:none;box-shadow:none;transform:none;}
   .rt-row.locked .grip{color:var(--muted2);}
   .rt-row.buffer{background:var(--buffer);}
-  .rt-row.ab-boundary{background:var(--ab-fill);box-shadow:inset 3px 0 0 var(--ab-line);}
-  .rt-row.bb-boundary{background:var(--bb-fill);box-shadow:inset 3px 0 0 var(--bb-line);}
+  .rt-row.ab-boundary{background:repeating-linear-gradient(135deg,color-mix(in srgb,var(--ab-line) 11%,transparent) 0 7px,transparent 7px 14px);box-shadow:inset 3px 0 0 var(--ab-line);}
+  .rt-row.bb-boundary{background:repeating-linear-gradient(135deg,color-mix(in srgb,var(--bb-line) 11%,transparent) 0 7px,transparent 7px 14px);box-shadow:inset 3px 0 0 var(--bb-line);}
   .rt-row.ellipsis{justify-items:center;color:var(--muted);cursor:default;padding:.3rem;grid-template-columns:1fr;text-align:center;}
   .rt-row.ellipsis:hover{background:none;box-shadow:none;transform:none;}
 
@@ -189,7 +188,7 @@
   .rt-row .rk{font-weight:800;font-size:1rem;text-align:center;font-variant-numeric:tabular-nums;}
   .rt-row .rk .tag{display:block;font-size:.6rem;color:var(--buffer-line);font-weight:800;}
   .cc{text-align:center;}
-  .cc input{width:1rem;height:1rem;cursor:pointer;}
+  .cc input{width:1rem;height:1rem;cursor:pointer;accent-color:var(--blue);}
   .nm{font-weight:700;}
   .team{color:var(--muted2);font-size:.82rem;}
   .rc{font-size:.8rem;color:var(--muted2);}
@@ -280,8 +279,8 @@
   .team-row:last-child{border-bottom:none;}
   .team-row:hover{background:#f5f8ff;box-shadow:inset 0 0 0 1px #d9e6fb;transform:scale(1.015);z-index:2;}
   .team-row.sel{background:var(--blue-soft);}
-  .team-row.ab-boundary{background:var(--ab-fill);box-shadow:inset 3px 0 0 var(--ab-line);}
-  .team-row.bb-boundary{background:var(--bb-fill);box-shadow:inset 3px 0 0 var(--bb-line);}
+  .team-row.ab-boundary{background:repeating-linear-gradient(135deg,color-mix(in srgb,var(--ab-line) 11%,transparent) 0 7px,transparent 7px 14px);box-shadow:inset 3px 0 0 var(--ab-line);}
+  .team-row.bb-boundary{background:repeating-linear-gradient(135deg,color-mix(in srgb,var(--bb-line) 11%,transparent) 0 7px,transparent 7px 14px);box-shadow:inset 3px 0 0 var(--bb-line);}
   .team-row.incmp{box-shadow:inset 3px 0 0 var(--blue);background:color-mix(in srgb,var(--blue) 7%,#fff);}
   .team-row .rank{font-weight:850;font-variant-numeric:tabular-nums;color:var(--muted2);font-size:.72rem;white-space:nowrap;}
   .team-row .name{font-weight:800;white-space:normal;overflow:visible;text-overflow:clip;line-height:1.25;word-break:keep-all;}
@@ -301,14 +300,20 @@
   .bottombar .dot{width:.55rem;height:.55rem;border-radius:50%;background:var(--ok);}
   .bottombar .status{font-size:.82rem;}
   .bottombar .status b{color:var(--buffer-line);}
-  .pick-actions{display:flex;align-items:center;gap:.45rem;border:1px solid var(--line);background:#f8fafc;border-radius:var(--radius-pill);padding:.25rem .4rem .25rem .7rem;min-height:2.1rem;}
-  .pick-actions.empty{opacity:.58;}
-  .pick-summary{font-size:.78rem;color:var(--muted2);font-weight:700;white-space:nowrap;min-width:4.6rem;}
-  .pick-action-btn{border:1px solid var(--line);background:#fff;border-radius:var(--radius-pill);padding:.34rem .8rem;font-size:.78rem;font-weight:700;color:var(--txt);cursor:pointer;transition:border-color .12s ease,background .12s ease,color .12s ease;}
-  .pick-action-btn:hover:not(:disabled){border-color:#c3cffb;background:var(--blue-soft);color:var(--blue);}
-  .pick-action-btn.primary{background:var(--blue);border-color:var(--blue);color:#fff;}
-  .pick-action-btn.primary:hover:not(:disabled){background:#3d5be0;color:#fff;}
-  .pick-action-btn:disabled{opacity:.42;cursor:default;}
+  .float-pick{position:fixed;left:50%;bottom:4.6rem;transform:translateX(-50%) translateY(10px);
+    background:var(--ink);color:#eef1f6;border-radius:var(--radius-pill);padding:.5rem .5rem .5rem 1.15rem;
+    display:flex;align-items:center;gap:.6rem;box-shadow:0 16px 38px rgba(20,24,36,.38);z-index:57;
+    opacity:0;pointer-events:none;transition:opacity .16s ease,transform .16s ease;}
+  .float-pick.show{opacity:1;transform:translateX(-50%) translateY(0);pointer-events:auto;}
+  .fp-count{font-size:.82rem;font-weight:700;white-space:nowrap;}
+  .fp-sep{width:1px;align-self:stretch;background:rgba(255,255,255,.18);}
+  .fp-btn{border:none;background:rgba(255,255,255,.1);color:#eef1f6;border-radius:var(--radius-pill);padding:.44rem .95rem;font-size:.8rem;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;gap:.35rem;transition:background .12s ease;}
+  .fp-btn:hover:not(:disabled){background:rgba(255,255,255,.2);}
+  .fp-btn.primary{background:var(--blue);}
+  .fp-btn.primary:hover:not(:disabled){background:#3d5be0;}
+  .fp-btn:disabled{opacity:.38;cursor:default;}
+  .fp-x{border:none;background:rgba(255,255,255,.1);color:#eef1f6;border-radius:50%;width:1.9rem;height:1.9rem;cursor:pointer;font-size:.85rem;transition:background .12s ease;}
+  .fp-x:hover{background:rgba(255,255,255,.22);}
 
   /* compare overlay */
   .ov{position:fixed;inset:0;background:rgba(30,37,48,.58);z-index:130;display:none;}
@@ -377,7 +382,7 @@
     .topbanner{position:static;}
     .main-sticky,.rt-head{position:static;top:auto;}
     .bottombar{position:static;height:auto;flex-wrap:wrap;padding:.8rem 1rem;}
-    .pick-actions{width:100%;justify-content:flex-end;}
+    .float-pick{bottom:auto;top:.6rem;}
   }
 </style>
 </head>
@@ -421,16 +426,20 @@
   <span class="leg" style="display:flex;align-items:center;gap:.3rem">⭐ S 추천 후보</span>
   <span class="leg" style="display:flex;align-items:center;gap:.3rem">🚩 C 후보</span>
   <span class="grow"></span>
-  <div class="pick-actions empty" id="pickActions">
-    <span class="pick-summary">선택 0명</span>
-    <button class="pick-action-btn" disabled>비교</button>
-    <button class="pick-action-btn" disabled>교체</button>
-  </div>
   <button class="tbtn" onclick="undo()" id="undoBtn">↶ 되돌리기</button>
   <button class="tbtn" onclick="redo()" id="redoBtn">↷ 다시 실행</button>
   <button class="tbtn" onclick="clearSaved()" title="저장 데이터 삭제">🗑 초기화</button>
   <span class="save" id="saveState"><span class="dot"></span>자동 저장 중</span>
   <span class="status" id="statusMsg"></span>
+</div>
+
+<!-- floating selection action bar -->
+<div class="float-pick" id="floatPick">
+  <span class="fp-count" id="fpCount">0명 선택</span>
+  <span class="fp-sep"></span>
+  <button class="fp-btn primary" onclick="openCompare()" id="fpCompareBtn">⇄ 비교</button>
+  <button class="fp-btn" onclick="swapPickedRanks()" id="fpSwapBtn">🔁 교체</button>
+  <button class="fp-x" onclick="clearPicked()" title="선택 해제">✕</button>
 </div>
 
 <!-- compare overlay -->
@@ -760,7 +769,7 @@ function renderToolbar(){
       <button class="${!stats?'on':''}" onclick="setMainView('rank')">순위 조정</button>
       <button class="${stats?'on':''}" onclick="setMainView('stats')">요약/통계</button>
     </div>
-    <span class="hint">${stats?'직급·팀·등급 분포를 한 화면에서 확인합니다.':'⋮⋮ 드래그 = 순위 이동 · 클릭 = 상세 보기 · Shift+클릭 = 비교 담기/빼기'}</span>
+    <span class="hint">${stats?'직급·팀·등급 분포를 한 화면에서 확인합니다.':'⋮⋮ 드래그 = 순위 이동 · 클릭 = 상세 보기 · 체크박스 = 비교/교체 선택'}</span>
     <span class="grow"></span>
     ${stats?'':renderLockControl()}
     ${stats?'':`<button class="tbtn ${onlyBoundary?'on':''}" onclick="toggleBoundary()">◎ 경계구간만 보기</button>`}
@@ -857,7 +866,10 @@ function renderMain(){
     <span class="stage">S ${q.S} · A ${q.A} · B+ ${q["B+"]} · B ${q.B}</span>
   </div>`;
 
+  const allIds=order[active]||[];
+  const allChecked=allIds.length>0 && allIds.every(id=>picked.has(id));
   const th=`<div class="rt-head">
+    <div class="cc"><input type="checkbox" ${allChecked?'checked':''} onclick="toggleSelectAll(event)" title="전체 선택/해제"></div>
     <div></div><div class="cc">순위</div><div>이름</div>
     <div>팀</div><div>직급/년차</div><div>작년평가</div><div>주요 성과 요약</div><div class="cc">메모</div>
   </div>`;
@@ -899,9 +911,10 @@ function renderMain(){
     const cls=["rt-row",inACut?"acut":"",zone.cls,selId===id?"sel":"",inCmp?"incmp":"",isMatch?"match":"",isDim?"dim":"",locked?"locked":""].join(' ');
     const achHtml=(p.ach||[]).slice(0,3).map(a=>`<div>${esc(a)}</div>`).join('');
     rows+=`<div class="${cls}" draggable="${locked?'false':'true'}" data-id="${id}" onclick="handleRowClick(event,${id})">
+      <div class="cc" onclick="event.stopPropagation()"><input type="checkbox" ${inCmp?'checked':''} onclick="togglePick(${id},event)" title="선택 (비교/교체 대상)"></div>
       <div class="grip">${locked?'🔒':'⋮⋮'}</div>
       <div class="rk">${rankNo}${zone.key?`<span class="tag" style="color:${zone.color}">${zone.label}</span>`:''}</div>
-      <div class="nm">${inCmp?'<span class="cmp-dot" title="비교 목록에 담김">⇄</span>':''}${esc(p.name)}${p.sRec?' ⭐':''}${p.cFlag?' 🚩':''}</div>
+      <div class="nm">${esc(p.name)}${p.sRec?' ⭐':''}${p.cFlag?' 🚩':''}</div>
       <div class="team">${esc(p.team)}</div>
       <div class="rc">${active} / ${p.yr}년차</div>
       <div class="prevcell"><span class="chip" style="background:${gColor(p.prev)}">${p.prev}</span>${stars(p.prev)}</div>
@@ -946,16 +959,25 @@ function handleRowClick(e,id){
     pickRow(id);
     return;
   }
-  const hadPicked=picked.size>0;
-  if(hadPicked){
-    picked.clear();
-    closeDetail();
-    render();
-    return;
-  }
   viewRow(id);
 }
 function viewRow(id){ selId=id; renderFloatingDetail(); document.querySelectorAll('.rt-row').forEach(r=>r.classList.toggle('sel',+r.dataset.id===id)); document.querySelectorAll('.team-row').forEach(r=>r.classList.toggle('sel',+r.dataset.id===id)); }
+function toggleSelectAll(e){
+  if(e)e.stopPropagation();
+  const ids=order[active]||[];
+  if(!ids.length)return;
+  const allChecked=ids.every(id=>picked.has(id));
+  if(allChecked){
+    picked.clear();
+  }else{
+    picked.clear();
+    ids.slice(0,cfg.maxCompare).forEach(id=>picked.add(id));
+    if(ids.length>cfg.maxCompare){
+      alert(`비교는 최대 ${cfg.maxCompare}명까지 가능합니다.\n상위 ${cfg.maxCompare}명만 선택되었습니다.`);
+    }
+  }
+  render();
+}
 function pickRow(id){
   if(picked.has(id)){
     picked.delete(id);
@@ -1255,16 +1277,18 @@ function renderBottom(){
   document.getElementById('statusMsg').innerHTML=`총 ${n}명 &nbsp; <b>현재 ${aEnd}~${aEnd+cfg.buffer}위 순위 조정 중</b>`;
 }
 function renderPickActions(){
-  const el=document.getElementById('pickActions');
+  const el=document.getElementById('floatPick');
   if(!el)return;
   const ids=order[active]||[];
   const chosen=ids.filter(id=>picked.has(id));
   const names=chosen.map(id=>pid(id)?.name).filter(Boolean).join(' · ');
-  el.className='pick-actions'+(chosen.length?'':' empty');
-  el.innerHTML=`<span class="pick-summary" title="${esc(names||'선택 없음')}">선택 ${chosen.length}명</span>
-    <button class="pick-action-btn primary" onclick="openCompare()" ${chosen.length?'':'disabled'}>비교</button>
-    <button class="pick-action-btn" onclick="swapPickedRanks()" ${chosen.length===2?'':'disabled'}>교체</button>`;
+  el.classList.toggle('show',chosen.length>0);
+  document.getElementById('fpCount').textContent=`${chosen.length}명 선택`;
+  document.getElementById('fpCount').title=names;
+  document.getElementById('fpCompareBtn').disabled=!chosen.length;
+  document.getElementById('fpSwapBtn').disabled=chosen.length!==2;
 }
+function clearPicked(){ picked.clear(); render(); }
 
 /* ---- misc ---- */
 function exportCsv(){
