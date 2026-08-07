@@ -313,6 +313,10 @@
   .float-pick.show{opacity:1;transform:translateX(-50%) translateY(0);pointer-events:auto;}
   .fp-count{font-size:.82rem;font-weight:700;white-space:nowrap;}
   .fp-sep{width:1px;align-self:stretch;background:rgba(255,255,255,.18);}
+  .fp-rank-group{display:flex;align-items:center;gap:.35rem;}
+  .fp-rank-input{width:4.2rem;border:none;border-radius:var(--radius-pill);padding:.42rem .7rem;font-size:.8rem;font-weight:700;background:rgba(255,255,255,.12);color:#fff;text-align:center;font-variant-numeric:tabular-nums;}
+  .fp-rank-input::placeholder{color:rgba(255,255,255,.55);}
+  .fp-rank-input:focus{outline:none;background:rgba(255,255,255,.2);}
   .fp-btn{border:none;background:rgba(255,255,255,.1);color:#eef1f6;border-radius:var(--radius-pill);padding:.44rem .95rem;font-size:.8rem;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;gap:.35rem;transition:background .12s ease;}
   .fp-btn:hover:not(:disabled){background:rgba(255,255,255,.2);}
   .fp-btn.primary{background:var(--blue);}
@@ -442,6 +446,11 @@
 <!-- floating selection action bar -->
 <div class="float-pick" id="floatPick">
   <span class="fp-count" id="fpCount">0명 선택</span>
+  <span class="fp-sep"></span>
+  <span class="fp-rank-group" id="fpRankGroup" style="display:none">
+    <input type="number" id="fpRankInput" class="fp-rank-input" min="1" placeholder="순위" onkeydown="if(event.key==='Enter'){event.preventDefault();moveToRank();}" onclick="event.stopPropagation()">
+    <button class="fp-btn" onclick="moveToRank()" title="입력한 순위로 바로 이동">→ 이동</button>
+  </span>
   <span class="fp-sep"></span>
   <button class="fp-btn primary" onclick="openCompare()" id="fpCompareBtn">⇄ 비교</button>
   <button class="fp-btn" onclick="swapPickedRanks()" id="fpSwapBtn">🔁 교체</button>
@@ -991,6 +1000,7 @@ function toggleSelectAll(e){
   const ids=order[active]||[];
   if(!ids.length)return;
   const allChecked=ids.every(id=>picked.has(id));
+  lastPickAnchorId=null;
   if(allChecked){
     picked.clear();
   }else{
@@ -1002,6 +1012,7 @@ function toggleSelectAll(e){
   }
   render();
 }
+let lastPickAnchorId=null;
 function pickRow(id){
   if(picked.has(id)){
     picked.delete(id);
@@ -1013,6 +1024,7 @@ function pickRow(id){
       picked.add(id);
     }
   }
+  lastPickAnchorId=id;
   render();
 }
 function swapPickedRanks(){
@@ -1344,8 +1356,63 @@ function renderPickActions(){
   document.getElementById('fpCount').title=names;
   document.getElementById('fpCompareBtn').disabled=!chosen.length;
   document.getElementById('fpSwapBtn').disabled=chosen.length!==2;
+  const rankGroup=document.getElementById('fpRankGroup');
+  if(chosen.length===1){
+    rankGroup.style.display='flex';
+    const rankInput=document.getElementById('fpRankInput');
+    rankInput.max=ids.length;
+    rankInput.placeholder=`현재 ${ids.indexOf(chosen[0])+1}위`;
+  }else{
+    rankGroup.style.display='none';
+  }
+  if(chosen.length>0)requestAnimationFrame(positionFloatPick);
 }
-function clearPicked(){ picked.clear(); render(); }
+function clearPicked(){ picked.clear(); lastPickAnchorId=null; render(); }
+function positionFloatPick(){
+  const el=document.getElementById('floatPick');
+  if(!el||!el.classList.contains('show'))return;
+  const anchorRow=lastPickAnchorId!=null?document.querySelector(`.rt-row[data-id="${lastPickAnchorId}"]`):null;
+  if(anchorRow){
+    const rect=anchorRow.getBoundingClientRect();
+    const barW=el.offsetWidth||320;
+    const left=Math.max(8,Math.min(rect.left,window.innerWidth-barW-8));
+    let top=rect.bottom+8;
+    if(top+el.offsetHeight>window.innerHeight-8){ top=rect.top-el.offsetHeight-8; } // 화면 하단에 가까우면 행 위쪽에 표시
+    el.style.left=left+'px';
+    el.style.top=Math.max(8,top)+'px';
+    el.style.bottom='auto';
+    el.style.transform='translateY(0)';
+  }else{
+    el.style.left='50%';
+    el.style.top='auto';
+    el.style.bottom='4.6rem';
+    el.style.transform='translateX(-50%) translateY(0)';
+  }
+}
+window.addEventListener('scroll',positionFloatPick,{passive:true});
+window.addEventListener('resize',positionFloatPick);
+document.addEventListener('scroll',e=>{ if(e.target&&e.target.id==='rpanel')positionFloatPick(); },true);
+function moveToRank(){
+  const ids=order[active]||[];
+  const chosen=ids.filter(id=>picked.has(id));
+  if(chosen.length!==1)return;
+  const id=chosen[0];
+  const input=document.getElementById('fpRankInput');
+  const target=parseInt(input.value);
+  const from=ids.indexOf(id);
+  if(!target||target<1||target>ids.length){ alert(`1~${ids.length} 사이의 순위를 입력하세요.`); return; }
+  const to=target-1;
+  if(from===to)return;
+  const lockN=locks[active]||0;
+  if(from<lockN||to<lockN){ alert('잠긴 구간에 포함된 인원은 이동할 수 없습니다.'); return; }
+  const person=pid(id);
+  snapshot();
+  ids.splice(from,1);
+  ids.splice(to,0,id);
+  persist();
+  logMove(person,active,from+1,target,'순위 직접 입력');
+  render();
+}
 
 /* ---- misc ---- */
 function exportCsv(){
