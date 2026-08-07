@@ -270,7 +270,13 @@
   .team-stack{display:flex;height:.34rem;background:var(--bg);overflow:hidden;}
   .team-stack i{height:100%;width:var(--w);background:var(--gc);}
   .team-rank{display:grid;}
-  .team-row{border:none;background:#fff;border-bottom:1px solid var(--line2);display:grid;grid-template-columns:2.8rem minmax(0,1fr) 3.6rem 2.8rem;align-items:center;gap:.35rem;padding:.32rem .48rem;text-align:left;cursor:pointer;font:inherit;color:var(--txt);position:relative;transition:transform .12s ease,box-shadow .12s ease;}
+  .team-row{border:none;background:#fff;border-bottom:1px solid var(--line2);display:grid;grid-template-columns:1.1rem 2.6rem minmax(0,1fr) 3.6rem;align-items:center;gap:.35rem;padding:.32rem .48rem;text-align:left;cursor:grab;font:inherit;color:var(--txt);position:relative;transition:transform .12s ease,box-shadow .12s ease;}
+  .team-row .grip{font-size:.7rem;}
+  .team-row.dragging{opacity:.35;}
+  .team-row.over{box-shadow:inset 0 2px 0 var(--blue);}
+  .team-row.locked{cursor:default;opacity:.72;}
+  .team-row.locked:hover{background:none;box-shadow:none;transform:none;}
+  .team-row.locked .grip{color:var(--muted2);}
   .team-row:last-child{border-bottom:none;}
   .team-row:hover{background:#f5f8ff;box-shadow:inset 0 0 0 1px #d9e6fb;transform:scale(1.015);z-index:2;}
   .team-row.sel{background:var(--blue-soft);}
@@ -280,10 +286,6 @@
   .team-row .rank{font-weight:850;font-variant-numeric:tabular-nums;color:var(--muted2);font-size:.72rem;white-space:nowrap;}
   .team-row .name{font-weight:800;white-space:normal;overflow:visible;text-overflow:clip;line-height:1.25;word-break:keep-all;}
   .team-row .share{text-align:right;color:var(--muted2);font-size:.68rem;white-space:nowrap;}
-  .team-moves{display:flex;gap:.15rem;justify-content:flex-end;}
-  .team-moves button{border:1px solid var(--line);background:#fff;color:var(--muted2);border-radius:7px;width:1.25rem;height:1.25rem;font-size:.62rem;font-weight:900;line-height:1;cursor:pointer;padding:0;transition:border-color .12s ease,background .12s ease,color .12s ease;}
-  .team-moves button:hover:not(:disabled){border-color:#bcd4fb;background:var(--blue-soft);color:var(--blue);}
-  .team-moves button:disabled{opacity:.25;cursor:default;}
 
   /* floating detail */
   .detail-backdrop{position:fixed;inset:0;background:rgba(30,37,48,.16);z-index:125;display:none;}
@@ -984,22 +986,6 @@ function swapPickedRanks(){
   render();
   if(ovOpen)openCompare();
 }
-function moveTeamRank(id,d){
-  const ids=order[active]||[],p=pid(id);
-  if(!p)return;
-  const teamIds=ids.filter(x=>pid(x).team===p.team);
-  const ti=teamIds.indexOf(id),target=teamIds[ti+d];
-  if(!target)return;
-  const a=ids.indexOf(id),b=ids.indexOf(target);
-  if(a<0||b<0)return;
-  const lockN=locks[active]||0;
-  if(a<lockN||b<lockN){alert('잠긴 구간에 포함된 인원은 이동할 수 없습니다.');return;}
-  snapshot();
-  [ids[a],ids[b]]=[ids[b],ids[a]];
-  persist();
-  logMove(p,active,a+1,b+1,'팀 내 이동');
-  render();
-}
 function togglePick(id,e){if(e)e.stopPropagation();pickRow(id);}
 function toggleSFromPanel(id){pid(id).sRec=!pid(id).sRec;persist();render();}
 function toggleCFromPanel(id){
@@ -1018,12 +1004,13 @@ function focusMemo(id){selId=id;renderFloatingDetail();setTimeout(()=>{const t=d
 
 /* ---- right panel ---- */
 function renderTeamRatio(counts,total){
-  const keys=["S","A","B+","B"];
+  const keys=["A","B+","B"];
+  const merged={A:(counts.S||0)+(counts.A||0),"B+":counts["B+"]||0,B:counts.B||0};
   const chips=`<div class="team-ratio">${keys.map(g=>{
-    const n=counts[g]||0,p=pct(n,total);
+    const n=merged[g]||0,p=pct(n,total);
     return `<span style="--gc:${gColor(g)}"><b>${g}</b> ${p}%</span>`;
   }).join('')}</div>`;
-  const stack=`<div class="team-stack">${keys.map(g=>`<i style="--gc:${gColor(g)};--w:${pct(counts[g]||0,total)}%"></i>`).join('')}</div>`;
+  const stack=`<div class="team-stack">${keys.map(g=>`<i style="--gc:${gColor(g)};--w:${pct(merged[g]||0,total)}%"></i>`).join('')}</div>`;
   return chips+stack;
 }
 function renderRPanel(){
@@ -1034,20 +1021,23 @@ function renderRPanel(){
     renderFloatingDetail();
     return;
   }
-  const s=rankSummary(active), keys=["S","A","B+","B"];
+  const s=rankSummary(active);
+  const lockN=locks[active]||0;
   const teamCards=s.teams.map(t=>{
     const teamRows=s.ids.map((id,i)=>({id,rankNo:i+1,p:pid(id),g:gradeAt(i,s.n)})).filter(x=>x.p.team===t.team);
     const rows=teamRows.map(x=>{
-      const gradeShare=pct(t[x.g]||0,t.total), zone=boundaryInfo(x.rankNo,s.n);
-      const gradeText=zone.key?zone.label.replace(' 경계',''):x.g;
-      const gradeColor=zone.key?zone.color:gColor(x.g);
+      const dispG=x.g==='S'?'A':x.g;
+      const dispCount=dispG==='A'?(t.S||0)+(t.A||0):(t[dispG]||0);
+      const gradeShare=pct(dispCount,t.total), zone=boundaryInfo(x.rankNo,s.n);
+      const gradeText=zone.key?zone.label.replace(' 경계',''):dispG;
+      const gradeColor=zone.key?zone.color:gColor(dispG);
       const shareText=zone.key?'경계':gradeShare+'%';
-      const teamIndex=teamRows.indexOf(x);
-      return `<div class="team-row ${selId===x.id?'sel':''} ${zone.cls} ${picked.has(x.id)?'incmp':''}" data-id="${x.id}" onclick="handleRowClick(event,${x.id})" title="전체 ${x.rankNo}위 · ${zone.label||x.g} · 클릭 = 상세 보기 · Shift+클릭 = 비교 담기/빼기 · ${esc(x.p.name)}">
+      const locked=x.rankNo<=lockN;
+      return `<div class="team-row ${selId===x.id?'sel':''} ${zone.cls} ${picked.has(x.id)?'incmp':''} ${locked?'locked':''}" draggable="${locked?'false':'true'}" data-id="${x.id}" onclick="handleRowClick(event,${x.id})" title="전체 ${x.rankNo}위 · ${zone.label||dispG} · 클릭 = 상세 보기 · Shift+클릭 = 비교 담기/빼기 · 드래그 = 팀 내 순위 이동 · ${esc(x.p.name)}">
+        <span class="grip">${locked?'🔒':'⋮⋮'}</span>
         <span class="rank">${x.rankNo}위</span>
         <span class="name">${esc(x.p.name)}${x.p.sRec?' ⭐':''}${x.p.cFlag?' 🚩':''}</span>
         <span class="share"><span class="chip" style="background:${gradeColor}">${gradeText}</span> ${shareText}</span>
-        <span class="team-moves" onclick="event.stopPropagation()"><button onclick="moveTeamRank(${x.id},-1)" ${teamIndex===0?'disabled':''} title="팀 내 위로">▲</button><button onclick="moveTeamRank(${x.id},1)" ${teamIndex===teamRows.length-1?'disabled':''} title="팀 내 아래로">▼</button></span>
       </div>`;
     }).join('');
     const bStatus=t.B<t.recB?'부족':t.B>t.recB?'과다':'적정';
@@ -1059,11 +1049,12 @@ function renderRPanel(){
   }).join('');
   rp.innerHTML=`<div class="team-panel">
     <h4>팀별 순위표</h4>
-    <div class="subline"><span>${active} ${s.n}명 · 좌측 전체순위 기준 자동 반영</span><span>S ${s.q.S} · A ${s.q.A} · B+ ${s.q["B+"]} · B ${s.q.B}</span></div>
+    <div class="subline"><span>${active} ${s.n}명 · 좌측 전체순위 기준 자동 반영</span><span>A ${s.q.S+s.q.A} · B+ ${s.q["B+"]} · B ${s.q.B}</span></div>
     <div class="team-overview"><div class="label">전체 평가 비중</div>${renderTeamRatio(s.counts,s.n)}</div>
     <div class="team-list">${teamCards}</div>
   </div>`;
   renderFloatingDetail();
+  wireTeamDrag();
 }
 function renderFloatingDetail(){
   const bg=document.getElementById('detailBackdrop'), panel=document.getElementById('detailPanel');
@@ -1228,6 +1219,28 @@ function wireDrag(){
       snapshot();l.splice(f,1);l.splice(to,0,dragId);persist();
       logMove(pid(dragId),active,f+1,to+1,'드래그 이동');
       render();});
+  });
+}
+let teamDragId=null;
+function wireTeamDrag(){
+  document.querySelectorAll('.team-card').forEach(card=>{
+    card.querySelectorAll('.team-row[draggable="true"]').forEach(row=>{
+      row.addEventListener('dragstart',()=>{teamDragId=+row.dataset.id;row.classList.add('dragging');});
+      row.addEventListener('dragend',()=>{row.classList.remove('dragging');card.querySelectorAll('.team-row').forEach(r=>r.classList.remove('over'));});
+      row.addEventListener('dragover',e=>{e.preventDefault();row.classList.add('over');});
+      row.addEventListener('dragleave',()=>row.classList.remove('over'));
+      row.addEventListener('drop',e=>{
+        e.preventDefault();row.classList.remove('over');
+        const t=+row.dataset.id; if(teamDragId===null||teamDragId===t)return;
+        const l=order[active],lockN=locks[active]||0,f=l.indexOf(teamDragId),to=l.indexOf(t);
+        if(f<0||to<0)return;
+        if(f<lockN||to<lockN){alert('잠긴 구간에 포함된 인원은 이동할 수 없습니다.');return;}
+        const person=pid(teamDragId);
+        snapshot();l.splice(f,1);l.splice(to,0,teamDragId);persist();
+        logMove(person,active,f+1,to+1,'팀 패널 드래그');
+        render();
+      });
+    });
   });
 }
 
