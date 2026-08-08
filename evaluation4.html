@@ -567,7 +567,8 @@
 <div class="mbg" id="mbg"><div class="modal">
   <h2>평가 대상자 입력</h2>
   <p>아래 양식을 다운로드해 엑셀에서 작성한 뒤, CSV로 저장해 업로드하세요. 첫 줄은 머리글입니다.<br>
-  <code>직급 · 이름 · 팀 · 담당 · S/P · 년차 · 25년 · 24년 · 23년 · 22년 · 21년 · 주요성과(줄바꿈은 / 로 구분) · 상세 · 입사일</code></p>
+  <code>직급 · 이름 · 팀 · 담당 · S/P · 년차 · 25년 · 24년 · 23년 · 22년 · 21년 · 주요성과(줄바꿈은 / 로 구분) · 상세 · 입사일</code><br>
+  전 직급을 한 파일에 섞어 올려도 자동으로 각 탭에 분류됩니다. <b>직급</b>란에는 <code>차장/과장/대리/사원</code> 또는 <code>1/2갑/2을/3급</code> 표기를 모두 인식합니다.</p>
   <div class="act" style="justify-content:flex-start;margin:0 0 .7rem">
     <button class="btn" onclick="downloadTemplate()">⬇ 양식 다운로드</button>
     <button class="btn" onclick="document.getElementById('uploadFileInput').click()">📁 파일 업로드</button>
@@ -778,7 +779,13 @@ function applyPaste(){
   ensurePersonFields(); rebuild(); closePaste(); persist(); render();
 }
 function cleanHeader(s){return String(s||'').replace(/s/g,'').toLowerCase().replace('???','?');}
-function normalizeRank(v){return RANKS.includes(v)?v:active;}
+const RANK_ALIASES={'1':'차장','1급':'차장','2갑':'과장','2급갑':'과장','2을':'대리','2급을':'대리','3급':'사원','3':'사원'};
+function normalizeRank(v){
+  v=String(v||'').trim();
+  if(RANKS.includes(v))return v;
+  if(RANK_ALIASES[v])return RANK_ALIASES[v];
+  return active;
+}
 function normalizeGrade(g){g=String(g||'').trim().toUpperCase(); if(g==='B?')g='B+'; return g||'';}
 function normalizeSp(v){v=String(v||'').trim(); if(/^talents*pool$/i.test(v))return 'T/P'; if(v==='Talent Pool')return 'T/P'; return v;}
 function dedupeNames(list){
