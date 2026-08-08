@@ -84,7 +84,7 @@
 
   /* layout */
   .layout{display:grid;grid-template-columns:minmax(0,1fr) .7rem minmax(30rem,var(--right-w));gap:0;align-items:start;}
-  main{padding:.55rem .8rem 5rem;min-width:0;}
+  main{padding:.55rem .45rem 5rem;min-width:0;}
   .splitter{position:sticky;top:calc(var(--topbar-h) + var(--banner-h));height:calc(100vh - var(--topbar-h) - var(--banner-h));z-index:30;cursor:col-resize;display:flex;justify-content:center;align-items:stretch;background:linear-gradient(90deg,transparent,rgba(30,37,48,.03),transparent);}
   .splitter::before{content:"";width:1px;background:var(--line);transition:width .12s,background .12s;}
   .splitter:hover::before,.splitter:focus-visible::before,body.resizing .splitter::before{width:4px;background:var(--blue);}
@@ -171,7 +171,7 @@
 
   /* rank table */
   .rtable{background:var(--panel);border:1px solid var(--line);border-radius:8px;overflow:auto;box-shadow:var(--sh);max-width:100%;}
-  .rt-head,.rt-row{display:grid;grid-template-columns:var(--rt-cols);align-items:center;gap:.45rem;padding:.34rem .55rem;width:max-content;min-width:100%;}
+  .rt-head,.rt-row{display:grid;grid-template-columns:var(--rt-cols);align-items:center;gap:.3rem;padding:.3rem .4rem;width:max-content;min-width:100%;}
   .rt-select{display:flex;align-items:center;gap:.5rem;height:100%;cursor:pointer;margin:-.5rem 0;padding:.5rem 0;}
   .rt-head .rt-select{cursor:pointer;}
   .rt-head{position:sticky;top:calc(var(--topbar-h) + var(--banner-h));z-index:35;background:#fafbfd;border-bottom:1px solid var(--line);color:var(--muted2);font-size:.74rem;font-weight:800;letter-spacing:.2px;}
@@ -211,11 +211,14 @@
   .rt-cell{position:relative;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
   .rt-resize{position:absolute;top:0;right:0;bottom:0;width:6px;cursor:col-resize;z-index:9;}
   .rt-resize:hover,.rt-resize.active{background:color-mix(in srgb,var(--blue) 40%,transparent);}
+  .rt-head .rt-cell[data-colkey]{cursor:grab;}
+  .rt-head .rt-cell[data-colkey].dragging{opacity:.4;}
+  .rt-head .rt-cell[data-colkey].over{box-shadow:inset 0 0 0 2px var(--blue);}
   .rt-cell.pin-final,.rt-cell.pin-ratio,.rt-cell.pin-name{position:sticky;z-index:3;background:inherit;}
   .rt-head .rt-cell.pin-final,.rt-head .rt-cell.pin-ratio,.rt-head .rt-cell.pin-name{z-index:6;background:#fafbfd;}
-  .rt-cell.pin-final{left:.55rem;}
-  .rt-cell.pin-ratio{left:5.25rem;}
-  .rt-cell.pin-name{left:9.45rem;}
+  .rt-cell.pin-final{left:.4rem;}
+  .rt-cell.pin-ratio{left:5.1rem;}
+  .rt-cell.pin-name{left:9.3rem;}
   .rt-filterbar{display:flex;align-items:center;gap:.45rem;flex-wrap:wrap;background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:.45rem .55rem;margin-bottom:.45rem;box-shadow:var(--sh);}
   .rt-filterbar input,.rt-filterbar select{height:2rem;border:1px solid var(--line);border-radius:8px;padding:0 .55rem;font-size:.78rem;background:#fff;min-width:7rem;}
   .rt-filterbar .mini{min-width:5.2rem;width:5.2rem;}
@@ -424,12 +427,12 @@
   }
 
   .rtable{max-height:calc(100vh - var(--topbar-h) - var(--banner-h) - 4.2rem);overflow:auto;}
-  .rt-head{top:0;z-index:42;min-height:2.25rem;padding:.32rem .55rem;}
+  .rt-head{top:0;z-index:42;min-height:2.25rem;padding:.3rem .4rem;}
   .rt-head .rt-cell{display:flex;flex-direction:row;align-items:center;gap:.28rem;justify-content:space-between;min-width:0;}
-  .rt-th-label{display:flex;align-items:center;gap:.25rem;min-width:0;font-weight:850;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .rt-th-label{display:flex;align-items:center;gap:.18rem;min-width:0;font-weight:850;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
   .rt-th-label span:first-child{overflow:hidden;text-overflow:ellipsis;}
   .rt-th-label .count{font-size:.66rem;color:var(--muted);font-weight:800;margin-left:.15rem;}
-  .rt-filter-toggle{border:1px solid #b9c2cf;background:#eef3f8;color:#364152;border-radius:2px;width:1.25rem;height:1.2rem;display:grid;place-items:center;font-size:.72rem;line-height:1;cursor:pointer;flex:none;padding:0;}
+  .rt-filter-toggle{border:1px solid #b9c2cf;background:#eef3f8;color:#364152;border-radius:2px;width:1.05rem;height:1.05rem;display:grid;place-items:center;font-size:.62rem;line-height:1;cursor:pointer;flex:none;padding:0;}
   .rt-filter-toggle:hover,.rt-filter-toggle.on{background:#fff;border-color:var(--blue);color:var(--blue);}
   .rt-head .rt-select{margin:0;padding:0;height:auto;}
   .pivot-menu{position:fixed;z-index:220;width:18.5rem;max-width:calc(100vw - 1rem);background:#fff;border:1px solid #9ca3af;box-shadow:0 18px 46px rgba(15,23,42,.24);font-size:.78rem;color:var(--txt);}
@@ -596,19 +599,19 @@ const GRADES=[
 ];
 const GRADE_VARS={S:'--s',A:'--a',"B+":'--bp',B:'--b',C:'--c'};
 const COLS=[
-  {key:'finalRank',label:'\uD655\uC815',w:'4.7rem',fixed:true},
-  {key:'ratioRank',label:'\uBE44\uC728',w:'4.2rem',fixed:true},
-  {key:'name',label:'\uC774\uB984',w:'9.4rem',fixed:true},
-  {key:'team',label:'\uD300',w:'7.2rem'},
-  {key:'owner',label:'\uB2F4\uB2F9',w:'7.2rem'},
-  {key:'sp',label:'S/P',w:'5.4rem'},
-  {key:'yr',label:'\uB144\uCC28',w:'4.6rem'},
-  {key:'eval25',label:'25\uB144',w:'4.8rem'},
-  {key:'eval24',label:'24\uB144',w:'4.8rem'},
-  {key:'eval23',label:'23\uB144',w:'4.8rem'},
-  {key:'eval22',label:'22\uB144',w:'4.8rem'},
-  {key:'eval21',label:'21\uB144',w:'4.8rem'},
-  {key:'detail',label:'\uC0C1\uC138',w:'3.8rem'}
+  {key:'finalRank',label:'\uC21C\uC704',w:'4.7rem',fixed:true},
+  {key:'ratioRank',label:'\uCD5C\uCD08',w:'4.2rem',fixed:true},
+  {key:'name',label:'\uC774\uB984',w:'8.4rem',fixed:true},
+  {key:'team',label:'\uD300',w:'6.2rem'},
+  {key:'owner',label:'\uB2F4\uB2F9',w:'6.2rem'},
+  {key:'sp',label:'S/P',w:'4rem'},
+  {key:'yr',label:'\uC5F0\uCC28',w:'3.4rem'},
+  {key:'eval25',label:'25\uB144',w:'3.1rem'},
+  {key:'eval24',label:'24\uB144',w:'3.1rem'},
+  {key:'eval23',label:'23\uB144',w:'3.1rem'},
+  {key:'eval22',label:'22\uB144',w:'3.1rem'},
+  {key:'eval21',label:'21\uB144',w:'3.1rem'},
+  {key:'detail',label:'\uC0C1\uC138',w:'3.2rem'}
 ];
 const DEFAULT_COL_STATE=COLS.map(c=>({key:c.key,visible:true}));
 // 조정 가능한 설정 (담당별 비중이 다르므로 세션 중 변경)
@@ -1707,12 +1710,23 @@ function renderPivotMenu(anchor){
   }
   setTimeout(()=>{const input=document.getElementById('pmSearch');if(input)input.focus();},0);
 }
+function evalText(g){return g?`<span style="color:${gColor(g)};font-weight:800">${esc(g)}</span>`:'';}
+function renderCell(c,p,rankNo,zone,locked,inCmp){
+  const cls=`rt-cell${pinClass(c.key)}`;
+  if(c.key==='finalRank')return `<div class="${cls} rt-select" onclick="event.stopPropagation();togglePick(${p.id},event)"><input type="checkbox" ${inCmp?'checked':''} title="선택"><span class="grip">${locked?'🔒':'⠿'}</span><span class="rk">${rankNo}${zone.key?`<span class="tag" style="color:${zone.color}">${zone.label}</span>`:''}</span></div>`;
+  if(c.key==='name')return `<div class="${cls} nm" title="${esc(p.name)}">${esc(p.name)}${p.sRec?' ⭐':''}${p.cFlag?' 🚩':''}</div>`;
+  if(c.key==='detail')return `<div class="${cls} cc" onclick="event.stopPropagation()"><button class="memo-btn ${memos[p.id]?'has':''}" onclick="openDetail(${p.id})" title="상세">상세</button></div>`;
+  if(c.key.startsWith('eval'))return `<div class="${cls} cc">${evalText(personValue(p,c.key,rankNo))}</div>`;
+  return `<div class="${cls}" title="${esc(personValue(p,c.key,rankNo))}">${esc(personValue(p,c.key,rankNo))}</div>`;
+}
 function renderHeaderCell(c,allChecked,total,shown){
   const pin=pinClass(c.key),on=isColumnFiltered(c.key)?' on':'';
-  const label=`<div class="rt-th-label"><span>${c.label}</span>${c.key==='finalRank'?`<span class="count">${shown}/${total}</span>`:''}</div><button class="rt-filter-toggle${on}" onclick="openPivotFilter('${c.key}',event)" title="필터">▾</button>`;
+  const countHtml=c.key==='finalRank'?`<span class="count">${shown}/${total}</span>`:'';
+  const label=`<div class="rt-th-label"><span>${c.label}</span><button class="rt-filter-toggle${on}" onclick="openPivotFilter('${c.key}',event)" title="필터">▾</button>${countHtml}</div>`;
   const resizer=PINNED_COLS.has(c.key)?'':`<span class="rt-resize" onmousedown="startColResize(event,'${c.key}')"></span>`;
   if(c.key==='finalRank')return `<div class="rt-cell rt-select${pin}"><input type="checkbox" ${allChecked?'checked':''} onclick="toggleSelectAll(event)" title="현재 표시 행 선택">${label}${resizer}</div>`;
-  return `<div class="rt-cell${pin}">${label}${resizer}</div>`;
+  const dragAttrs=PINNED_COLS.has(c.key)?'':` draggable="true" data-colkey="${c.key}"`;
+  return `<div class="rt-cell${pin}"${dragAttrs}>${label}${resizer}</div>`;
 }
 function renderMain(){
   const m=document.getElementById('main');
@@ -1735,6 +1749,27 @@ function renderMain(){
   });
   m.innerHTML=`<div class="rtable" style="--rt-cols:${grid}">${th}${rows||'<div class="empty-main" style="padding:2rem">표시할 행이 없습니다.</div>'}</div>`;
   wireDrag();
+  wireColDrag();
+}
+let colDragKey=null;
+function wireColDrag(){
+  document.querySelectorAll('.rt-head .rt-cell[data-colkey]').forEach(cell=>{
+    cell.addEventListener('dragstart',e=>{e.stopPropagation();colDragKey=cell.dataset.colkey;cell.classList.add('dragging');});
+    cell.addEventListener('dragend',()=>{cell.classList.remove('dragging');document.querySelectorAll('.rt-head .rt-cell').forEach(c=>c.classList.remove('over'));});
+    cell.addEventListener('dragover',e=>{e.preventDefault();e.stopPropagation();cell.classList.add('over');});
+    cell.addEventListener('dragleave',()=>cell.classList.remove('over'));
+    cell.addEventListener('drop',e=>{
+      e.preventDefault();e.stopPropagation();cell.classList.remove('over');
+      const target=cell.dataset.colkey;
+      if(!colDragKey||colDragKey===target)return;
+      const f=colState.findIndex(x=>x.key===colDragKey),t=colState.findIndex(x=>x.key===target);
+      if(f<0||t<0)return;
+      const [moved]=colState.splice(f,1);
+      colState.splice(t,0,moved);
+      colDragKey=null;
+      persist();render();
+    });
+  });
 }
 let colResize=null;
 function startColResize(e,key){
