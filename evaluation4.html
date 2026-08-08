@@ -10,7 +10,7 @@
     --muted:#94969f; --muted2:#6d707c; --txt:#292c37;
     --blue:#4f6df0; --blue-soft:#eef1fd;
     --s:#8b7fd6; --a:#4f7fe6; --bp:#4ba37c; --b:#d99a4a; --c:#d16b6b;
-    --green-line:#4ba37c; --a-fill:#eff7f1; --buffer:#fdf4e3; --buffer-line:#d99a4a;
+    --green-line:#4ba37c; --a-fill:#eef3fd; --bp-fill:#eff7f2; --b-fill:#fdf5e9; --buffer:#fdf4e3; --buffer-line:#d99a4a;
     --ab-fill:#eaf7f3; --ab-line:#2b9d89; --bb-fill:#fff2e1; --bb-line:#d1893a;
     --ok:#3aa06c; --warn:#d16b6b; --over:#c8903e;
     --star:#eeab3d;
@@ -184,7 +184,9 @@
   .rt-row.dragging{opacity:.35;}
   .rt-row.over{box-shadow:inset 0 0 0 2px var(--blue);}
   .rt-row.sel{background:var(--blue-soft);}
-  .rt-row.acut{background:var(--a-fill);}
+  .rt-row.band-a{background:var(--a-fill);}
+  .rt-row.band-bp{background:var(--bp-fill);}
+  .rt-row.band-b{background:var(--b-fill);}
   .rt-row.locked{cursor:default;opacity:.72;}
   .rt-row.locked:hover{background:var(--panel);box-shadow:none;}
   .rt-row.locked .grip{color:var(--muted2);}
@@ -437,6 +439,7 @@
   .rt-legend .tb-tag{flex:none;padding:.1rem .5rem;font-size:.72rem;}
   .rt-head .rt-cell{display:flex;flex-direction:row;align-items:center;gap:.28rem;justify-content:space-between;min-width:0;}
   .rt-head .rt-cell.hcenter{justify-content:center;}
+  .rt-head .rt-cell.rt-select .rt-th-label{flex:1;justify-content:center;}
   .rt-th-label{display:flex;align-items:center;gap:.18rem;min-width:0;font-weight:850;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
   .rt-th-text{flex:none;}
   .rt-th-label span:first-child{overflow:hidden;text-overflow:ellipsis;}
@@ -493,9 +496,11 @@
 
 <!-- bottom bar -->
 <div class="bottombar">
-  <span class="leg" style="display:flex;align-items:center;gap:.3rem"><i style="width:.8rem;height:.8rem;border-radius:3px;background:var(--a-fill);border:1px solid var(--green-line);display:inline-block"></i>A권역 확정</span>
-  <span class="leg" style="display:flex;align-items:center;gap:.3rem"><i style="width:.8rem;height:.8rem;border-radius:3px;background:var(--ab-fill);border:1px solid var(--ab-line);display:inline-block"></i>A/B+ 경계</span>
-  <span class="leg" style="display:flex;align-items:center;gap:.3rem"><i style="width:.8rem;height:.8rem;border-radius:3px;background:var(--bb-fill);border:1px solid var(--bb-line);display:inline-block"></i>B+/B 경계</span>
+  <span class="leg" style="display:flex;align-items:center;gap:.3rem"><i style="width:.8rem;height:.8rem;border-radius:3px;background:var(--a-fill);border:1px solid var(--a);display:inline-block"></i>A</span>
+  <span class="leg" style="display:flex;align-items:center;gap:.3rem"><i style="width:.8rem;height:.8rem;border-radius:3px;background:var(--ab-fill);border:1px solid var(--ab-line);display:inline-block"></i>A경계</span>
+  <span class="leg" style="display:flex;align-items:center;gap:.3rem"><i style="width:.8rem;height:.8rem;border-radius:3px;background:var(--bp-fill);border:1px solid var(--bp);display:inline-block"></i>B+</span>
+  <span class="leg" style="display:flex;align-items:center;gap:.3rem"><i style="width:.8rem;height:.8rem;border-radius:3px;background:var(--bb-fill);border:1px solid var(--bb-line);display:inline-block"></i>B경계</span>
+  <span class="leg" style="display:flex;align-items:center;gap:.3rem"><i style="width:.8rem;height:.8rem;border-radius:3px;background:var(--b-fill);border:1px solid var(--b);display:inline-block"></i>B</span>
   <span class="leg" style="display:flex;align-items:center;gap:.3rem">⭐ S 추천 후보</span>
   <span class="leg" style="display:flex;align-items:center;gap:.3rem">🚩 C 후보</span>
   <span class="grow"></span>
@@ -863,8 +868,8 @@ function stars(g){const v=ps(g);let s='';for(let i=0;i<5;i++)s+=`<span class="${
 function pct(v,n){return n?Math.round(v/n*100):0;}
 function boundaryInfo(rankNo,n){
   const r=boundaryRanges(n);
-  if(rankNo>r.aEnd&&rankNo<=r.abTo)return{key:'ab',label:'A/B+ ??',cls:'ab-boundary',color:'var(--ab-line)'};
-  if(rankNo>=r.bbFrom&&rankNo<=r.bbTo)return{key:'bb',label:'B ????',cls:'bb-boundary',color:'var(--bb-line)'};
+  if(rankNo>r.aEnd&&rankNo<=r.abTo)return{key:'ab',label:'A경계',cls:'ab-boundary',color:'var(--ab-line)'};
+  if(rankNo>=r.bbFrom&&rankNo<=r.bbTo)return{key:'bb',label:'B경계',cls:'bb-boundary',color:'var(--bb-line)'};
   return{key:'',label:'',cls:'',color:''};
 }
 function boundaryRanges(n){
@@ -1733,7 +1738,7 @@ function renderCell(c,p,rankNo,zone,locked,inCmp){
   if(c.key==='sp'||c.key==='yr')return `<div class="${cls} cc" title="${esc(personValue(p,c.key,rankNo))}">${esc(personValue(p,c.key,rankNo))}</div>`;
   return `<div class="${cls}" title="${esc(personValue(p,c.key,rankNo))}">${esc(personValue(p,c.key,rankNo))}</div>`;
 }
-const CENTER_HEAD=new Set(['finalRank','name','sp','yr','evalHistory','detail']);
+const CENTER_HEAD=new Set(['name','sp','yr','evalHistory','detail']);
 function renderHeaderCell(c,allChecked,total,shown){
   const pin=pinClass(c.key),on=isColumnFiltered(c.key)?' on':'';
   const filterBtn=NO_FILTER_COLS.has(c.key)?'':`<button class="rt-filter-toggle${on}" onclick="openPivotFilter('${c.key}',event)" title="필터">▾</button>`;
@@ -1766,12 +1771,13 @@ function renderMain(){
   ids.forEach((id,i)=>{
     const rankNo=i+1,p=pid(id);
     if(!rowMatches(p,rankNo))return;
-    const zone=boundaryInfo(rankNo,n),inACut=rankNo<=aEnd,locked=i<(locks[active]||0),inCmp=picked.has(id);
+    const g=gradeAt(i,n),zone=boundaryInfo(rankNo,n),locked=i<(locks[active]||0),inCmp=picked.has(id);
     if(onlyBoundary){const showA=rankNo>=aEnd-4&&rankNo<=ranges.abTo+1,showB=rankNo>=ranges.bbFrom-1&&rankNo<=Math.min(n,bStart+1),showTop=rankNo<=3;if(!(showA||showB||showTop)){if(!prevShownEllipsis){rows+=`<div class="rt-row ellipsis">⋯</div>`;prevShownEllipsis=true;}return;}prevShownEllipsis=false;}
-    if(rankNo===ranges.abFrom)rows+=`<div class="cutline ab"><hr><span class="lab">A/B+ 경계구간 (${ranges.abFrom}~${ranges.abTo}위)</span></div>`;
-    if(rankNo===ranges.bbFrom)rows+=`<div class="cutline bb"><hr><span class="lab">B 상위경계 (${ranges.bbFrom}~${ranges.bbTo}위)</span></div>`;
-    if(rankNo===bStart+1)rows+=`<div class="cutline bb"><hr><span class="lab">B 기준 시작 (${bStart+1}위)</span></div>`;
-    const cls=['rt-row',inACut?'acut':'',zone.cls,selId===id?'sel':'',inCmp?'incmp':'',locked?'locked':''].join(' ');
+    if(rankNo===ranges.abFrom)rows+=`<div class="cutline ab"><hr><span class="lab">A경계 (${ranges.abFrom}~${ranges.abTo}위)</span></div>`;
+    if(rankNo===ranges.bbFrom)rows+=`<div class="cutline bb"><hr><span class="lab">B경계 (${ranges.bbFrom}~${ranges.bbTo}위)</span></div>`;
+    if(rankNo===bStart+1)rows+=`<div class="cutline bb"><hr><span class="lab">B (${bStart+1}위~)</span></div>`;
+    const bandCls=zone.cls||(g==='S'||g==='A'?'band-a':g==='B+'?'band-bp':g==='B'?'band-b':'');
+    const cls=['rt-row',bandCls,selId===id?'sel':'',inCmp?'incmp':'',locked?'locked':''].join(' ');
     rows+=`<div class="${cls}" draggable="${locked?'false':'true'}" data-id="${id}" onclick="handleRowClick(event,${id})">${cols.map(c=>renderCell(c,p,rankNo,zone,locked,inCmp)).join('')}</div>`;
   });
   m.innerHTML=`<div class="rtable" style="--rt-cols:${grid}">${th}${rows||'<div class="empty-main" style="padding:2rem">표시할 행이 없습니다.</div>'}</div>`;
