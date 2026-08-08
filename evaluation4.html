@@ -678,7 +678,7 @@ let changeLog=[];  // 순위 변경 자동 이력
 /* ---- data ---- */
 function downloadTemplate(){
   const headers=['직급','초기순위','이름','팀','담당','S/P','년차','25년','24년','23년','22년','21년','주요성과'];
-  const example=['차장','1','김철수','MS운영','서비스담당','','5','A','A','B+','A','B+',
+  const example=['차장','','김철수','MS운영','서비스담당','','5','A','A','B+','A','B+',
     '○ 팀 매출 확대 및 원가절감 측면의 개선 노력\n- 그룹보안진단 후속과제를 도전적인 목표로 상반기 내 20개 계열사, 6개 서비스 동시 전개 완료\n○ 업무 자동화/효율화를 위한 AX 과제 수행\n- 상반기 기준 : 총 4건 절감'];
   const csvEscape=v=>{v=String(v??'');return /[",\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v;};
   const csv=[headers,example].map(r=>r.map(csvEscape).join(',')).join('\r\n');
@@ -752,7 +752,7 @@ function loadSample(){
   RANKS.forEach(rk=>{ const n=rk===RANKS[3]?120:rk===RANKS[2]?108:rk===RANKS[1]?95:77; for(let i=0;i<n;i++){ const ev=evals[i%evals.length]; arr.push({id:id++,rank:rk,baseNo:i+1,rawName:baseNames[i%baseNames.length]+(i>7?(Math.floor(i/8)+1):''),name:'',team:teams[i%teams.length],owner:teamOwners[i%teams.length],sp:spVals[i%spVals.length],yr:(i%6)+2,eval25:ev[0],eval24:ev[1],eval23:ev[2],eval22:ev[3],eval21:ev[4],prev:ev[0],three:[ev[1],ev[2],ev[3]],ach:achLib[i%achLib.length],sRec:false,cFlag:false,cNote:''}); } });
   dedupeNames(arr);
   const header=['직급','초기순위','이름','팀','담당','S/P','년차','25년','24년','23년','22년','21년','주요성과'];
-  const body=arr.map(p=>[p.rank,p.baseNo,p.rawName,p.team,p.owner,p.sp,p.yr,p.eval25,p.eval24,p.eval23,p.eval22,p.eval21,quoteTsvField(p.ach.join('\n'))].join('\t'));
+  const body=arr.map(p=>[p.rank,'',p.rawName,p.team,p.owner,p.sp,p.yr,p.eval25,p.eval24,p.eval23,p.eval22,p.eval21,quoteTsvField(p.ach.join('\n'))].join('\t'));
   document.getElementById('pasteBox').value=[header.join('\t'),...body].join('\n');
 }
 function applyPaste(){
