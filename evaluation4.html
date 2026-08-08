@@ -329,6 +329,7 @@
   .team-row.incmp{box-shadow:inset 0 0 0 2px var(--blue);background:color-mix(in srgb,var(--blue) 7%,#fff);}
   .team-row .rank{font-weight:850;font-variant-numeric:tabular-nums;color:var(--muted2);font-size:.72rem;white-space:nowrap;}
   .team-row .name{font-weight:800;white-space:normal;overflow:visible;text-overflow:clip;line-height:1.25;word-break:keep-all;}
+  .team-sub{font-size:.68rem;color:var(--muted2);font-weight:700;margin-left:.3rem;}
   .team-row .share{text-align:right;color:var(--muted2);font-size:.68rem;white-space:nowrap;}
 
   /* floating detail */
@@ -973,6 +974,8 @@ function renderMain(){
 }
 
 let onlyBoundary=false;
+let teamGroupBy='team';
+function setTeamGroupBy(mode){teamGroupBy=mode;renderRPanel();}
 function toggleBoundary(){onlyBoundary=!onlyBoundary;render();}
 
 function renderLockControl(){
@@ -1084,38 +1087,56 @@ function renderTeamRatio(counts,total){
 function renderRPanel(){
   const rp=document.getElementById('rpanel');
   if(!rp)return;
+  const groupLabel=teamGroupBy==='owner'?'담당별':'팀별';
   if(!people.length){
-    rp.innerHTML=`<div class="team-panel"><h4>팀별 순위표</h4><div class="empty-rp">데이터를 입력하면<br>팀별 순위와 평가 비중이 표시됩니다.</div></div>`;
+    rp.innerHTML=`<div class="team-panel"><h4>${groupLabel} 순위표</h4><div class="empty-rp">데이터를 입력하면<br>${groupLabel} 순위와 평가 비중이 표시됩니다.</div></div>`;
     renderFloatingDetail();
     return;
   }
   const s=rankSummary(active);
   const lockN=locks[active]||0;
-  const teamCards=s.teams.map(t=>{
-    const teamRows=s.ids.map((id,i)=>({id,rankNo:i+1,p:pid(id),g:gradeAt(i,s.n)})).filter(x=>x.p.team===t.team);
-    const rows=teamRows.map(x=>{
+  const groupKeyOf=p=>String(teamGroupBy==='owner'?p.owner:p.team||'').trim()||'미지정';
+  const groups={};
+  s.ids.forEach((id,i)=>{
+    const p=pid(id),key=groupKeyOf(p),g=gradeAt(i,s.n);
+    const gr=groups[key]=groups[key]||{key,total:0,S:0,A:0,"B+":0,B:0,C:0,recB:0};
+    gr.total++; gr[g]++;
+  });
+  Object.values(groups).forEach(g=>{g.recB=Math.round(g.total*.10);});
+  const groupKeys=Object.values(groups).sort((a,b)=>b.total-a.total||String(a.key).localeCompare(String(b.key)));
+  const teamCards=groupKeys.map(gr=>{
+    const teamRows=s.ids.map((id,i)=>({id,rankNo:i+1,p:pid(id),g:gradeAt(i,s.n)})).filter(x=>groupKeyOf(x.p)===gr.key);
+    let rows='',prevZone='';
+    teamRows.forEach((x,j)=>{
       const dispG=x.g==='S'?'A':x.g;
-      const teamNo=teamRows.findIndex(row=>row.id===x.id)+1;
+      const teamNo=j+1;
       const personalShare=pct(teamNo,teamRows.length), zone=boundaryInfo(x.rankNo,s.n);
       const locked=x.rankNo<=lockN;
-      return `<div class="team-row ${selId===x.id?'sel':''} ${zone.cls} ${picked.has(x.id)?'incmp':''} ${locked?'locked':''}" draggable="${locked?'false':'true'}" data-id="${x.id}" onclick="handleRowClick(event,${x.id})" title="전체 ${x.rankNo}위 · ${dispG} · ${zone.label?zone.label+' 대상':''} · Shift+클릭 = 비교 담기/빼기 · 드래그 = 팀 내 순위 이동 · ${esc(x.p.name)}">
+      if(zone.cls!==prevZone){
+        const closingCls=prevZone==='ab-boundary'?'ab':'bb';
+        if(prevZone)rows+=`<div class="cutline ${closingCls}"><hr></div>`;
+        if(zone.cls)rows+=`<div class="cutline ${zone.cls==='ab-boundary'?'ab':'bb'}"><hr></div>`;
+      }
+      prevZone=zone.cls;
+      const subLabel=teamGroupBy==='owner'?`<span class="team-sub">${esc(x.p.team||'')}</span>`:'';
+      rows+=`<div class="team-row ${selId===x.id?'sel':''} ${zone.cls} ${picked.has(x.id)?'incmp':''} ${locked?'locked':''}" draggable="${locked?'false':'true'}" data-id="${x.id}" onclick="handleRowClick(event,${x.id})" title="전체 ${x.rankNo}위 · ${dispG} · ${zone.label?zone.label+' 대상':''} · Shift+클릭 = 비교 담기/빼기 · 드래그 = 순위 교체 · ${esc(x.p.name)}">
         <span class="grip">${locked?'🔒':'⋮⋮'}</span>
         <span class="rank">${x.rankNo}위</span>
-        <span class="name">${esc(x.p.name)}${x.p.sRec?' ⭐':''}${x.p.cFlag?' 🚩':''}</span>
+        <span class="name">${esc(x.p.name)}${subLabel}${x.p.sRec?' ⭐':''}${x.p.cFlag?' 🚩':''}</span>
         <span class="share"><span class="chip" style="background:${gColor(dispG)}">${dispG}</span> ${personalShare}%</span>
       </div>`;
-    }).join('');
-    const bStatus=t.B<t.recB?'부족':t.B>t.recB?'과다':'적정';
+    });
+    if(prevZone)rows+=`<div class="cutline ${prevZone==='ab-boundary'?'ab':'bb'}"><hr></div>`;
+    const bStatus=gr.B<gr.recB?'부족':gr.B>gr.recB?'과다':'적정';
     return `<section class="team-card">
-      <div class="team-card-head"><b>${esc(t.team)}</b><span>${t.total}명 · B ${t.B}/${t.recB} ${bStatus}</span></div>
-      ${renderTeamRatio(t,t.total)}
+      <div class="team-card-head"><b>${esc(gr.key)}</b><span>${gr.total}명 · B ${gr.B}/${gr.recB} ${bStatus}</span></div>
+      ${renderTeamRatio(gr,gr.total)}
       <div class="team-rank">${rows}</div>
     </section>`;
   }).join('');
   rp.innerHTML=`<div class="team-panel">
-    <h4>팀별 순위표</h4>
+    <h4>${groupLabel} 순위표<div class="seg" style="margin-left:auto"><button class="${teamGroupBy==='team'?'on':''}" onclick="setTeamGroupBy('team')">팀별</button><button class="${teamGroupBy==='owner'?'on':''}" onclick="setTeamGroupBy('owner')">담당별</button></div></h4>
     <div class="subline"><span>${active} ${s.n}명 · 좌측 전체순위 기준 자동 반영</span><span>A ${s.q.S+s.q.A} · B+ ${s.q["B+"]} · B ${s.q.B}</span></div>
-    <div class="team-overview"><div class="label">전체 평가 비중</div>${renderTeamRatio(s.counts,s.n)}</div>
     <div class="team-list">${teamCards}</div>
   </div>`;
   renderFloatingDetail();
@@ -1333,9 +1354,11 @@ function wireTeamDrag(){
         const l=order[active],lockN=locks[active]||0,f=l.indexOf(teamDragId),to=l.indexOf(t);
         if(f<0||to<0)return;
         if(f<lockN||to<lockN){alert('잠긴 구간에 포함된 인원은 이동할 수 없습니다.');return;}
-        const person=pid(teamDragId);
-        snapshot();l.splice(f,1);l.splice(to,0,teamDragId);persist();
-        logMove(person,active,f+1,to+1,'팀 패널 드래그');
+        snapshot();
+        [l[f],l[to]]=[l[to],l[f]];
+        persist();
+        logMove(pid(teamDragId),active,f+1,to+1,'팀 패널 순위 교체');
+        logMove(pid(t),active,to+1,f+1,'팀 패널 순위 교체');
         render();
       });
     });
