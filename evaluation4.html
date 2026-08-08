@@ -1134,18 +1134,12 @@ function rankSummary(rk){
   return {rk,ids,n,q,aEnd,bStart,counts,prev,teams:Object.values(teams).sort((a,b)=>b.total-a.total||String(a.team).localeCompare(String(b.team))),sRec:ids.filter(id=>pid(id).sRec).length,cCnt:ids.filter(id=>pid(id).cFlag).length,memo:ids.filter(id=>memos[id]).length,avgYr:n?(ids.reduce((sum,id)=>sum+(pid(id).yr||0),0)/n):0};
 }
 function renderToolbar(){return '';}
-function renderDist(counts,total){
-  return `<div class="dist-list">${GRADES.map(g=>{const n=counts[g.key]||0,p=pct(n,total);return `<div class="dist-row" style="--gc:${g.color};--w:${p}%"><div class="lab"><span class="dot"></span>${g.key}</div><div class="bar-track"><div class="bar-fill"></div></div><div class="num">${n}명 · ${p}%</div></div>`;}).join('')}</div>`;
-}
-function renderYoyCompare(cur,last,total){
-  return `<div class="yoy-list">${GRADES.map(g=>{
-    const c=cur[g.key]||0,l=last[g.key]||0,d=c-l;
-    const dLabel=d>0?`▲${d}`:d<0?`▼${Math.abs(d)}`:'변동없음';
-    const dCls=d>0?'up':d<0?'down':'flat';
-    return `<div class="yoy-row" style="--gc:${g.color}"><div class="yoy-lab"><span class="dot"></span>${g.key}</div><div class="yoy-nums"><span class="yoy-cur">${c}명 · ${pct(c,total)}%</span><span class="yoy-vs">작년 ${l}명</span></div><div class="yoy-delta ${dCls}">${dLabel}</div></div>`;
-  }).join('')}</div>`;
-}
-function renderGroupTable(groups,labelKey,titleLabel){
+function renderGroupTable(groups,labelKey,titleLabel,simple){
+  if(simple){
+    const grand=groups.reduce((a,g)=>a+(g.total||0),0);
+    const rows=groups.map(g=>`<tr><td><b>${esc(g[labelKey])}</b></td><td>${g.total||0}명</td><td>${pct(g.total||0,grand)}%</td></tr>`).join('');
+    return `<table class="stat-table"><tr><th style="text-align:left">${titleLabel}</th><th>인원</th><th>비중</th></tr>${rows}</table>`;
+  }
   const rows=groups.map(g=>{
     const total=g.total||0;
     const stack=GRADES.map(gr=>`<i style="--gc:${gr.color};--w:${pct(g[gr.key]||0,total)}%"></i>`).join('');
@@ -1155,7 +1149,7 @@ function renderGroupTable(groups,labelKey,titleLabel){
   return `<table class="stat-table"><tr><th style="text-align:left">${titleLabel}</th><th>인원</th><th>등급 비중</th><th style="text-align:left">상세</th></tr>${rows}</table>`;
 }
 function aggregateSummary(){
-  const sums={rk:'전체',ids:[],n:people.length,q:{S:0,A:0,"B+":0,B:0},counts:{S:0,A:0,"B+":0,B:0,C:0},lastYear:{S:0,A:0,"B+":0,B:0,C:0,"-":0},teams:{},owners:{},byRank:{},sRec:0,cCnt:0,memo:0,avgYr:0};
+  const sums={rk:'전체',ids:[],n:people.length,q:{S:0,A:0,"B+":0,B:0},counts:{S:0,A:0,"B+":0,B:0,C:0},teams:{},owners:{},byRank:{},sRec:0,cCnt:0,memo:0,avgYr:0};
   let yrSum=0;
   RANKS.forEach(rk=>{
     const ids=order[rk]||[],n=ids.length,q=quotas(n);
@@ -1164,7 +1158,6 @@ function aggregateSummary(){
     ids.forEach((id,i)=>{
       const p=pid(id),g=gradeAt(i,n),teamKey=String(p.team||'').trim()||'미지정',ownerKey=String(p.owner||'').trim()||'미지정';
       sums.ids.push(id);sums.counts[g]++;
-      const ly=normalizeGrade(p.eval24)||'-'; sums.lastYear[ly]=(sums.lastYear[ly]||0)+1;
       sums.teams[teamKey]=sums.teams[teamKey]||{team:p.team,owner:p.owner||'',total:0,S:0,A:0,"B+":0,B:0,C:0,recB:0};
       sums.teams[teamKey].total++; sums.teams[teamKey][g]++;
       sums.owners[ownerKey]=sums.owners[ownerKey]||{owner:ownerKey,total:0,S:0,A:0,"B+":0,B:0,C:0};
@@ -1183,10 +1176,6 @@ function aggregateSummary(){
 function renderStatsScreen(){
   const s=aggregateSummary();
   const aTotal=s.counts.S+s.counts.A;
-  const aLast=(s.lastYear.S||0)+(s.lastYear.A||0);
-  const aDelta=aTotal-aLast;
-  const aDeltaLabel=aDelta>0?`▲${aDelta}명`:aDelta<0?`▼${Math.abs(aDelta)}명`:'변동없음';
-  const aDeltaCls=aDelta>0?'up':aDelta<0?'down':'flat';
   return `<div class="stats-view">
     <div class="mhead stats-head"><span class="t">전체 요약 · 통계</span><span class="n">전체 ${s.n}명 · 평균 ${s.avgYr.toFixed(1)}년차</span><span class="stage">S추천 ${s.sRec}명 · C후보 ${s.cCnt}명 · 메모 ${s.memo}건</span></div>
     <div class="stats-kpis">
@@ -1194,14 +1183,9 @@ function renderStatsScreen(){
       <div class="stat-kpi"><div class="k">A등급 이상 (S+A)</div><div class="v">${aTotal}<small>명</small></div><div class="sub">${pct(aTotal,s.n)}% · S ${s.counts.S}명 + A ${s.counts.A}명</div></div>
       <div class="stat-kpi"><div class="k">B+ 등급</div><div class="v">${s.counts["B+"]}<small>명</small></div><div class="sub">${pct(s.counts["B+"],s.n)}%</div></div>
       <div class="stat-kpi"><div class="k">B 등급</div><div class="v">${s.counts.B}<small>명</small></div><div class="sub">${pct(s.counts.B,s.n)}%</div></div>
-      <div class="stat-kpi ${aDeltaCls==='up'?'good':aDeltaCls==='down'?'bad':''}"><div class="k">A등급 작년 대비</div><div class="v" style="font-size:1.1rem">${aDeltaLabel}</div><div class="sub">작년 A등급 ${aLast}명 → 올해 ${aTotal}명</div></div>
-    </div>
-    <div class="stats-grid">
-      <section class="stats-card"><h3>전체 등급 분포</h3>${renderDist(s.counts,s.n)}</section>
-      <section class="stats-card"><h3>작년 대비 등급 변화<span class="hint">24년 실제평가 기준</span></h3>${renderYoyCompare(s.counts,s.lastYear,s.n)}</section>
     </div>
     <section class="stats-card"><h3>직급별 현황</h3>${renderGroupTable(s.byRank,'rk','직급')}</section>
-    <section class="stats-card"><h3>담당별 현황</h3>${renderGroupTable(s.owners,'owner','담당')}</section>
+    <section class="stats-card"><h3>담당별 현황</h3>${renderGroupTable(s.owners,'owner','담당',true)}</section>
   </div>`;
 }
 function visibleColumns(){normalizeColumnState();return colState.map(x=>{const c=COLS.find(v=>v.key===x.key);const isEv=c.key==='evalHistory';return {...c,visible:x.visible,w:x.w||(isEv?evalColWidth():c.w),label:isEv?evalLabel():c.label};}).filter(c=>c.fixed||c.visible!==false);}
