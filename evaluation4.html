@@ -77,6 +77,18 @@
   .set-field input{border:1px solid var(--line);border-radius:10px;padding:.45rem .6rem;font-size:.9rem;width:100%;font-variant-numeric:tabular-nums;transition:border-color .12s ease,box-shadow .12s ease;}
   .set-field input:focus{outline:none;border-color:var(--blue);box-shadow:0 0 0 3px color-mix(in srgb,var(--blue) 14%,transparent);}
   .set-field .unit{color:var(--muted);font-size:.82rem;}
+  .org-owner{background:#fff;border:1px solid var(--line);border-radius:10px;margin-bottom:.5rem;overflow:hidden;}
+  .org-owner-head{display:flex;align-items:center;gap:.4rem;padding:.55rem .7rem;background:var(--panel);cursor:grab;font-weight:800;font-size:.86rem;border-bottom:1px solid var(--line2);transition:box-shadow .12s ease,background-color .12s ease;}
+  .org-owner-head:hover{background:#f5f8ff;}
+  .org-owner-head.dragging{opacity:.35;}
+  .org-owner-head.over{box-shadow:inset 0 0 0 2px var(--blue)!important;}
+  .org-owner-head .cnt{margin-left:auto;font-weight:600;color:var(--muted2);font-size:.74rem;}
+  .org-team-list{padding:.35rem;display:flex;flex-direction:column;gap:.25rem;}
+  .org-team{display:flex;align-items:center;gap:.4rem;padding:.4rem .6rem;background:var(--bg);border-radius:8px;cursor:grab;font-size:.82rem;transition:box-shadow .12s ease,background-color .12s ease;}
+  .org-team:hover{background:#eef1fd;}
+  .org-team.dragging{opacity:.35;}
+  .org-team.over{box-shadow:inset 0 0 0 2px var(--blue)!important;}
+  .org-team .grip{color:#c3cad6;font-size:.85rem;}
   .set-field .live{font-size:.74rem;color:var(--blue);font-weight:700;}
   .set-sum{background:var(--bg);border-radius:8px;padding:.6rem .8rem;font-size:.8rem;margin-top:.4rem;display:flex;justify-content:space-between;}
   .set-sum.bad{background:#fdeaea;color:var(--warn);font-weight:700;}
@@ -616,11 +628,27 @@
     <label>등급 색상</label>
     <div class="color-grid" id="colorGrid"></div>
   </div>
+  <div class="set-field" style="margin-top:1rem">
+    <label>담당·팀 표시 순서</label>
+    <div class="with"><button class="btn" onclick="openOrgOrder()">📋 담당·팀 순서 설정</button></div>
+  </div>
   <div class="set-note">* S·A·B+·B 합은 100%가 되어야 합니다. C는 절대평가로 별도 처리됩니다.<br>* 이 설정은 모든 직급에 공통 적용됩니다.</div>
   <div class="act">
     <button class="btn" onclick="resetSettings()">기본값 복원</button>
     <button class="btn" onclick="closeSettings()">취소</button>
     <button class="btn primary" id="setApply" onclick="applySettings()">적용</button>
+  </div>
+</div></div>
+
+<!-- org (담당/팀) order modal -->
+<div class="mbg" id="orgbg"><div class="modal" style="width:34rem">
+  <h2>담당·팀 순서 설정</h2>
+  <p>담당(굵은 제목)을 드래그하면 담당 순서가, 그 아래 팀 이름을 드래그하면 해당 담당 안에서의 팀 순서가 바뀝니다. 담당별/팀별 순위표에 그대로 적용됩니다.</p>
+  <div id="orgList" style="max-height:26rem;overflow:auto;border:1px solid var(--line);border-radius:10px;padding:.6rem;background:var(--bg)"></div>
+  <div class="act">
+    <button class="btn" onclick="resetOrgOrder()">기본 순서로</button>
+    <button class="btn" onclick="closeOrgOrder()">취소</button>
+    <button class="btn primary" onclick="applyOrgOrder()">적용</button>
   </div>
 </div></div>
 
@@ -671,7 +699,7 @@ const COLS=[
 const DEFAULT_COL_STATE=COLS.map(c=>({key:c.key,visible:true}));
 // 조정 가능한 설정 (담당별 비중이 다르므로 세션 중 변경)
 const DEFAULT_CFG={ ratio:{S:0,A:25,"B+":65,B:10}, buffer:3, maxCompare:6,
-  colors:{S:'#8b7fd6',A:'#4f7fe6',"B+":'#4ba37c',B:'#d99a4a',C:'#d16b6b'} };
+  colors:{S:'#8b7fd6',A:'#4f7fe6',"B+":'#4ba37c',B:'#d99a4a',C:'#d16b6b'}, orgOrder:{owners:[],teams:{}} };
 let cfg=JSON.parse(JSON.stringify(DEFAULT_CFG));
 function applyGradeColors(colors){
   Object.keys(GRADE_VARS).forEach(k=>{
@@ -835,7 +863,7 @@ function applyPaste(){
     out.push(p);
   });
   people=out; picked.clear(); selId=null; undoStack=[]; redoStack=[]; query=''; columnFilters={}; hiddenRows={};
-  ensurePersonFields(); rebuild(); closePaste(); persist(); render();
+  ensurePersonFields(); rebuild(); syncOrgOrder(); closePaste(); persist(); persistCfg(); render();
 }
 function cleanHeader(s){return String(s||'').replace(/s/g,'').toLowerCase().replace('???','?');}
 const RANK_ALIASES={...RANK_LEGACY_MIGRATE,'1급':'1을','2갑':'1갑','2급갑':'1갑'};
@@ -885,6 +913,29 @@ function rebuild(){
   ensurePersonFields();
   order={};
   RANKS.forEach(rk=>{ order[rk]=people.filter(p=>p.rank===rk).sort((a,b)=>(a.baseNo||0)-(b.baseNo||0)||a.id-b.id).map(p=>p.id); });
+}
+function buildOrgFromData(){
+  const owners=[],teams={};
+  people.forEach(p=>{
+    const o=String(p.owner||'').trim()||'미지정';
+    const t=String(p.team||'').trim()||'미지정';
+    if(!owners.includes(o))owners.push(o);
+    teams[o]=teams[o]||[];
+    if(!teams[o].includes(t))teams[o].push(t);
+  });
+  return {owners,teams};
+}
+function syncOrgOrder(){
+  const fresh=buildOrgFromData();
+  const cur=(cfg.orgOrder&&Array.isArray(cfg.orgOrder.owners))?cfg.orgOrder:{owners:[],teams:{}};
+  const owners=[...cur.owners.filter(o=>fresh.owners.includes(o)),...fresh.owners.filter(o=>!cur.owners.includes(o))];
+  const teams={};
+  owners.forEach(o=>{
+    const curTeams=cur.teams[o]||[];
+    const freshTeams=fresh.teams[o]||[];
+    teams[o]=[...curTeams.filter(t=>freshTeams.includes(t)),...freshTeams.filter(t=>!curTeams.includes(t))];
+  });
+  cfg.orgOrder={owners,teams};
 }
 function ps(g){return ({S:5,A:4,"B+":3,B:2,C:1})[g]||0;}
 function pid(id){return people.find(p=>p.id===id);}
@@ -939,6 +990,7 @@ function restore(){
     if(d.cfg)cfg={...cfg,...d.cfg}; memos=d.memos||{}; locks=d.locks||{}; changeLog=d.changeLog||[]; colState=d.colState||colState; columnFilters=d.columnFilters||{}; hiddenRows=d.hiddenRows||{}; lastSaved=d.savedAt||null;
     applyGradeColors(cfg.colors);
     ensurePersonFields();
+    syncOrgOrder();
     // 정합성 보정: order 누락 직급 재생성
     RANKS.forEach(rk=>{ if(!order[rk]) order[rk]=people.filter(p=>p.rank===rk).map(p=>p.id); });
     return true;
@@ -998,6 +1050,7 @@ function restoreSnapshot(id){
   colState=d.colState||colState; columnFilters=d.columnFilters||{}; hiddenRows=d.hiddenRows||{};
   applyGradeColors(cfg.colors);
   ensurePersonFields();
+  syncOrgOrder();
   RANKS.forEach(rk=>{ if(!order[rk]) order[rk]=people.filter(p=>p.rank===rk).map(p=>p.id); });
   picked.clear(); selId=null; undoStack=[]; redoStack=[];
   changeLog.push({t:Date.now(),marker:true,label:'↩ 스크린샷으로 복원 · '+stamp});
@@ -1393,11 +1446,27 @@ function renderRPanel(){
   const groups={};
   s.ids.forEach((id,i)=>{
     const p=pid(id),key=groupKeyOf(p),g=gradeAt(i,s.n);
-    const gr=groups[key]=groups[key]||{key,total:0,S:0,A:0,"B+":0,B:0,C:0,recB:0};
+    const gr=groups[key]=groups[key]||{key,total:0,S:0,A:0,"B+":0,B:0,C:0,recB:0,owner:String(p.owner||'').trim()||'미지정'};
     gr.total++; gr[g]++;
   });
   Object.values(groups).forEach(g=>{g.recB=Math.round(g.total*.10);});
-  const groupKeys=Object.values(groups).sort((a,b)=>b.total-a.total||String(a.key).localeCompare(String(b.key)));
+  const orgOrder=cfg.orgOrder||{owners:[],teams:{}};
+  const fallbackCompare=(a,b)=>b.total-a.total||String(a.key).localeCompare(String(b.key));
+  const groupKeys=Object.values(groups).sort((a,b)=>{
+    if(teamGroupBy==='owner'){
+      const oi=orgOrder.owners||[];
+      const ia=oi.indexOf(a.key),ib=oi.indexOf(b.key);
+      if(ia!==-1||ib!==-1)return (ia===-1?999:ia)-(ib===-1?999:ib);
+      return fallbackCompare(a,b);
+    }
+    const oi=orgOrder.owners||[];
+    const oa=oi.indexOf(a.owner),ob=oi.indexOf(b.owner);
+    if(oa!==ob)return (oa===-1?999:oa)-(ob===-1?999:ob);
+    const ti=(orgOrder.teams&&orgOrder.teams[a.owner])||[];
+    const ia=ti.indexOf(a.key),ib=ti.indexOf(b.key);
+    if(ia!==-1||ib!==-1)return (ia===-1?999:ia)-(ib===-1?999:ib);
+    return fallbackCompare(a,b);
+  });
   const boundaryRangesForTeam=onlyBoundary?boundaryRanges(s.n):null;
   const teamSegs=boundaryRangesForTeam?boundaryCoreSegments(s.n,boundaryRangesForTeam):null;
   const teamCards=groupKeys.map(gr=>{
@@ -1913,8 +1982,81 @@ function closeSettings(){
 }
 function persistCfg(){ try{ localStorage.setItem("evalSession.cfg",JSON.stringify(cfg)); }catch(e){} }
 function restoreCfg(){ try{ const r=localStorage.getItem("evalSession.cfg"); if(r){cfg={...cfg,...JSON.parse(r)};} }catch(e){} }
+
+/* ---- org (담당/팀) order ---- */
+let draftOrgOrder=null;
+function openOrgOrder(){
+  syncOrgOrder();
+  draftOrgOrder={owners:[...cfg.orgOrder.owners],teams:Object.fromEntries(Object.entries(cfg.orgOrder.teams).map(([k,v])=>[k,[...v]]))};
+  renderOrgOrderList();
+  document.getElementById('orgbg').classList.add('show');
+}
+function closeOrgOrder(){document.getElementById('orgbg').classList.remove('show');draftOrgOrder=null;}
+function renderOrgOrderList(){
+  const el=document.getElementById('orgList');
+  if(!el||!draftOrgOrder)return;
+  const {owners,teams}=draftOrgOrder;
+  if(!owners.length){el.innerHTML='<div style="padding:1rem;color:var(--muted);text-align:center;font-size:.82rem">데이터를 입력하면 담당·팀 목록이 표시됩니다.</div>';return;}
+  el.innerHTML=owners.map(o=>`
+    <div class="org-owner">
+      <div class="org-owner-head" draggable="true" data-owner="${esc(o)}"><span class="grip">⋮⋮</span><span>${esc(o)}</span><span class="cnt">${(teams[o]||[]).length}개 팀</span></div>
+      <div class="org-team-list">${(teams[o]||[]).map(t=>`<div class="org-team" draggable="true" data-owner="${esc(o)}" data-team="${esc(t)}"><span class="grip">⋮⋮</span>${esc(t)}</div>`).join('')}</div>
+    </div>`).join('');
+  wireOrgDrag();
+}
+let orgDragOwner=null,orgDragTeam=null;
+function wireOrgDrag(){
+  document.querySelectorAll('.org-owner-head').forEach(head=>{
+    head.addEventListener('dragstart',e=>{e.stopPropagation();orgDragOwner=head.dataset.owner;head.classList.add('dragging');});
+    head.addEventListener('dragend',()=>{head.classList.remove('dragging');document.querySelectorAll('.org-owner-head').forEach(h=>h.classList.remove('over'));orgDragOwner=null;});
+    head.addEventListener('dragover',e=>{e.preventDefault();e.stopPropagation();if(orgDragOwner!==null)head.classList.add('over');});
+    head.addEventListener('dragleave',()=>head.classList.remove('over'));
+    head.addEventListener('drop',e=>{
+      e.preventDefault();e.stopPropagation();head.classList.remove('over');
+      const target=head.dataset.owner;
+      if(orgDragOwner===null||orgDragOwner===target){orgDragOwner=null;return;}
+      const arr=draftOrgOrder.owners;
+      const f=arr.indexOf(orgDragOwner),t=arr.indexOf(target);
+      orgDragOwner=null;
+      if(f<0||t<0)return;
+      const [moved]=arr.splice(f,1);
+      arr.splice(t,0,moved);
+      renderOrgOrderList();
+    });
+  });
+  document.querySelectorAll('.org-team').forEach(row=>{
+    row.addEventListener('dragstart',e=>{e.stopPropagation();orgDragTeam={owner:row.dataset.owner,team:row.dataset.team};row.classList.add('dragging');});
+    row.addEventListener('dragend',()=>{row.classList.remove('dragging');document.querySelectorAll('.org-team').forEach(r=>r.classList.remove('over'));orgDragTeam=null;});
+    row.addEventListener('dragover',e=>{e.preventDefault();e.stopPropagation();if(orgDragTeam&&orgDragTeam.owner===row.dataset.owner)row.classList.add('over');});
+    row.addEventListener('dragleave',()=>row.classList.remove('over'));
+    row.addEventListener('drop',e=>{
+      e.preventDefault();e.stopPropagation();row.classList.remove('over');
+      if(!orgDragTeam||orgDragTeam.owner!==row.dataset.owner){orgDragTeam=null;return;}
+      const arr=draftOrgOrder.teams[row.dataset.owner]||[];
+      const f=arr.indexOf(orgDragTeam.team),t=arr.indexOf(row.dataset.team);
+      orgDragTeam=null;
+      if(f<0||t<0||f===t)return;
+      const [moved]=arr.splice(f,1);
+      arr.splice(t,0,moved);
+      renderOrgOrderList();
+    });
+  });
+}
+function applyOrgOrder(){
+  if(!draftOrgOrder)return;
+  cfg.orgOrder=draftOrgOrder;
+  draftOrgOrder=null;
+  persistCfg(); persist();
+  closeOrgOrder();
+  render();
+}
+function resetOrgOrder(){
+  const fresh=buildOrgFromData();
+  draftOrgOrder=fresh;
+  renderOrgOrderList();
+}
 document.addEventListener('keydown',e=>{
-  if(e.key==='Escape'){closeCompare();closePaste();closeSettings();closeDetail();closeHist();closeSpotlight();}
+  if(e.key==='Escape'){closeCompare();closePaste();closeSettings();closeDetail();closeHist();closeSpotlight();closeOrgOrder();}
   if((e.ctrlKey||e.metaKey)&&e.key==='z'){e.preventDefault();undo();}
   if((e.ctrlKey||e.metaKey)&&(e.key==='y'||(e.shiftKey&&e.key==='z'))){e.preventDefault();redo();}
 });
