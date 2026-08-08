@@ -182,7 +182,7 @@
   .rt-row:last-child{border-bottom:none;}
   .rt-row:hover{background:#f5f8ff;box-shadow:inset 0 0 0 2px var(--hover-line)!important;}
   .rt-row.dragging{opacity:.35;}
-  .rt-row.over{box-shadow:inset 0 0 0 2px var(--blue);}
+  .rt-row.over{box-shadow:inset 0 0 0 2px var(--blue)!important;}
   .rt-row.sel{background:var(--blue-soft);}
   .rt-row.band-a{background:var(--a-fill);}
   .rt-row.band-bp{background:var(--bp-fill);}
@@ -319,7 +319,7 @@
   .team-row{border:none;background:#fff;border-bottom:1px solid var(--line2);display:grid;grid-template-columns:1.1rem 2.6rem minmax(0,1fr) 3.6rem;align-items:center;gap:.35rem;padding:.32rem .48rem;text-align:left;cursor:grab;font:inherit;color:var(--txt);position:relative;transition:box-shadow .12s ease,background-color .12s ease;}
   .team-row .grip{font-size:.7rem;}
   .team-row.dragging{opacity:.35;}
-  .team-row.over{box-shadow:inset 0 0 0 2px var(--blue);}
+  .team-row.over{box-shadow:inset 0 0 0 2px var(--blue)!important;}
   .team-row.locked{cursor:default;opacity:.72;}
   .team-row.locked:hover{background:none;box-shadow:none;}
   .team-row.locked .grip{color:var(--muted2);}
@@ -1078,11 +1078,6 @@ function toggleCFromPanel(id){
 function openDetail(id){viewRow(id);}
 
 /* ---- right panel ---- */
-function cutlineHtml(cls,ranges,showLabel){
-  const isAb=cls==='ab-boundary';
-  const lab=isAb?`A경계 (${ranges.abFrom}~${ranges.abTo}위)`:`B경계 (${ranges.bbFrom}~${ranges.bbTo}위)`;
-  return `<div class="cutline ${isAb?'ab':'bb'}"><hr>${showLabel?`<span class="lab">${lab}</span>`:''}</div>`;
-}
 function renderTeamRatio(counts,total){
   const keys=["A","B+","B"];
   const merged={A:(counts.S||0)+(counts.A||0),"B+":counts["B+"]||0,B:counts.B||0};
@@ -1103,7 +1098,6 @@ function renderRPanel(){
     return;
   }
   const s=rankSummary(active);
-  const ranges=boundaryRanges(s.n);
   const lockN=locks[active]||0;
   const groupKeyOf=p=>String(teamGroupBy==='owner'?p.owner:p.team||'').trim()||'미지정';
   const groups={};
@@ -1116,17 +1110,12 @@ function renderRPanel(){
   const groupKeys=Object.values(groups).sort((a,b)=>b.total-a.total||String(a.key).localeCompare(String(b.key)));
   const teamCards=groupKeys.map(gr=>{
     const teamRows=s.ids.map((id,i)=>({id,rankNo:i+1,p:pid(id),g:gradeAt(i,s.n)})).filter(x=>groupKeyOf(x.p)===gr.key);
-    let rows='',prevZone='';
+    let rows='';
     teamRows.forEach((x,j)=>{
       const dispG=x.g==='S'?'A':x.g;
       const teamNo=j+1;
       const personalShare=pct(teamNo,teamRows.length), zone=boundaryInfo(x.rankNo,s.n);
       const locked=x.rankNo<=lockN;
-      if(zone.cls!==prevZone){
-        if(prevZone)rows+=cutlineHtml(prevZone,ranges,false);
-        if(zone.cls)rows+=cutlineHtml(zone.cls,ranges,true);
-      }
-      prevZone=zone.cls;
       const subLabel=teamGroupBy==='owner'?`<span class="team-sub">${esc(x.p.team||'')}</span>`:'';
       rows+=`<div class="team-row ${selId===x.id?'sel':''} ${zone.cls} ${picked.has(x.id)?'incmp':''} ${locked?'locked':''}" draggable="${locked?'false':'true'}" data-id="${x.id}" onclick="handleRowClick(event,${x.id})" title="전체 ${x.rankNo}위 · ${dispG} · ${zone.label?zone.label+' 대상':''} · Shift+클릭 = 비교 담기/빼기 · 드래그 = 순위 교체 · ${esc(x.p.name)}">
         <span class="grip">${locked?'🔒':'⋮⋮'}</span>
@@ -1135,7 +1124,6 @@ function renderRPanel(){
         <span class="share"><span class="chip" style="background:${gColor(dispG)}">${dispG}</span><span class="pct">${personalShare}%</span></span>
       </div>`;
     });
-    if(prevZone)rows+=cutlineHtml(prevZone,ranges,false);
     return `<section class="team-card">
       <div class="team-card-head"><b>${esc(gr.key)}</b><span>${gr.total}명</span></div>
       ${renderTeamRatio(gr,gr.total)}
@@ -1808,10 +1796,6 @@ function renderMain(){
     if(!rowMatches(p,rankNo))return;
     const g=gradeAt(i,n),zone=boundaryInfo(rankNo,n),locked=i<(locks[active]||0),inCmp=picked.has(id);
     if(onlyBoundary){const showA=rankNo>=aEnd-4&&rankNo<=ranges.abTo+1,showB=rankNo>=ranges.bbFrom-1&&rankNo<=Math.min(n,bStart+1),showTop=rankNo<=3;if(!(showA||showB||showTop)){if(!prevShownEllipsis){rows+=`<div class="rt-row ellipsis">⋯</div>`;prevShownEllipsis=true;}return;}prevShownEllipsis=false;}
-    if(rankNo===ranges.abFrom)rows+=`<div class="cutline ab"><hr><span class="lab">A경계 (${ranges.abFrom}~${ranges.abTo}위)</span></div>`;
-    if(rankNo===ranges.abTo+1)rows+=`<div class="cutline ab"><hr></div>`;
-    if(rankNo===ranges.bbFrom)rows+=`<div class="cutline bb"><hr><span class="lab">B경계 (${ranges.bbFrom}~${ranges.bbTo}위)</span></div>`;
-    if(rankNo===bStart+1)rows+=`<div class="cutline bb"><hr></div>`;
     const bandCls=zone.cls||(g==='S'||g==='A'?'band-a':g==='B+'?'band-bp':g==='B'?'band-b':'');
     const cls=['rt-row',bandCls,selId===id?'sel':'',inCmp?'incmp':'',locked?'locked':''].join(' ');
     rows+=`<div class="${cls}" draggable="${locked?'false':'true'}" data-id="${id}" onclick="handleRowClick(event,${id})">${cols.map(c=>renderCell(c,p,rankNo,zone,locked,inCmp)).join('')}</div>`;
