@@ -523,6 +523,12 @@
   .rt-head{top:1.85rem;z-index:42;min-height:2.25rem;padding:.3rem .4rem;}
   .rt-legend{position:sticky;top:0;z-index:43;display:flex;align-items:center;gap:.35rem;flex-wrap:nowrap;overflow-x:auto;background:var(--panel);padding:.28rem .5rem;height:1.85rem;box-sizing:border-box;border-bottom:1px solid var(--line2);}
   .rt-legend .tb-tag{flex:none;padding:.1rem .5rem;font-size:.72rem;}
+  .rt-legend-btn{flex:none;font-size:.72rem;font-weight:700;padding:.16rem .55rem;border-radius:20px;border:1px solid var(--line);background:var(--panel);color:var(--muted2);cursor:pointer;white-space:nowrap;transition:background .12s ease,color .12s ease,border-color .12s ease;}
+  .rt-legend-btn:hover{background:var(--blue-soft);color:var(--blue);border-color:var(--blue);}
+  .rt-legend-seg{flex:none;display:inline-flex;align-items:center;border:1px solid var(--line);background:#f8fafc;border-radius:20px;padding:.1rem;gap:.1rem;}
+  .rt-legend-seg .seg-lab{font-size:.62rem;font-weight:800;color:var(--muted2);padding:0 .3rem 0 .45rem;white-space:nowrap;}
+  .rt-legend-seg button{border:none;background:transparent;border-radius:20px;padding:.14rem .5rem;font-size:.68rem;font-weight:700;color:var(--muted2);cursor:pointer;white-space:nowrap;transition:background .12s ease,color .12s ease;}
+  .rt-legend-seg button.on{background:var(--panel);color:var(--blue);box-shadow:var(--sh);}
   .rt-head .rt-cell{display:flex;flex-direction:row;align-items:center;gap:.28rem;justify-content:space-between;min-width:0;}
   .rt-head .rt-cell.hcenter{justify-content:center;}
   .rt-head .rt-cell.rt-select .rt-th-label{flex:1;justify-content:center;}
@@ -734,9 +740,9 @@ const COLS=[
   {key:'sp',label:'S/P',w:'3.2rem'},
   {key:'yr',label:'\uC5F0\uCC28',w:'2.8rem'},
   {key:'evalHistory',label:'25/24/23/22/21',w:'6.2rem'},
-  {key:'detail',label:'\uC0C1\uC138',w:'3.2rem'}
+  {key:'detail',label:'\uC0C1\uC138',w:'3.2rem',fixed:true}
 ];
-const DEFAULT_COL_STATE=COLS.map(c=>({key:c.key,visible:true}));
+const DEFAULT_COL_STATE=COLS.map(c=>({key:c.key,visible:c.key!=='empId'}));
 // 조정 가능한 설정 (담당별 비중이 다르므로 세션 중 변경)
 const DEFAULT_CFG={ ratio:{S:0,A:25,"B+":65,B:10}, buffer:3, maxCompare:6,
   colors:{S:'#8b7fd6',A:'#4f7fe6',"B+":'#4ba37c',B:'#d99a4a',C:'#d16b6b'}, orgOrder:{owners:[],teams:{}} };
@@ -946,7 +952,7 @@ function normalizeColumnState(){
   const known=new Set(COLS.map(c=>c.key));
   const next=[];
   (Array.isArray(colState)?colState:[]).forEach(x=>{ if(x&&known.has(x.key)&&!next.some(y=>y.key===x.key))next.push({key:x.key,visible:x.visible!==false,...(x.w?{w:x.w}:{})}); });
-  COLS.forEach(c=>{ if(!next.some(x=>x.key===c.key))next.push({key:c.key,visible:true}); });
+  COLS.forEach(c=>{ if(!next.some(x=>x.key===c.key))next.push({key:c.key,visible:c.key!=='empId'}); });
   colState=next;
 }
 function rebuild(){
@@ -2276,7 +2282,7 @@ function applyColumnSettings(){normalizeColumnState();persist();closeColumns();r
 function renderBanner(){
   const el=document.getElementById('topbanner');
   const rankTabs=`<div class="rank-tabs">${RANKS.map(rk=>`<button class="rank-tab ${rk===active&&mainView==='rank'?'active':''}" onclick="setRank('${rk}')"><span>${rk}</span><span class="cnt">${(order[rk]||[]).length}\uBA85</span></button>`).join('')}</div>`;
-  const actions=`<button class="tbtn ${mainView==='stats'?'on':''}" onclick="setMainView('stats')">\uC804\uCCB4 \uC694\uC57D/\uD1B5\uACC4</button><span class="tb-sep"></span><button class="tbtn ${onlyBoundary?'on':''}" onclick="toggleBoundary()" ${mainView==='stats'?'disabled':''}>\uACBD\uACC4\uAD6C\uAC04</button><button class="tbtn" onclick="openColumns()">\uC5F4 \uC124\uC815</button><button class="tbtn" onclick="openSettings()">\uC124\uC815</button><button class="tbtn" onclick="openPaste()">\uB370\uC774\uD130 \uC785\uB825</button><div class="seg" title="\uACFC\uAC70\uD3C9\uAC00 \uD45C\uC2DC \uBC94\uC704"><span class="seg-lab">\uACFC\uAC70\uD3C9\uAC00</span><button class="${evalRange==='recent1'?'on':''}" onclick="applyEvalRange('recent1')">\uCD5C\uADFC1\uB144</button><button class="${evalRange==='recent3'?'on':''}" onclick="applyEvalRange('recent3')">\uCD5C\uADFC3\uB144</button><button class="${evalRange==='recent5'?'on':''}" onclick="applyEvalRange('recent5')">\uCD5C\uADFC5\uB144</button></div><button class="tbtn" onclick="exportCsv()">CSV</button>`;
+  const actions=`<button class="tbtn ${mainView==='stats'?'on':''}" onclick="setMainView('stats')">\uC804\uCCB4 \uC694\uC57D/\uD1B5\uACC4</button><span class="tb-sep"></span><button class="tbtn ${onlyBoundary?'on':''}" onclick="toggleBoundary()" ${mainView==='stats'?'disabled':''}>\uACBD\uACC4\uAD6C\uAC04</button><button class="tbtn" onclick="openSettings()">\uC124\uC815</button><button class="tbtn" onclick="openPaste()">\uB370\uC774\uD130 \uC785\uB825</button><button class="tbtn" onclick="exportCsv()">CSV</button>`;
   if(!people.length){el.innerHTML=`${rankTabs}<div class="tb-empty">\uB370\uC774\uD130\uB97C \uC785\uB825\uD558\uBA74 \uD3C9\uAC00 \uD45C\uAC00 \uD45C\uC2DC\uB429\uB2C8\uB2E4.</div><span class="grow"></span>${actions}`;return;}
   el.innerHTML=`${rankTabs}<span class="grow"></span><div class="tb-search"><input id="searchBox" placeholder="\uC774\uB984/\uD300 \uAC80\uC0C9" value="${esc(query)}" oninput="query=this.value;renderMain();jumpFirst()" onkeydown="if(event.key==='Enter')jumpFirst()">${query?`<button class="tb-x" onclick="query='';document.getElementById('searchBox').value='';renderMain()">\u2715</button>`:''}</div>${actions}`;
 }
@@ -2309,7 +2315,8 @@ function openCompare(){
 }
 /* ---- end request patch final text overrides ---- */
 /* ---- request patch column button text override ---- */
-function renderColumnList(){const el=document.getElementById('colList');if(!el)return;el.innerHTML=colState.map((x,i)=>{const c=COLS.find(v=>v.key===x.key);const fixed=!!c.fixed;return '<div class="col-row"><label><input type="checkbox" '+(x.visible!==false?'checked':'')+' '+(fixed?'disabled':'')+' onchange="toggleColumnVisible(\''+x.key+'\',this.checked)"> '+esc(c.label)+'</label><button onclick="moveColumn(\''+x.key+'\',-1)" '+(fixed||i===0?'disabled':'')+'>&lt;</button><button onclick="moveColumn(\''+x.key+'\',1)" '+(fixed||i===colState.length-1?'disabled':'')+'>&gt;</button><button onclick="resetColumnOne(\''+x.key+'\')" '+(fixed?'disabled':'')+'>reset</button></div>';}).join('');}
+const COL_SETTINGS_EXCLUDE=['finalRank','name','empId','detail'];
+function renderColumnList(){const el=document.getElementById('colList');if(!el)return;const list=colState.filter(x=>!COL_SETTINGS_EXCLUDE.includes(x.key));el.innerHTML=list.map((x,i)=>{const c=COLS.find(v=>v.key===x.key);const fixed=!!c.fixed;return '<div class="col-row"><label><input type="checkbox" '+(x.visible!==false?'checked':'')+' '+(fixed?'disabled':'')+' onchange="toggleColumnVisible(\''+x.key+'\',this.checked)"> '+esc(c.label)+'</label><button onclick="moveColumn(\''+x.key+'\',-1)" '+(fixed||i===0?'disabled':'')+'>&lt;</button><button onclick="moveColumn(\''+x.key+'\',1)" '+(fixed||i===list.length-1?'disabled':'')+'>&gt;</button><button onclick="resetColumnOne(\''+x.key+'\')" '+(fixed?'disabled':'')+'>reset</button></div>';}).join('');}
 /* ---- end request patch column button text override ---- */
 /* ---- request patch header filter override ---- */
 function activeFilterCount(){return (query?1:0)+Object.values(columnFilters).filter(Boolean).length+Object.keys(hiddenRows).length;}
@@ -2425,18 +2432,19 @@ function renderHeaderCell(c,allChecked,total,shown){
   return `<div class="rt-cell${pin}${hc}"${dragAttrs}>${label}${resizer}</div>`;
 }
 function renderRankLegend(n,r){
-  if(!n)return '';
-  const segs=[
+  const segs=n?[
     {label:'A',from:1,to:r.aEnd,tc:'var(--a)'},
     {label:'A경계',from:r.abFrom,to:r.abTo,tc:'var(--ab-line)'},
     {label:'B+',from:r.abTo+1,to:r.bbFrom-1,tc:'var(--bp)'},
     {label:'B경계',from:r.bbFrom,to:r.bbTo,tc:'var(--bb-line)'},
     {label:'B',from:r.bbTo+1,to:n,tc:'var(--b)'}
-  ].filter(s=>s.from<=s.to&&s.to>=1);
-  return `<div class="rt-legend">${segs.map(s=>{
+  ].filter(s=>s.from<=s.to&&s.to>=1):[];
+  const badges=segs.map(s=>{
     const on=legendFilterRange&&legendFilterRange.from===s.from&&legendFilterRange.to===s.to;
     return `<span class="tb-tag${on?' on':''}" style="--tc:${s.tc}" onclick="toggleLegendFilter(${s.from},${s.to})" title="클릭하면 ${s.from}~${s.to}위만 필터링됩니다"><b>${s.label}</b> ${s.from}~${s.to}위</span>`;
-  }).join('')}</div>`;
+  }).join('');
+  const controls=`<span class="tb-sep"></span><button class="rt-legend-btn" onclick="openColumns()">열 설정</button><div class="rt-legend-seg" title="과거평가 표시 범위"><span class="seg-lab">과거평가</span><button class="${evalRange==='recent3'?'on':''}" onclick="applyEvalRange('recent3')">최근3년</button><button class="${evalRange==='recent5'?'on':''}" onclick="applyEvalRange('recent5')">최근5년</button></div>`;
+  return `<div class="rt-legend">${badges}${controls}</div>`;
 }
 let keepScrollOnRender=true;
 function renderMain(){
