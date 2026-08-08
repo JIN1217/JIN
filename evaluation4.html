@@ -192,6 +192,33 @@
   .stat-table th:first-child,.stat-table td:first-child{text-align:left;}
   .stat-table td{padding:.46rem .35rem;text-align:right;border-bottom:1px solid var(--line2);vertical-align:middle;}
   .stat-table tr:last-child td{border-bottom:none;}
+  .opv-scroll{overflow-x:auto;border-radius:10px;border:1px solid var(--line);}
+  .opv-table{width:100%;border-collapse:collapse;font-size:.78rem;white-space:nowrap;}
+  .opv-table th{background:var(--panel);color:var(--muted2);font-weight:800;font-size:.72rem;padding:.4rem .5rem;border-bottom:1px solid var(--line);position:sticky;top:0;z-index:2;}
+  .opv-table thead tr:first-child th{top:0;}
+  .opv-table thead tr.opv-sub th{top:1.9rem;font-size:.68rem;color:var(--muted);font-weight:700;padding:.3rem .5rem;}
+  .opv-table th.opv-owner{text-align:center;border-left:2px solid var(--line);}
+  .opv-table td{padding:.36rem .55rem;text-align:right;border-bottom:1px solid var(--line2);font-variant-numeric:tabular-nums;}
+  .opv-table td.opv-rk{text-align:left;font-weight:800;color:var(--txt);vertical-align:middle;background:var(--panel);position:sticky;left:0;z-index:1;}
+  .opv-table td.opv-g{text-align:left;font-weight:800;padding-left:.9rem;}
+  .opv-table td.opv-n{color:var(--muted2);border-left:2px solid var(--line);min-width:3rem;}
+  .opv-table td.opv-p{font-weight:800;min-width:3.6rem;}
+  .opv-table tr.opv-stripe-a td.opv-g{background:color-mix(in srgb, var(--blue-soft) 55%, var(--panel));}
+  .opv-table tr.opv-stripe-b td.opv-g{background:color-mix(in srgb, var(--bp-fill) 65%, var(--panel));}
+  .opv-table tr.opv-ranktotal td{font-weight:800;border-top:1px solid var(--line);border-bottom:1px solid var(--line);}
+  .opv-table tr.opv-ranktotal.opv-stripe-a td{background:var(--blue-soft);}
+  .opv-table tr.opv-ranktotal.opv-stripe-b td{background:var(--bp-fill);}
+  .opv-table tr.opv-gradetotal td{font-weight:800;background:var(--buffer);border-top:1px solid var(--buffer-line);border-bottom:1px solid var(--buffer-line);}
+  .opv-table tr.opv-gradetotal td.opv-rk{background:var(--buffer);}
+  .opv-table tr.opv-grand td{background:var(--ink);color:#eef1f6;font-weight:850;font-size:.82rem;border:none;}
+  .opv-table tr.opv-grand td.opv-rk{background:var(--ink);color:#eef1f6;}
+  .opv-ratio-wrap{margin-top:1rem;}
+  .opv-ratio-wrap h4{margin:0 0 .5rem;font-size:.82rem;color:var(--muted2);}
+  .stat-table.opv-ratio th{text-align:center;}
+  .stat-table.opv-ratio td{text-align:center;font-weight:800;}
+  .stat-table.opv-ratio tr.opv-grand td{background:var(--ink);color:#eef1f6;border-radius:0;}
+  .stat-table.opv-ratio tr.opv-grand td:first-child{border-radius:8px 0 0 8px;}
+  .stat-table.opv-ratio tr.opv-grand td:last-child{border-radius:0 8px 8px 0;}
   .mini-meter{height:.4rem;background:var(--bg);border-radius:12px;overflow:hidden;margin-top:.2rem;}
   .mini-meter i{display:block;height:100%;width:var(--w);background:var(--gc);border-radius:12px;}
   .boundary-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.7rem;}
@@ -1154,6 +1181,91 @@ function renderGroupTable(groups,labelKey,titleLabel,simple){
   }).join('');
   return `<table class="stat-table"><tr><th style="text-align:left">${titleLabel}</th><th>인원</th><th>등급 비중</th><th style="text-align:left">상세</th></tr>${rows}</table>`;
 }
+const OPV_EXCLUDE_RANK='3급';
+function ownerRankGradeStats(){
+  const inclRanks=RANKS.filter(rk=>rk!==OPV_EXCLUDE_RANK);
+  const grades=['A','B+','B'];
+  const ownersSet=new Set();
+  people.forEach(p=>ownersSet.add(String(p.owner||'').trim()||'미지정'));
+  const orgOwners=(cfg.orgOrder&&cfg.orgOrder.owners)||[];
+  const ownerList=[...ownersSet].sort((a,b)=>{
+    const ia=orgOwners.indexOf(a),ib=orgOwners.indexOf(b);
+    if(ia!==-1||ib!==-1)return (ia===-1?999:ia)-(ib===-1?999:ib);
+    return a.localeCompare(b);
+  });
+  const matrix={};
+  inclRanks.forEach(rk=>{
+    matrix[rk]={}; grades.forEach(g=>matrix[rk][g]={});
+    const ids=order[rk]||[],n=ids.length;
+    ids.forEach((id,i)=>{
+      const p=pid(id),g0=gradeAt(i,n),g=g0==='S'?'A':g0;
+      if(!grades.includes(g))return;
+      const ownerKey=String(p.owner||'').trim()||'미지정';
+      matrix[rk][g][ownerKey]=(matrix[rk][g][ownerKey]||0)+1;
+    });
+  });
+  const ownerTotal={};
+  ownerList.forEach(o=>{
+    ownerTotal[o]=inclRanks.reduce((a,rk)=>a+grades.reduce((s2,g)=>s2+(matrix[rk][g][o]||0),0),0);
+  });
+  const grandTotal=ownerList.reduce((a,o)=>a+ownerTotal[o],0);
+  return {inclRanks,grades,ownerList,matrix,ownerTotal,grandTotal};
+}
+function opvHeatStyle(colorVar,pctVal){
+  const alpha=Math.max(0,Math.min(65,Math.round(pctVal*1.3)));
+  return `background:color-mix(in srgb, ${colorVar} ${alpha}%, white);`;
+}
+function opvCell(v,base,colorVar){
+  const p=base?pct(v,base):0;
+  return `<td class="opv-n">${v}</td><td class="opv-p" style="${opvHeatStyle(colorVar,p)}">${p}%</td>`;
+}
+function renderOwnerRankGradeTable(){
+  const d=ownerRankGradeStats();
+  if(!d.ownerList.length)return '<div class="empty-rp">데이터가 없습니다.</div>';
+  const gVar=g=>`var(${GRADE_VARS[g]})`;
+  let head=`<tr><th class="opv-rk" style="text-align:left">직급</th><th style="text-align:left">등급</th>${d.ownerList.map(o=>`<th colspan="2" class="opv-owner">${esc(o)}</th>`).join('')}</tr>`;
+  head+=`<tr class="opv-sub"><th></th><th></th>${d.ownerList.map(()=>`<th>인원</th><th>비율</th>`).join('')}</tr>`;
+  let body='';
+  d.inclRanks.forEach((rk,ri)=>{
+    const stripe=ri%2===0?'opv-stripe-a':'opv-stripe-b';
+    d.grades.forEach((g,gi)=>{
+      body+=`<tr class="${stripe}">${gi===0?`<td class="opv-rk" rowspan="${d.grades.length+1}">${esc(rk)}</td>`:''}<td class="opv-g" style="color:${gVar(g)}">${g}</td>${d.ownerList.map(o=>opvCell(d.matrix[rk][g][o]||0,d.ownerTotal[o],gVar(g))).join('')}</tr>`;
+    });
+    const rankCells=d.ownerList.map(o=>{
+      const v=d.grades.reduce((a,g)=>a+(d.matrix[rk][g][o]||0),0);
+      return opvCell(v,d.ownerTotal[o],'var(--muted2)');
+    }).join('');
+    body+=`<tr class="opv-ranktotal ${stripe}"><td class="opv-g">합계</td>${rankCells}</tr>`;
+  });
+  d.grades.forEach(g=>{
+    const row=d.ownerList.map(o=>{
+      const v=d.inclRanks.reduce((a,rk)=>a+(d.matrix[rk][g][o]||0),0);
+      return opvCell(v,d.ownerTotal[o],gVar(g));
+    }).join('');
+    body+=`<tr class="opv-gradetotal"><td class="opv-rk">합계</td><td class="opv-g" style="color:${gVar(g)}">${g}</td>${row}</tr>`;
+  });
+  const grandCells=d.ownerList.map(o=>opvCell(d.ownerTotal[o],d.ownerTotal[o],'var(--ink)')).join('');
+  body+=`<tr class="opv-grand"><td class="opv-rk" colspan="2">전체 합계</td>${grandCells}</tr>`;
+  return `<div class="opv-scroll"><table class="opv-table">${head}${body}</table></div>`;
+}
+function renderOwnerGradeRatioTable(){
+  const d=ownerRankGradeStats();
+  if(!d.ownerList.length)return '';
+  const gVar=g=>`var(${GRADE_VARS[g]})`;
+  const rows=d.ownerList.map(o=>{
+    const cells=d.grades.map(g=>{
+      const v=d.inclRanks.reduce((a,rk)=>a+(d.matrix[rk][g][o]||0),0);
+      const p=pct(v,d.ownerTotal[o]);
+      return `<td style="${opvHeatStyle(gVar(g),p)}color:${gVar(g)}">${p}%</td>`;
+    }).join('');
+    return `<tr><td class="opv-rk" style="text-align:left"><b>${esc(o)}</b></td>${cells}</tr>`;
+  }).join('');
+  const totalCells=d.grades.map(g=>{
+    const v=d.ownerList.reduce((a,o)=>a+d.inclRanks.reduce((s2,rk)=>s2+(d.matrix[rk][g][o]||0),0),0);
+    return `<td>${pct(v,d.grandTotal)}%</td>`;
+  }).join('');
+  return `<table class="stat-table opv-ratio"><tr><th style="text-align:left">담당</th>${d.grades.map(g=>`<th>${g} 비율</th>`).join('')}</tr>${rows}<tr class="opv-grand"><td style="text-align:left"><b>사업부 합계</b></td>${totalCells}</tr></table>`;
+}
 function aggregateSummary(){
   const sums={rk:'전체',ids:[],n:people.length,q:{S:0,A:0,"B+":0,B:0},counts:{S:0,A:0,"B+":0,B:0,C:0},teams:{},owners:{},byRank:{},sRec:0,cCnt:0,memo:0,avgYr:0};
   let yrSum=0;
@@ -1191,7 +1303,13 @@ function renderStatsScreen(){
       <div class="stat-kpi"><div class="k">B 등급</div><div class="v">${s.counts.B}<small>명</small></div><div class="sub">${pct(s.counts.B,s.n)}%</div></div>
     </div>
     <section class="stats-card"><h3>직급별 현황</h3>${renderGroupTable(s.byRank,'rk','직급')}</section>
-    <section class="stats-card"><h3>담당별 현황</h3>${renderGroupTable(s.owners,'owner','담당',true)}</section>
+    <section class="stats-card opv-card"><h3>담당·직급별 등급 현황<span class="hint">${OPV_EXCLUDE_RANK} 제외 · 좌측 순위표 기준 자동 반영</span></h3>
+      ${renderOwnerRankGradeTable()}
+      <div class="opv-ratio-wrap">
+        <h4>담당별 등급 비율</h4>
+        ${renderOwnerGradeRatioTable()}
+      </div>
+    </section>
   </div>`;
 }
 function visibleColumns(){normalizeColumnState();return colState.map(x=>{const c=COLS.find(v=>v.key===x.key);const isEv=c.key==='evalHistory';return {...c,visible:x.visible,w:x.w||(isEv?evalColWidth():c.w),label:isEv?evalLabel():c.label};}).filter(c=>c.fixed||c.visible!==false);}
