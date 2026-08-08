@@ -576,7 +576,7 @@
   <h2>평가 대상자 입력</h2>
   <p>아래 양식을 다운로드해 엑셀에서 작성한 뒤, CSV로 저장해 업로드하세요. 첫 줄은 머리글입니다.<br>
   <code>직급 · 초기순위 · 이름 · 팀 · 담당 · S/P · 년차 · 25년 · 24년 · 23년 · 22년 · 21년 · 주요성과</code><br>
-  전 직급을 한 파일에 섞어 올려도 자동으로 각 탭에 분류됩니다. <b>직급</b>란에는 <code>차장/과장/대리/사원</code> 또는 <code>1/2갑/2을/3급</code> 표기를 모두 인식합니다.<br>
+  전 직급을 한 파일에 섞어 올려도 자동으로 각 탭에 분류됩니다. <b>직급</b>란에는 <code>차장/과장/대리/사원</code> 또는 <code>1(1을)/2갑/2을/3급</code> 표기를 모두 인식합니다.<br>
   <b>초기순위</b>는 각 직급 내에서의 최초 순위 번호입니다(비워두면 업로드한 행 순서대로 자동 부여).<br>
   <b>주요성과</b>는 여러 줄로 길게 작성해도 됩니다(엑셀 셀 안에서 Alt+Enter로 줄바꿈). 줄 단위로 그대로 표시됩니다.</p>
   <div class="act" style="justify-content:flex-start;margin:0 0 .7rem">
@@ -836,7 +836,7 @@ function applyPaste(){
   ensurePersonFields(); rebuild(); closePaste(); persist(); render();
 }
 function cleanHeader(s){return String(s||'').replace(/s/g,'').toLowerCase().replace('???','?');}
-const RANK_ALIASES={'1':'차장','1급':'차장','2갑':'과장','2급갑':'과장','2을':'대리','2급을':'대리','3급':'사원','3':'사원'};
+const RANK_ALIASES={'1':'차장','1급':'차장','1을':'차장','2갑':'과장','2급갑':'과장','2을':'대리','2급을':'대리','3급':'사원','3':'사원'};
 function normalizeRank(v){
   v=String(v||'').trim();
   if(RANKS.includes(v))return v;
