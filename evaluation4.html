@@ -974,7 +974,7 @@ function renderMain(){
 }
 
 let onlyBoundary=false;
-let teamGroupBy='team';
+let teamGroupBy='owner';
 function setTeamGroupBy(mode){teamGroupBy=mode;renderRPanel();}
 function toggleBoundary(){onlyBoundary=!onlyBoundary;render();}
 
@@ -1079,7 +1079,7 @@ function renderTeamRatio(counts,total){
   const merged={A:(counts.S||0)+(counts.A||0),"B+":counts["B+"]||0,B:counts.B||0};
   const chips=`<div class="team-ratio">${keys.map(g=>{
     const n=merged[g]||0,p=pct(n,total);
-    return `<span style="--gc:${gColor(g)}"><b>${g}</b> ${p}%</span>`;
+    return `<span style="--gc:${gColor(g)}"><b>${g}</b> ${n}명 ${p}%</span>`;
   }).join('')}</div>`;
   const stack=`<div class="team-stack">${keys.map(g=>`<i style="--gc:${gColor(g)};--w:${pct(merged[g]||0,total)}%"></i>`).join('')}</div>`;
   return chips+stack;
@@ -1127,15 +1127,14 @@ function renderRPanel(){
       </div>`;
     });
     if(prevZone)rows+=`<div class="cutline ${prevZone==='ab-boundary'?'ab':'bb'}"><hr></div>`;
-    const bStatus=gr.B<gr.recB?'부족':gr.B>gr.recB?'과다':'적정';
     return `<section class="team-card">
-      <div class="team-card-head"><b>${esc(gr.key)}</b><span>${gr.total}명 · B ${gr.B}/${gr.recB} ${bStatus}</span></div>
+      <div class="team-card-head"><b>${esc(gr.key)}</b><span>${gr.total}명</span></div>
       ${renderTeamRatio(gr,gr.total)}
       <div class="team-rank">${rows}</div>
     </section>`;
   }).join('');
   rp.innerHTML=`<div class="team-panel">
-    <h4>${groupLabel} 순위표<div class="seg" style="margin-left:auto"><button class="${teamGroupBy==='team'?'on':''}" onclick="setTeamGroupBy('team')">팀별</button><button class="${teamGroupBy==='owner'?'on':''}" onclick="setTeamGroupBy('owner')">담당별</button></div></h4>
+    <h4>${groupLabel} 순위표<div class="seg" style="margin-left:auto"><button class="${teamGroupBy==='owner'?'on':''}" onclick="setTeamGroupBy('owner')">담당</button><button class="${teamGroupBy==='team'?'on':''}" onclick="setTeamGroupBy('team')">팀</button></div></h4>
     <div class="subline"><span>${active} ${s.n}명 · 좌측 전체순위 기준 자동 반영</span><span>A ${s.q.S+s.q.A} · B+ ${s.q["B+"]} · B ${s.q.B}</span></div>
     <div class="team-list">${teamCards}</div>
   </div>`;
