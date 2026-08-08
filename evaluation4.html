@@ -862,7 +862,7 @@ function jumpFirst(){
   if(row)row.scrollIntoView({behavior:'smooth',block:'center'});
 }
 
-function setRank(rk){active=rk;mainView='rank';picked.clear();selId=null;undoStack=[];redoStack=[];render();}
+function setRank(rk){keepScrollOnRender=false;active=rk;mainView='rank';picked.clear();selId=null;undoStack=[];redoStack=[];render();}
 
 function stars(g){const v=ps(g);let s='';for(let i=0;i<5;i++)s+=`<span class="${i<v?'':'off'}">★</span>`;return `<span class="stars">${s}</span>`;}
 function pct(v,n){return n?Math.round(v/n*100):0;}
@@ -995,7 +995,7 @@ function unlockRank(){
   locks[active]=0;
   persist();render();
 }
-function setMainView(view){mainView=view;picked.clear();selId=null;render();}
+function setMainView(view){keepScrollOnRender=false;mainView=view;picked.clear();selId=null;render();}
 
 function handleRowClick(e,id){
   if(e&&e.shiftKey){
@@ -1760,8 +1760,12 @@ function renderRankLegend(n,r){
   ].filter(s=>s.from<=s.to&&s.to>=1);
   return `<div class="rt-legend">${segs.map(s=>`<span class="tb-tag" style="--tc:${s.tc}"><b>${s.label}</b> ${s.from}~${s.to}위</span>`).join('')}</div>`;
 }
+let keepScrollOnRender=true;
 function renderMain(){
   const m=document.getElementById('main');
+  const prevScrollTop=keepScrollOnRender?(document.querySelector('.rtable')?.scrollTop||0):0;
+  const prevScrollLeft=keepScrollOnRender?(document.querySelector('.rtable')?.scrollLeft||0):0;
+  keepScrollOnRender=true;
   if(!people.length){m.innerHTML=`<div class="empty-main">평가 대상자 데이터가 없습니다.<br><br><button class="btn primary" onclick="openPaste()">데이터 입력하기</button></div>`;return;}
   if(mainView==='stats'){m.innerHTML=renderStatsScreen();return;}
   const ids=order[active]||[],n=ids.length,{aEnd,bStart}=bounds(n),ranges=boundaryRanges(n),cols=visibleColumns(),shown=getVisibleRankIds(),grid=gridCols();
@@ -1781,6 +1785,8 @@ function renderMain(){
     rows+=`<div class="${cls}" draggable="${locked?'false':'true'}" data-id="${id}" onclick="handleRowClick(event,${id})">${cols.map(c=>renderCell(c,p,rankNo,zone,locked,inCmp)).join('')}</div>`;
   });
   m.innerHTML=`<div class="rtable" style="--rt-cols:${grid}">${th}${rows||'<div class="empty-main" style="padding:2rem">표시할 행이 없습니다.</div>'}</div>`;
+  const newTable=document.querySelector('.rtable');
+  if(newTable){newTable.scrollTop=prevScrollTop;newTable.scrollLeft=prevScrollLeft;}
   wireDrag();
   wireColDrag();
 }
