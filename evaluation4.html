@@ -176,7 +176,7 @@
   .rt-head,.rt-row{display:grid;grid-template-columns:var(--rt-cols);align-items:center;gap:.3rem;padding:.3rem .4rem;width:max-content;min-width:100%;}
   .rt-select{display:flex;align-items:center;gap:.5rem;height:100%;cursor:pointer;margin:-.5rem 0;padding:.5rem 0;}
   .rt-head .rt-select{cursor:pointer;}
-  .rt-head{position:sticky;top:calc(var(--topbar-h) + var(--banner-h));z-index:35;background:#fafbfd;border-bottom:1px solid var(--line);color:var(--muted2);font-size:.74rem;font-weight:800;letter-spacing:.2px;}
+  .rt-head{position:sticky;top:calc(var(--topbar-h) + var(--banner-h));z-index:35;background:#fafbfd;border-bottom:1px solid var(--line);color:var(--muted2);font-size:.84rem;font-weight:800;letter-spacing:.2px;}
   .rt-head .cc{text-align:center;}
   .rt-row{border-bottom:1px solid var(--line2);cursor:grab;position:relative;transition:box-shadow .12s ease,background-color .12s ease;background:var(--panel);}
   .rt-row:last-child{border-bottom:none;}
@@ -195,7 +195,7 @@
   .rt-row.ellipsis:hover{background:none;box-shadow:none;}
 
   .grip{color:#c3cad6;font-size:.95rem;text-align:center;}
-  .rt-row .rk{font-weight:800;font-size:1rem;text-align:center;font-variant-numeric:tabular-nums;}
+  .rt-row .rk{flex:1;font-weight:800;font-size:1rem;text-align:center;font-variant-numeric:tabular-nums;}
   .rt-row .rk .rksep{color:var(--muted);font-weight:600;margin:0 1px;}
   .rt-row .rk .init{color:var(--muted2);font-weight:700;font-size:.8em;}
   .rt-row .rk .tag{display:block;font-size:.6rem;color:var(--buffer-line);font-weight:800;}
@@ -203,7 +203,7 @@
   .evh .evsep{color:var(--muted);margin:0 1px;font-weight:400;}
   .cc{text-align:center;}
   .cc input{width:1rem;height:1rem;cursor:pointer;accent-color:var(--blue);}
-  .nm{font-weight:700;}
+  .nm{font-weight:700;text-align:center;}
   .team{color:var(--muted2);font-size:.82rem;}
   .rc{font-size:.8rem;color:var(--muted2);}
   .prevcell{display:flex;align-items:center;gap:.35rem;font-size:.78rem;}
@@ -1726,21 +1726,21 @@ function renderPivotMenu(anchor){
 function evalText(g){return g?`<span style="color:${gColor(g)};font-weight:800">${esc(g)}</span>`:'';}
 function renderCell(c,p,rankNo,zone,locked,inCmp){
   const cls=`rt-cell${pinClass(c.key)}`;
-  if(c.key==='finalRank')return `<div class="${cls} rt-select" onclick="event.stopPropagation();togglePick(${p.id},event)"><input type="checkbox" ${inCmp?'checked':''} title="선택"><span class="grip">${locked?'🔒':'⠿'}</span><span class="rk">${rankNo}<span class="rksep">/</span><span class="init">${p.baseNo||'-'}</span>${zone.key?`<span class="tag" style="color:${zone.color}">${zone.label}</span>`:''}</span></div>`;
+  if(c.key==='finalRank')return `<div class="${cls} rt-select" onclick="event.stopPropagation();togglePick(${p.id},event)"><input type="checkbox" ${inCmp?'checked':''} title="선택"><span class="rk">${rankNo}<span class="rksep">/</span><span class="init">${p.baseNo||'-'}</span>${zone.key?`<span class="tag" style="color:${zone.color}">${zone.label}</span>`:''}</span></div>`;
   if(c.key==='name')return `<div class="${cls} nm" title="${esc(p.name)}">${esc(p.name)}${p.sRec?' ⭐':''}${p.cFlag?' 🚩':''}</div>`;
   if(c.key==='detail')return `<div class="${cls} cc" onclick="event.stopPropagation()"><button class="memo-btn ${memos[p.id]?'has':''}" onclick="openDetail(${p.id})" title="상세">상세</button></div>`;
   if(c.key==='evalHistory'){const keys=evalKeysActive();return `<div class="${cls} cc evh" title="${keys.map(k=>k.replace('eval','')).join('/')}년: ${keys.map(k=>p[k]||'-').join('/')}">${keys.map(k=>evalText(p[k])||'-').join('<span class="evsep">/</span>')}</div>`;}
   if(c.key==='sp'||c.key==='yr')return `<div class="${cls} cc" title="${esc(personValue(p,c.key,rankNo))}">${esc(personValue(p,c.key,rankNo))}</div>`;
   return `<div class="${cls}" title="${esc(personValue(p,c.key,rankNo))}">${esc(personValue(p,c.key,rankNo))}</div>`;
 }
-const CENTER_HEAD=new Set(['sp','yr','evalHistory','detail']);
+const CENTER_HEAD=new Set(['finalRank','name','sp','yr','evalHistory','detail']);
 function renderHeaderCell(c,allChecked,total,shown){
   const pin=pinClass(c.key),on=isColumnFiltered(c.key)?' on':'';
   const filterBtn=NO_FILTER_COLS.has(c.key)?'':`<button class="rt-filter-toggle${on}" onclick="openPivotFilter('${c.key}',event)" title="필터">▾</button>`;
   const label=`<div class="rt-th-label"><span class="rt-th-text">${c.label}</span>${filterBtn}</div>`;
   const resizer=PINNED_COLS.has(c.key)?'':`<span class="rt-resize" onmousedown="startColResize(event,'${c.key}')"></span>`;
   const hc=CENTER_HEAD.has(c.key)?' hcenter':'';
-  if(c.key==='finalRank')return `<div class="rt-cell rt-select${pin}"><input type="checkbox" ${allChecked?'checked':''} title="현재 표시 행 선택 (${shown}/${total}명 표시 중)" onclick="toggleSelectAll(event)">${label}${resizer}</div>`;
+  if(c.key==='finalRank')return `<div class="rt-cell rt-select${pin}${hc}"><input type="checkbox" ${allChecked?'checked':''} title="현재 표시 행 선택 (${shown}/${total}명 표시 중)" onclick="toggleSelectAll(event)">${label}${resizer}</div>`;
   const dragAttrs=NO_REORDER_COLS.has(c.key)?'':` draggable="true" data-colkey="${c.key}"`;
   return `<div class="rt-cell${pin}${hc}"${dragAttrs}>${label}${resizer}</div>`;
 }
