@@ -14,7 +14,7 @@
     --ab-fill:#eaf7f3; --ab-line:#2b9d89; --bb-fill:#fff2e1; --bb-line:#d1893a;
     --ok:#3aa06c; --warn:#d16b6b; --over:#c8903e;
     --star:#eeab3d;
-    --fs:15px;
+    --fs:16px;
     --topbar-h:46px; --banner-h:3.1rem;
     --right-w:45rem;
     --radius-pill:999px;
@@ -29,7 +29,7 @@
   /* top bar */
   .topbar{background:var(--ink);color:#eef1f6;height:var(--topbar-h);display:flex;align-items:center;
     padding:0 16px;gap:12px;position:sticky;top:0;z-index:60;font-size:14px;}
-  .topbar .brand{font-size:1rem;font-weight:800;letter-spacing:-.2px;}
+  .topbar .brand{font-size:16px;font-weight:800;letter-spacing:-.2px;}
   .topbar .grow{flex:1;}
   .topbar button{border:1px solid rgba(255,255,255,.14);background:rgba(255,255,255,.07);
     color:#eef1f6;border-radius:var(--radius-pill);height:32px;padding:0 12px;font-size:12px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:5px;transition:background .12s ease,border-color .12s ease;}
@@ -49,6 +49,7 @@
   .rank-tab:hover{border-color:#cdd5e2;background:#fff;}
   .rank-tab.active{background:var(--blue);border-color:var(--blue);color:#fff;box-shadow:var(--sh);}
   .rank-tab .cnt{font-size:.68rem;border-radius:var(--radius-pill);padding:.05rem .38rem;background:rgba(79,109,240,.1);color:inherit;}
+  .tb-sep{width:1px;align-self:stretch;background:var(--line);margin:0 .15rem;}
   .rank-tab.active .cnt{background:rgba(255,255,255,.22);}
   .tb-cuts{display:flex;align-items:center;gap:.5rem;flex-wrap:wrap;flex:1;min-width:26rem;}
   .tb-tag{font-size:.8rem;color:var(--txt);padding:.25rem .6rem;border-radius:20px;
@@ -625,7 +626,7 @@ function applyGradeColors(colors){
 }
 
 let people=[], order={}, active=RANKS[0], selId=null;
-let picked=new Set(), memos={}, fs=15;
+let picked=new Set(), memos={}, fs=16;
 let undoStack=[], redoStack=[];
 let query="";  // ???
 let mainView="rank";
@@ -1393,7 +1394,7 @@ function positionFloatPick(){
 }
 window.addEventListener('scroll',positionFloatPick,{passive:true});
 window.addEventListener('resize',positionFloatPick);
-document.addEventListener('scroll',e=>{ if(e.target&&e.target.id==='rpanel')positionFloatPick(); },true);
+document.addEventListener('scroll',positionFloatPick,true);
 function scrollRowIntoView(id){
   const el=document.querySelector(`.rt-row[data-id="${id}"]`);
   if(el)el.scrollIntoView({behavior:'smooth',block:'center'});
@@ -1468,7 +1469,7 @@ function openHist(){
 }
 function closeHist(){document.getElementById('hbg').classList.remove('show');}
 function toggleFull(){if(!document.fullscreenElement){document.documentElement.requestFullscreen();document.getElementById('fsBtn').textContent='⛶ 전체화면 종료';}else{document.exitFullscreen();document.getElementById('fsBtn').textContent='⛶ 전체화면';}}
-function zoom(d){fs=Math.max(11,Math.min(20,fs+d));document.documentElement.style.setProperty('--fs',fs+'px');document.getElementById('zl').textContent=Math.round(fs/15*100)+'%';}
+function zoom(d){fs=Math.max(12,Math.min(22,fs+d));document.documentElement.style.setProperty('--fs',fs+'px');document.getElementById('zl').textContent=Math.round(fs/16*100)+'%';}
 function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
 function openPaste(){document.getElementById('mbg').classList.add('show');}
 function closePaste(){document.getElementById('mbg').classList.remove('show');}
@@ -1616,14 +1617,10 @@ function resetColumns(){colState=DEFAULT_COL_STATE.map(x=>({...x}));renderColumn
 function applyColumnSettings(){normalizeColumnState();persist();closeColumns();render();}
 function renderBanner(){
   const el=document.getElementById('topbanner');
-  const rankTabs=`<div class="rank-tabs">${RANKS.map(rk=>`<button class="rank-tab ${rk===active&&mainView==='rank'?'active':''}" onclick="setRank('${rk}')"><span>${rk}</span><span class="cnt">${(order[rk]||[]).length}\uBA85</span></button>`).join('')}</div>`;
-  const viewTabs=`<div class="rank-tabs"><button class="rank-tab ${mainView==='stats'?'active':''}" onclick="setMainView('stats')">\uC804\uCCB4 \uC694\uC57D/\uD1B5\uACC4</button></div>`;
-  const actions=`<button class="tbtn ${onlyBoundary?'on':''}" onclick="toggleBoundary()" ${mainView==='stats'?'disabled':''}>\uACBD\uACC4\uAD6C\uAC04</button><button class="tbtn" onclick="openColumns()">\uC5F4 \uC124\uC815</button><button class="tbtn" onclick="openSettings()">\uC124\uC815</button><button class="tbtn" onclick="openPaste()">\uB370\uC774\uD130 \uC785\uB825</button><button class="tbtn" onclick="exportCsv()">CSV</button>`;
-  if(!people.length){el.innerHTML=`${rankTabs}${viewTabs}<div class="tb-empty">\uB370\uC774\uD130\uB97C \uC785\uB825\uD558\uBA74 \uD3C9\uAC00 \uD45C\uAC00 \uD45C\uC2DC\uB429\uB2C8\uB2E4.</div><span class="grow"></span>${actions}`;return;}
-  const ids=order[active]||[],n=ids.length,{q}=bounds(n),r=boundaryRanges(n);
-  const sRec=ids.filter(id=>pid(id).sRec).length,cCnt=ids.filter(id=>pid(id).cFlag).length;
-  const summary=mainView==='stats'?`<div class="tb-cuts"><span class="tb-tag" style="--tc:var(--blue)"><b>\uC804\uCCB4</b> ${people.length}\uBA85</span><span class="tb-tag" style="--tc:var(--s)"><b>S/P</b> ${people.filter(p=>p.sp).length}\uBA85</span></div>`:`<div class="tb-cuts"><span class="tb-tag" style="--tc:var(--a)"><b>A\uAD6C\uAC04</b> 1~${r.aEnd}\uC704</span><span class="tb-tag" style="--tc:var(--ab-line)"><b>A/B+ \uACBD\uACC4</b> ${r.abFrom}~${r.abTo}\uC704</span><span class="tb-tag" style="--tc:var(--bb-line)"><b>B \uC0C1\uC704\uACBD\uACC4</b> ${r.bbFrom}~${r.bbTo}\uC704</span><span class="tb-tag" style="--tc:var(--s)"><b>S\uCD94\uCC9C</b> ${sRec}/${q.S}\uBA85</span>${cCnt?`<span class="tb-tag" style="--tc:var(--c)"><b>C\uD6C4\uBCF4</b> ${cCnt}\uBA85</span>`:''}</div>`;
-  el.innerHTML=`${rankTabs}${viewTabs}${summary}<span class="grow"></span><div class="tb-search"><input id="searchBox" placeholder="\uD589 \uAC80\uC0C9" value="${esc(query)}" oninput="query=this.value;renderMain()" onkeydown="if(event.key==='Enter')jumpFirst()">${query?`<button class="tb-x" onclick="query='';document.getElementById('searchBox').value='';renderMain()">?</button>`:''}</div>${actions}`;
+  const rankTabs=`<div class="rank-tabs">${RANKS.map(rk=>`<button class="rank-tab ${rk===active&&mainView==='rank'?'active':''}" onclick="setRank('${rk}')">${rk}</button>`).join('')}</div>`;
+  const actions=`<button class="tbtn ${mainView==='stats'?'on':''}" onclick="setMainView('stats')">\uC804\uCCB4 \uC694\uC57D/\uD1B5\uACC4</button><span class="tb-sep"></span><button class="tbtn ${onlyBoundary?'on':''}" onclick="toggleBoundary()" ${mainView==='stats'?'disabled':''}>\uACBD\uACC4\uAD6C\uAC04</button><button class="tbtn" onclick="openColumns()">\uC5F4 \uC124\uC815</button><button class="tbtn" onclick="openSettings()">\uC124\uC815</button><button class="tbtn" onclick="openPaste()">\uB370\uC774\uD130 \uC785\uB825</button><button class="tbtn" onclick="exportCsv()">CSV</button>`;
+  if(!people.length){el.innerHTML=`${rankTabs}<div class="tb-empty">\uB370\uC774\uD130\uB97C \uC785\uB825\uD558\uBA74 \uD3C9\uAC00 \uD45C\uAC00 \uD45C\uC2DC\uB429\uB2C8\uB2E4.</div><span class="grow"></span>${actions}`;return;}
+  el.innerHTML=`${rankTabs}<span class="grow"></span><div class="tb-search"><input id="searchBox" placeholder="\uD589 \uAC80\uC0C9" value="${esc(query)}" oninput="query=this.value;renderMain()" onkeydown="if(event.key==='Enter')jumpFirst()">${query?`<button class="tb-x" onclick="query='';document.getElementById('searchBox').value='';renderMain()">\u2715</button>`:''}</div>${actions}`;
 }
 function renderCell(c,p,rankNo,zone,locked,inCmp){const cls=`rt-cell${pinClass(c.key)}`;if(c.key==='finalRank')return `<div class="${cls} rt-select" onclick="event.stopPropagation();togglePick(${p.id},event)"><input type="checkbox" ${inCmp?'checked':''} title="\uC120\uD0DD"><span class="grip">${locked?'??':'??'}</span><span class="rk">${rankNo}${zone.key?`<span class="tag" style="color:${zone.color}">${zone.label}</span>`:''}</span></div>`;if(c.key==='name')return `<div class="${cls} nm" title="${esc(p.name)}">${esc(p.name)}${p.sRec?' ?':''}${p.cFlag?' ??':''}</div>`;if(c.key==='detail')return `<div class="${cls} cc" onclick="event.stopPropagation()"><button class="memo-btn ${memos[p.id]?'has':''}" onclick="openDetail(${p.id})" title="\uC0C1\uC138">\uC0C1\uC138</button></div>`;if(c.key.startsWith('eval'))return `<div class="${cls}">${evalChip(personValue(p,c.key,rankNo))}</div>`;return `<div class="${cls}" title="${esc(personValue(p,c.key,rankNo))}">${esc(personValue(p,c.key,rankNo))}</div>`;}
 function renderFilterBar(total,shown){const cols=visibleColumns().filter(c=>!['finalRank','detail'].includes(c.key));return `<div class="rt-filterbar"><span class="count">${active} ${shown}/${total}\uBA85</span><input placeholder="\uD589 \uAC80\uC0C9" value="${esc(query)}" oninput="query=this.value;renderMain();renderBanner()">${cols.map(c=>`<input class="mini" placeholder="${c.label}" value="${esc(columnFilters[c.key]||'')}" oninput="setColumnFilter('${c.key}',this.value)">`).join('')}<span class="grow"></span><button class="tbtn" onclick="clearFilters()">\uD544\uD130 \uCD08\uAE30\uD654</button><button class="tbtn" onclick="hidePickedRows()" ${picked.size?'':'disabled'}>\uC120\uD0DD \uC228\uAE40</button><button class="tbtn" onclick="resetHiddenRows()" ${Object.keys(hiddenRows).length?'':'disabled'}>\uC228\uAE40 \uD574\uC81C</button>${renderLockControl()}</div>`;}
