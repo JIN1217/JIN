@@ -1581,10 +1581,10 @@ function autoScrollTick(){
     if(rt){
       const rect=rt.getBoundingClientRect();
       const top=Math.max(rect.top,0),bottom=Math.min(rect.bottom,vh);
-      if(dragPointerY<top+threshold && dragPointerY>top-20){
-        rt.scrollTop-=Math.min(maxSpeed,(top+threshold-dragPointerY)/3);
-      }else if(dragPointerY>bottom-threshold && dragPointerY<bottom+20){
-        rt.scrollTop+=Math.min(maxSpeed,(dragPointerY-(bottom-threshold))/3);
+      if(dragPointerY<top+threshold){
+        rt.scrollTop-=Math.min(maxSpeed,Math.max(4,(top+threshold-dragPointerY)/3));
+      }else if(dragPointerY>bottom-threshold){
+        rt.scrollTop+=Math.min(maxSpeed,Math.max(4,(dragPointerY-(bottom-threshold))/3));
       }
     }
   }
@@ -1592,10 +1592,11 @@ function autoScrollTick(){
     const rp=document.getElementById('rpanel');
     if(rp){
       const rect=rp.getBoundingClientRect();
-      if(dragPointerY<rect.top+70 && dragPointerY>rect.top-20){
-        rp.scrollTop-=Math.min(maxSpeed,(rect.top+70-dragPointerY)/3);
-      }else if(dragPointerY>rect.bottom-70 && dragPointerY<rect.bottom+20){
-        rp.scrollTop+=Math.min(maxSpeed,(dragPointerY-(rect.bottom-70))/3);
+      const top=Math.max(rect.top,0),bottom=Math.min(rect.bottom,vh);
+      if(dragPointerY<top+threshold){
+        rp.scrollTop-=Math.min(maxSpeed,Math.max(4,(top+threshold-dragPointerY)/3));
+      }else if(dragPointerY>bottom-threshold){
+        rp.scrollTop+=Math.min(maxSpeed,Math.max(4,(dragPointerY-(bottom-threshold))/3));
       }
     }
   }
