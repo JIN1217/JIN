@@ -11,7 +11,7 @@
     --blue:#4f6df0; --blue-soft:#eef1fd;
     --s:#8b7fd6; --a:#4f7fe6; --bp:#4ba37c; --b:#d99a4a; --c:#d16b6b;
     --green-line:#4ba37c; --a-fill:#eef3fd; --bp-fill:#eff7f2; --b-fill:#fdf5e9; --buffer:#fdf4e3; --buffer-line:#d99a4a;
-    --ab-fill:#eaf0fd; --ab-line:#3a5fce; --bb-fill:#fff2e1; --bb-line:#d1893a; --hover-line:#e2531d;
+    --ab-fill:#c9d8f8; --ab-line:#3a5fce; --bb-fill:#fbdfb2; --bb-line:#d1893a; --hover-line:#e2531d;
     --ok:#3aa06c; --warn:#d16b6b; --over:#c8903e;
     --star:#eeab3d;
     --fs:16px;
@@ -578,8 +578,9 @@
 <div class="mbg" id="mbg"><div class="modal">
   <h2>평가 대상자 입력</h2>
   <p>아래 양식을 다운로드해 엑셀에서 작성한 뒤, CSV로 저장해 업로드하세요. 첫 줄은 머리글입니다.<br>
-  <code>직급 · 초기순위 · 이름 · 팀 · 담당 · S/P · 년차 · 25년 · 24년 · 23년 · 22년 · 21년 · 주요성과</code><br>
-  전 직급을 한 파일에 섞어 올려도 자동으로 각 탭에 분류됩니다. <b>직급</b>란에는 <code>차장/과장/대리/사원</code> 또는 <code>1(1을)/2갑/2을/3급</code> 표기를 모두 인식합니다.<br>
+  <code>직급 · 초기순위 · 이름 · 사번 · 팀 · 담당 · S/P · 년차 · 25년 · 24년 · 23년 · 22년 · 21년 · 주요성과</code><br>
+  전 직급을 한 파일에 섞어 올려도 자동으로 각 탭에 분류됩니다. <b>직급</b>란에는 <code>1을/1갑/2을/3급</code> 표기(또는 기존 차장/과장/대리/사원)를 모두 인식합니다.<br>
+  <b>사번</b>은 년도+월+3자리 일련번호 형식입니다(예: 202608001).<br>
   <b>초기순위</b>는 각 직급 내에서의 최초 순위 번호입니다(비워두면 업로드한 행 순서대로 자동 부여).<br>
   <b>주요성과</b>는 여러 줄로 길게 작성해도 됩니다(엑셀 셀 안에서 Alt+Enter로 줄바꿈). 줄 단위로 그대로 표시됩니다.</p>
   <div class="act" style="justify-content:flex-start;margin:0 0 .7rem">
@@ -592,7 +593,7 @@
   </div>
   <input type="file" id="uploadFileInput" accept=".csv,.tsv,.txt" style="display:none" onchange="handleFileUpload(event)">
   <p style="margin:.6rem 0 .5rem;font-size:.76rem;color:var(--muted)">또는 엑셀에서 표를 직접 복사해 아래에 붙여넣어도 됩니다.</p>
-  <textarea id="pasteBox" oninput="updatePasteCount()" placeholder="차장	1	김철수	MS운영	서비스담당	5	A	A	B+	A	B+	장애 Zero 달성/운영 자동화 개선"></textarea>
+  <textarea id="pasteBox" oninput="updatePasteCount()" placeholder="1을	1	김철수	202608001	MS운영	서비스담당	5	A	A	B+	A	B+	장애 Zero 달성/운영 자동화 개선"></textarea>
   <div id="pasteCount" style="margin-top:.35rem;font-size:.76rem;color:var(--muted)"></div>
   <div class="act">
     <button class="btn" onclick="loadSample()">샘플 데이터</button>
@@ -608,10 +609,6 @@
   <div class="set-grid" id="setGrid"></div>
   <div class="set-sum" id="setSum"></div>
   <div class="set-field" style="margin-top:1rem;max-width:12rem">
-    <label>경계 후보군 (전사 후보) 수</label>
-    <div class="with"><input type="number" id="setBuffer" min="0" max="20" oninput="previewSettings()"><span class="unit">명</span></div>
-  </div>
-  <div class="set-field" style="margin-top:.9rem;max-width:12rem">
     <label>비교 최대 인원</label>
     <div class="with"><input type="number" id="setMaxCmp" min="2" max="8" oninput="previewSettings()"><span class="unit">명</span></div>
   </div>
@@ -650,7 +647,8 @@
 </div></div>
 
 <script>
-const RANKS=["차장","과장","대리","사원"];
+const RANKS=["1을","1갑","2을","3급"];
+const RANK_LEGACY_MIGRATE={'차장':'1을','과장':'1갑','대리':'2을','사원':'3급'};
 const GRADES=[
   {key:"S",color:"var(--s)"},
   {key:"A",color:"var(--a)"},
@@ -662,6 +660,7 @@ const GRADE_VARS={S:'--s',A:'--a',"B+":'--bp',B:'--b',C:'--c'};
 const COLS=[
   {key:'finalRank',label:'\uC21C\uC704',w:'5.6rem',fixed:true},
   {key:'name',label:'\uC774\uB984',w:'6.4rem',fixed:true},
+  {key:'empId',label:'\uC0AC\uBC88',w:'6.2rem'},
   {key:'team',label:'\uD300',w:'4.6rem'},
   {key:'owner',label:'\uB2F4\uB2F9',w:'4.6rem'},
   {key:'sp',label:'S/P',w:'3.2rem'},
@@ -671,7 +670,7 @@ const COLS=[
 ];
 const DEFAULT_COL_STATE=COLS.map(c=>({key:c.key,visible:true}));
 // 조정 가능한 설정 (담당별 비중이 다르므로 세션 중 변경)
-const DEFAULT_CFG={ ratio:{S:5,A:20,"B+":65,B:10}, buffer:3, maxCompare:4,
+const DEFAULT_CFG={ ratio:{S:0,A:25,"B+":65,B:10}, buffer:3, maxCompare:6,
   colors:{S:'#8b7fd6',A:'#4f7fe6',"B+":'#4ba37c',B:'#d99a4a',C:'#d16b6b'} };
 let cfg=JSON.parse(JSON.stringify(DEFAULT_CFG));
 function applyGradeColors(colors){
@@ -693,8 +692,8 @@ let changeLog=[];  // 순위 변경 자동 이력
 
 /* ---- data ---- */
 function downloadTemplate(){
-  const headers=['직급','초기순위','이름','팀','담당','S/P','년차','25년','24년','23년','22년','21년','주요성과'];
-  const example=['차장','','김철수','MS운영','서비스담당','','5','A','A','B+','A','B+',
+  const headers=['직급','초기순위','이름','사번','팀','담당','S/P','년차','25년','24년','23년','22년','21년','주요성과'];
+  const example=['1을','','김철수','202608001','MS운영','서비스담당','','5','A','A','B+','A','B+',
     '○ 팀 매출 확대 및 원가절감 측면의 개선 노력\n- 그룹보안진단 후속과제를 도전적인 목표로 상반기 내 20개 계열사, 6개 서비스 동시 전개 완료\n○ 업무 자동화/효율화를 위한 AX 과제 수행\n- 상반기 기준 : 총 4건 절감'];
   const csvEscape=v=>{v=String(v??'');return /[",\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v;};
   const csv=[headers,example].map(r=>r.map(csvEscape).join(',')).join('\r\n');
@@ -795,10 +794,10 @@ function loadSample(){
   const achLib=[['Cleverse \uAD6C\uCD95 PM','\uC7A5\uC560 Zero \uB2EC\uC131','\uC6B4\uC601 \uC790\uB3D9\uD654 \uAC1C\uC120'],['\uC2E0\uADDC API \uAC1C\uBC1C \uC8FC\uB3C4','\uC131\uB2A5 \uAC1C\uC120 30% \uB2EC\uC131','\uACE0\uAC1D\uC0AC \uAE30\uC220\uC9C0\uC6D0 \uC644\uC218'],['\uD074\uB77C\uC6B0\uB4DC \uB9C8\uC774\uADF8\uB808\uC774\uC158 PM','\uBE44\uC6A9 \uC808\uAC10 2.5\uC5B5','\uBCF4\uC548 \uAC15\uD654 \uD504\uB85C\uC81D\uD2B8 \uC8FC\uB3C4']];
   const baseNames=['\uAE40\uCCA0\uC218','\uC774\uC601\uD76C','\uBC15\uBBFC\uC218','\uCD5C\uC9C0\uD6C8','\uC815\uD558\uB298','\uC720\uC7AC\uC11D','\uAC15\uC544\uB984','\uC774\uBBFC\uD638'];
   const arr=[]; let id=1;
-  RANKS.forEach(rk=>{ const n=rk===RANKS[3]?120:rk===RANKS[2]?108:rk===RANKS[1]?95:77; for(let i=0;i<n;i++){ const ev=evals[i%evals.length]; arr.push({id:id++,rank:rk,baseNo:i+1,rawName:baseNames[i%baseNames.length]+(i>7?(Math.floor(i/8)+1):''),name:'',team:teams[i%teams.length],owner:teamOwners[i%teams.length],sp:spVals[i%spVals.length],yr:(i%6)+2,eval25:ev[0],eval24:ev[1],eval23:ev[2],eval22:ev[3],eval21:ev[4],prev:ev[0],three:[ev[1],ev[2],ev[3]],ach:achLib[i%achLib.length],sRec:false,cFlag:false,cNote:''}); } });
+  RANKS.forEach(rk=>{ const n=rk===RANKS[3]?120:rk===RANKS[2]?108:rk===RANKS[1]?95:77; for(let i=0;i<n;i++){ const ev=evals[i%evals.length],curId=id++; arr.push({id:curId,rank:rk,baseNo:i+1,rawName:baseNames[i%baseNames.length]+(i>7?(Math.floor(i/8)+1):''),name:'',empId:'202608'+String(curId).padStart(3,'0'),team:teams[i%teams.length],owner:teamOwners[i%teams.length],sp:spVals[i%spVals.length],yr:(i%6)+2,eval25:ev[0],eval24:ev[1],eval23:ev[2],eval22:ev[3],eval21:ev[4],prev:ev[0],three:[ev[1],ev[2],ev[3]],ach:achLib[i%achLib.length],sRec:false,cFlag:false,cNote:''}); } });
   dedupeNames(arr);
-  const header=['직급','초기순위','이름','팀','담당','S/P','년차','25년','24년','23년','22년','21년','주요성과'];
-  const body=arr.map(p=>[p.rank,'',p.rawName,p.team,p.owner,p.sp,p.yr,p.eval25,p.eval24,p.eval23,p.eval22,p.eval21,quoteTsvField(p.ach.join('\n'))].join('\t'));
+  const header=['직급','초기순위','이름','사번','팀','담당','S/P','년차','25년','24년','23년','22년','21년','주요성과'];
+  const body=arr.map(p=>[p.rank,'',p.rawName,p.empId,p.team,p.owner,p.sp,p.yr,p.eval25,p.eval24,p.eval23,p.eval22,p.eval21,quoteTsvField(p.ach.join('\n'))].join('\t'));
   document.getElementById('pasteBox').value=[header.join('\t'),...body].join('\n');
   updatePasteCount();
   const info=document.getElementById('dzFileInfo');
@@ -822,7 +821,7 @@ function applyPaste(){
       const rank=normalizeRank(val(['\uC9C1\uAE09','rank'],c));
       const rawName=val(['\uC774\uB984','\uC131\uBA85','name'],c);
       if(!rawName)return;
-      p={id:id++,rank,rawName,name:'',team:val(['\uD300','\uC18C\uC18D\uD300'],c)||'-',owner:val(['\uB2F4\uB2F9','\uC18C\uC18D\uB2F4\uB2F9'],c),sp:normalizeSp(val(['S/P','SP','Succession Plan'],c)),yr:parseInt(val(['\uB144\uCC28','\uC9C1\uAE09/\uB144\uCC28'],c))||0,eval25:normalizeGrade(val(['25\uB144','2025','25\uB144 \uD3C9\uAC00','\uC791\uB144\uD3C9\uAC00'],c)),eval24:normalizeGrade(val(['24\uB144','2024'],c)),eval23:normalizeGrade(val(['23\uB144','2023'],c)),eval22:normalizeGrade(val(['22\uB144','2022'],c)),eval21:normalizeGrade(val(['21\uB144','2021'],c)),ach:(val(['\uC8FC\uC694\uC131\uACFC','\uC5C5\uC801','\uC8FC\uC694\uC5C5\uC801'],c)||'').split(/\r?\n/).map(x=>x.trim()).filter(Boolean),sRec:false,cFlag:false,cNote:''};
+      p={id:id++,rank,rawName,name:'',empId:val(['\uC0AC\uBC88','\uC0AC\uC6D0\uBC88\uD638','empid'],c),team:val(['\uD300','\uC18C\uC18D\uD300'],c)||'-',owner:val(['\uB2F4\uB2F9','\uC18C\uC18D\uB2F4\uB2F9'],c),sp:normalizeSp(val(['S/P','SP','Succession Plan'],c)),yr:parseInt(val(['\uB144\uCC28','\uC9C1\uAE09/\uB144\uCC28'],c))||0,eval25:normalizeGrade(val(['25\uB144','2025','25\uB144 \uD3C9\uAC00','\uC791\uB144\uD3C9\uAC00'],c)),eval24:normalizeGrade(val(['24\uB144','2024'],c)),eval23:normalizeGrade(val(['23\uB144','2023'],c)),eval22:normalizeGrade(val(['22\uB144','2022'],c)),eval21:normalizeGrade(val(['21\uB144','2021'],c)),ach:(val(['\uC8FC\uC694\uC131\uACFC','\uC5C5\uC801','\uC8FC\uC694\uC5C5\uC801'],c)||'').split(/\r?\n/).map(x=>x.trim()).filter(Boolean),sRec:false,cFlag:false,cNote:''};
       const baseNo=parseInt(val(['\uCD08\uAE30\uC21C\uC704','\uCD08\uAE30','\uBE44\uC728','\uCD5C\uCD08','\uC6D0\uC21C\uC704'],c)); if(baseNo)p.baseNo=baseNo;
     }else if(RANKS.includes(c[0]) && c.length>=12){
       p={id:id++,rank:c[0],baseNo:0,rawName:c[1]||'\uC774\uB984\uC5C6\uC74C',name:'',team:c[2]||'-',owner:c[3]||'',sp:normalizeSp(c[4]||''),yr:parseInt(c[5])||0,eval25:normalizeGrade(c[6]),eval24:normalizeGrade(c[7]),eval23:normalizeGrade(c[8]),eval22:normalizeGrade(c[9]),eval21:normalizeGrade(c[10]),ach:(c[11]||'').split(/\r?\n/).map(x=>x.trim()).filter(Boolean),sRec:false,cFlag:false,cNote:''};
@@ -839,7 +838,7 @@ function applyPaste(){
   ensurePersonFields(); rebuild(); closePaste(); persist(); render();
 }
 function cleanHeader(s){return String(s||'').replace(/s/g,'').toLowerCase().replace('???','?');}
-const RANK_ALIASES={'1을':'차장','1급':'차장','2갑':'과장','2급갑':'과장','2을':'대리','2급을':'대리','3급':'사원','3':'사원'};
+const RANK_ALIASES={...RANK_LEGACY_MIGRATE,'1급':'1을','2갑':'1갑','2급갑':'1갑'};
 function normalizeRank(v){
   v=String(v||'').trim();
   if(RANKS.includes(v))return v;
@@ -857,7 +856,7 @@ function dedupeNames(list){
 function ensurePersonFields(){
   people.forEach(p=>{
     p.rawName=p.rawName||p.name||'????';
-    p.owner=p.owner||''; p.sp=normalizeSp(p.sp||'');
+    p.owner=p.owner||''; p.empId=p.empId||''; p.sp=normalizeSp(p.sp||'');
     p.eval25=normalizeGrade(p.eval25||p.prev||'');
     const three=Array.isArray(p.three)?p.three:[];
     p.eval24=normalizeGrade(p.eval24||three[0]||'');
@@ -932,7 +931,11 @@ function restore(){
   try{
     const d=JSON.parse(raw);
     if(!d.people||!d.people.length)return false;
-    people=d.people; order=d.order||{}; active=RANKS.includes(d.active)?d.active:active;
+    people=d.people; order=d.order||{};
+    const migratedActive=RANK_LEGACY_MIGRATE[d.active]||d.active;
+    active=RANKS.includes(migratedActive)?migratedActive:active;
+    people.forEach(p=>{ if(RANK_LEGACY_MIGRATE[p.rank])p.rank=RANK_LEGACY_MIGRATE[p.rank]; });
+    Object.keys(order).forEach(k=>{ if(RANK_LEGACY_MIGRATE[k]){ order[RANK_LEGACY_MIGRATE[k]]=order[k]; delete order[k]; } });
     if(d.cfg)cfg={...cfg,...d.cfg}; memos=d.memos||{}; locks=d.locks||{}; changeLog=d.changeLog||[]; colState=d.colState||colState; columnFilters=d.columnFilters||{}; hiddenRows=d.hiddenRows||{}; lastSaved=d.savedAt||null;
     applyGradeColors(cfg.colors);
     ensurePersonFields();
@@ -986,7 +989,11 @@ function restoreSnapshot(id){
   if(!d||!Array.isArray(d.people)||!d.people.length){alert('스크린샷 데이터가 올바르지 않습니다.');return;}
   const stamp=fmtDateTime(d.savedAt);
   if(!confirm(`이 시점(${stamp})으로 되돌릴까요?\n현재 화면의 조정 내용은 사라집니다.`))return;
-  people=d.people; order=d.order||{}; active=RANKS.includes(d.active)?d.active:active;
+  people=d.people; order=d.order||{};
+  const migratedActive=RANK_LEGACY_MIGRATE[d.active]||d.active;
+  active=RANKS.includes(migratedActive)?migratedActive:active;
+  people.forEach(p=>{ if(RANK_LEGACY_MIGRATE[p.rank])p.rank=RANK_LEGACY_MIGRATE[p.rank]; });
+  Object.keys(order).forEach(k=>{ if(RANK_LEGACY_MIGRATE[k]){ order[RANK_LEGACY_MIGRATE[k]]=order[k]; delete order[k]; } });
   if(d.cfg)cfg={...cfg,...d.cfg}; memos=d.memos||{}; locks=d.locks||{};
   colState=d.colState||colState; columnFilters=d.columnFilters||{}; hiddenRows=d.hiddenRows||{};
   applyGradeColors(cfg.colors);
@@ -1150,7 +1157,7 @@ function pinClass(key){return key==='finalRank'?' pin-final':key==='name'?' pin-
 function evalChip(g){return g?`<span class="chip" style="background:${gColor(g)}">${esc(g)}</span>`:'';}
 function personValue(p,key,rankNo){
   const n=(order[active]||[]).length;
-  const vals={finalRank:rankNo,name:p.name,team:p.team,owner:p.owner,sp:p.sp,yr:p.yr,evalHistory:evalKeysActive().map(k=>p[k]||'-').join('/'),detail:p.detail||''};
+  const vals={finalRank:rankNo,name:p.name,empId:p.empId||'',team:p.team,owner:p.owner,sp:p.sp,yr:p.yr,evalHistory:evalKeysActive().map(k=>p[k]||'-').join('/'),detail:p.detail||''};
   return vals[key]??'';
 }
 function rowMatches(p,rankNo){
@@ -1570,10 +1577,15 @@ function autoScrollTick(){
   const threshold=90, maxSpeed=18;
   const vh=window.innerHeight;
   if(dragId!==null){
-    if(dragPointerY<threshold){
-      window.scrollBy(0,-Math.min(maxSpeed,(threshold-dragPointerY)/3));
-    }else if(dragPointerY>vh-threshold){
-      window.scrollBy(0,Math.min(maxSpeed,(dragPointerY-(vh-threshold))/3));
+    const rt=document.querySelector('.rtable');
+    if(rt){
+      const rect=rt.getBoundingClientRect();
+      const top=Math.max(rect.top,0),bottom=Math.min(rect.bottom,vh);
+      if(dragPointerY<top+threshold && dragPointerY>top-20){
+        rt.scrollTop-=Math.min(maxSpeed,(top+threshold-dragPointerY)/3);
+      }else if(dragPointerY>bottom-threshold && dragPointerY<bottom+20){
+        rt.scrollTop+=Math.min(maxSpeed,(dragPointerY-(bottom-threshold))/3);
+      }
     }
   }
   if(teamDragId!==null){
@@ -1725,16 +1737,17 @@ function moveToRank(){
 }
 
 /* ---- misc ---- */
+function csvField(v){return `"${String(v==null?'':v).replace(/"/g,'""')}"`;}
 function exportCsv(){
   if(!people.length){alert('데이터 없음');return;}
-  let rows=[["직급","최종순위","등급","S추천","C후보","C후보사유","이름","팀","년차","작년평가","최근3년","주요성과","상세"]];
-  RANKS.forEach(rk=>{const ids=order[rk]||[],n=ids.length;ids.forEach((id,i)=>{const p=pid(id);
-    rows.push([rk,i+1,gradeAt(i,n),p.sRec?"Y":"",p.cFlag?"Y":"",`"${(p.cNote||'').replace(/"/g,'""')}"`,p.name,p.team,p.yr,p.prev,(p.three||[]).join('·'),`"${(p.ach||[]).join('\n').replace(/"/g,'""')}"`,`"${(memos[id]||'').replace(/"/g,'""')}"`]);});});
+  let rows=[["직급","조정된 최종순위","담당","팀","이름","사번","메모"]];
+  RANKS.forEach(rk=>{const ids=order[rk]||[];ids.forEach((id,i)=>{const p=pid(id);
+    rows.push([csvField(rk),i+1,csvField(p.owner),csvField(p.team),csvField(p.name),csvField(p.empId),csvField(memos[id]||'')]);});});
   const csv="﻿"+rows.map(r=>r.join(',')).join('\n');
   const b=new Blob([csv],{type:'text/csv;charset=utf-8'}),u=URL.createObjectURL(b);
   const a=document.createElement('a');a.href=u;a.download=`평가결과_${new Date().toISOString().slice(0,10)}.csv`;a.click();URL.revokeObjectURL(u);
 }
-function saveSession(){persist();exportCsv();alert('세션 결과를 CSV로 내보냈습니다.\n작업 내용은 이 브라우저에 자동 저장되어, 새로고침·창 닫기 후 다시 열어도 복원됩니다.');}
+function saveSession(){persist();exportCsv();alert('평가 결과를 엑셀(CSV)로 내보냈습니다.\n작업 내용은 이 브라우저에 자동 저장되어, 새로고침·창 닫기 후 다시 열어도 복원됩니다.');}
 function logMove(p,rank,fromNo,toNo,type){
   if(!p||fromNo===toNo)return;
   changeLog.push({t:Date.now(),rank,name:p.name,team:p.team,from:fromNo,to:toNo,type});
@@ -1834,10 +1847,6 @@ function openSettings(){
   const n=(order[active]||[]).length;
   document.getElementById('setRankLbl').textContent=active;
   document.getElementById('setN').textContent=n;
-  const bufferInput=document.getElementById('setBuffer');
-  bufferInput.value=boundarySize(n);
-  bufferInput.disabled=true;
-  bufferInput.title='?? ??? ?? ??? 3%? ?? ?????.';
   document.getElementById('setMaxCmp').value=cfg.maxCompare;
   const grid=document.getElementById('setGrid');
   grid.innerHTML=["S","A","B+","B"].map(g=>`
@@ -1883,7 +1892,7 @@ function applySettings(){
   cfg.ratio={...draftRatio};
   cfg.colors={...draftColors};
   cfg.buffer=boundarySize((order[active]||[]).length);
-  cfg.maxCompare=Math.max(2,parseInt(document.getElementById('setMaxCmp').value)||4);
+  cfg.maxCompare=Math.max(2,parseInt(document.getElementById('setMaxCmp').value)||DEFAULT_CFG.maxCompare);
   // 비교 목록이 새 상한 초과 시 잘라냄
   if(picked.size>cfg.maxCompare){ picked=new Set([...picked].slice(0,cfg.maxCompare)); }
   applyGradeColors(cfg.colors);
@@ -1891,7 +1900,6 @@ function applySettings(){
 }
 function resetSettings(){ draftRatio={...DEFAULT_CFG.ratio};
   draftColors={...DEFAULT_CFG.colors};
-  document.getElementById('setBuffer').value=boundarySize((order[active]||[]).length||100);
   document.getElementById('setMaxCmp').value=DEFAULT_CFG.maxCompare;
   ["S","A","B+","B"].forEach(g=>{const el=document.getElementById('r_'+g);if(el)el.value=DEFAULT_CFG.ratio[g];});
   ["S","A","B+","B","C"].forEach(g=>{const el=document.getElementById('col_'+g);if(el)el.value=DEFAULT_CFG.colors[g];});
@@ -1921,10 +1929,10 @@ function resetColumns(){colState=DEFAULT_COL_STATE.map(x=>({...x}));renderColumn
 function applyColumnSettings(){normalizeColumnState();persist();closeColumns();render();}
 function renderBanner(){
   const el=document.getElementById('topbanner');
-  const rankTabs=`<div class="rank-tabs">${RANKS.map(rk=>`<button class="rank-tab ${rk===active&&mainView==='rank'?'active':''}" onclick="setRank('${rk}')">${rk}</button>`).join('')}</div>`;
+  const rankTabs=`<div class="rank-tabs">${RANKS.map(rk=>`<button class="rank-tab ${rk===active&&mainView==='rank'?'active':''}" onclick="setRank('${rk}')"><span>${rk}</span><span class="cnt">${(order[rk]||[]).length}\uBA85</span></button>`).join('')}</div>`;
   const actions=`<button class="tbtn ${mainView==='stats'?'on':''}" onclick="setMainView('stats')">\uC804\uCCB4 \uC694\uC57D/\uD1B5\uACC4</button><span class="tb-sep"></span><button class="tbtn ${onlyBoundary?'on':''}" onclick="toggleBoundary()" ${mainView==='stats'?'disabled':''}>\uACBD\uACC4\uAD6C\uAC04</button><button class="tbtn" onclick="openColumns()">\uC5F4 \uC124\uC815</button><button class="tbtn" onclick="openSettings()">\uC124\uC815</button><button class="tbtn" onclick="openPaste()">\uB370\uC774\uD130 \uC785\uB825</button><div class="seg" title="\uACFC\uAC70\uD3C9\uAC00 \uD45C\uC2DC \uBC94\uC704"><span class="seg-lab">\uACFC\uAC70\uD3C9\uAC00</span><button class="${evalRange==='recent1'?'on':''}" onclick="applyEvalRange('recent1')">\uCD5C\uADFC1\uB144</button><button class="${evalRange==='recent3'?'on':''}" onclick="applyEvalRange('recent3')">\uCD5C\uADFC3\uB144</button><button class="${evalRange==='recent5'?'on':''}" onclick="applyEvalRange('recent5')">\uCD5C\uADFC5\uB144</button></div><button class="tbtn" onclick="exportCsv()">CSV</button>`;
   if(!people.length){el.innerHTML=`${rankTabs}<div class="tb-empty">\uB370\uC774\uD130\uB97C \uC785\uB825\uD558\uBA74 \uD3C9\uAC00 \uD45C\uAC00 \uD45C\uC2DC\uB429\uB2C8\uB2E4.</div><span class="grow"></span>${actions}`;return;}
-  el.innerHTML=`${rankTabs}<span class="grow"></span><div class="tb-search"><input id="searchBox" placeholder="\uD589 \uAC80\uC0C9" value="${esc(query)}" oninput="query=this.value;renderMain()" onkeydown="if(event.key==='Enter')jumpFirst()">${query?`<button class="tb-x" onclick="query='';document.getElementById('searchBox').value='';renderMain()">\u2715</button>`:''}</div>${actions}`;
+  el.innerHTML=`${rankTabs}<span class="grow"></span><div class="tb-search"><input id="searchBox" placeholder="\uC774\uB984/\uD300 \uAC80\uC0C9" value="${esc(query)}" oninput="query=this.value;renderMain();jumpFirst()" onkeydown="if(event.key==='Enter')jumpFirst()">${query?`<button class="tb-x" onclick="query='';document.getElementById('searchBox').value='';renderMain()">\u2715</button>`:''}</div>${actions}`;
 }
 function renderCell(c,p,rankNo,zone,locked,inCmp){const cls=`rt-cell${pinClass(c.key)}`;if(c.key==='finalRank')return `<div class="${cls} rt-select" onclick="event.stopPropagation();togglePick(${p.id},event)"><input type="checkbox" ${inCmp?'checked':''} title="\uC120\uD0DD"><span class="grip">${locked?'??':'??'}</span><span class="rk">${rankNo}${zone.key?`<span class="tag" style="color:${zone.color}">${zone.label}</span>`:''}</span></div>`;if(c.key==='name')return `<div class="${cls} nm" title="${esc(p.name)}">${esc(p.name)}${p.sRec?' ?':''}${p.cFlag?' ??':''}</div>`;if(c.key==='detail')return `<div class="${cls} cc" onclick="event.stopPropagation()"><button class="memo-btn ${memos[p.id]?'has':''}" onclick="openDetail(${p.id})" title="\uC0C1\uC138">\uC0C1\uC138</button></div>`;if(c.key.startsWith('eval'))return `<div class="${cls}">${evalChip(personValue(p,c.key,rankNo))}</div>`;return `<div class="${cls}" title="${esc(personValue(p,c.key,rankNo))}">${esc(personValue(p,c.key,rankNo))}</div>`;}
 function renderFilterBar(total,shown){const cols=visibleColumns().filter(c=>!['finalRank','detail'].includes(c.key));return `<div class="rt-filterbar"><span class="count">${active} ${shown}/${total}\uBA85</span><input placeholder="\uD589 \uAC80\uC0C9" value="${esc(query)}" oninput="query=this.value;renderMain();renderBanner()">${cols.map(c=>`<input class="mini" placeholder="${c.label}" value="${esc(columnFilters[c.key]||'')}" oninput="setColumnFilter('${c.key}',this.value)">`).join('')}<span class="grow"></span><button class="tbtn" onclick="clearFilters()">\uD544\uD130 \uCD08\uAE30\uD654</button><button class="tbtn" onclick="hidePickedRows()" ${picked.size?'':'disabled'}>\uC120\uD0DD \uC228\uAE40</button><button class="tbtn" onclick="resetHiddenRows()" ${Object.keys(hiddenRows).length?'':'disabled'}>\uC228\uAE40 \uD574\uC81C</button>${renderLockControl()}</div>`;}
@@ -1970,7 +1978,13 @@ function filterState(key){const f=columnFilters[key];return f&&typeof f==='objec
 function activeFilterCount(){return (query?1:0)+Object.values(columnFilters).filter(v=>v&&(typeof v==='string'?v:(v.selected&&v.selected.length))).length+Object.keys(hiddenRows).length;}
 function columnValueForFilter(p,key,rankNo){const v=personValue(p,key,rankNo);return String(v==null?'':v);}
 function columnFilterValues(key){const ids=order[active]||[],map=new Map();ids.forEach((id,i)=>{const p=pid(id),v=columnValueForFilter(p,key,i+1),label=v||'(? ?)';map.set(v,{value:v,label,count:(map.get(v)?.count||0)+1});});return [...map.values()].sort((a,b)=>String(a.label).localeCompare(String(b.label),'ko'));}
-function rowMatches(p,rankNo){if(hiddenRows[p.id])return false;const hay=COLS.map(c=>String(personValue(p,c.key,rankNo))).join(' ').toLowerCase();const q=query.trim().toLowerCase();if(q&&!hay.includes(q))return false;return Object.entries(columnFilters).every(([k,f])=>{if(!f)return true;const v=columnValueForFilter(p,k,rankNo);if(typeof f==='string')return String(v).toLowerCase().includes(f.toLowerCase());if(f.mode==='include')return (f.selected||[]).includes(v);if(f.mode==='exclude')return !(f.selected||[]).includes(v);return true;});}
+function rowMatches(p,rankNo){if(hiddenRows[p.id])return false;return Object.entries(columnFilters).every(([k,f])=>{if(!f)return true;const v=columnValueForFilter(p,k,rankNo);if(typeof f==='string')return String(v).toLowerCase().includes(f.toLowerCase());if(f.mode==='include')return (f.selected||[]).includes(v);if(f.mode==='exclude')return !(f.selected||[]).includes(v);return true;});}
+function rowSearchMatch(p,rankNo){
+  const q=query.trim().toLowerCase();
+  if(!q)return false;
+  const hay=COLS.map(c=>String(personValue(p,c.key,rankNo))).join(' ').toLowerCase();
+  return hay.includes(q);
+}
 function isColumnFiltered(key){const f=filterState(key);return !!(f&&(f.selected||[]).length);}
 function ensurePivotMenu(){let el=document.getElementById('pivotMenu');if(!el){el=document.createElement('div');el.id='pivotMenu';el.className='pivot-menu';document.body.appendChild(el);}return el;}
 function closePivotMenu(){const el=document.getElementById('pivotMenu');if(el)el.remove();pivotDraft=null;}
@@ -2099,9 +2113,10 @@ function renderMain(){
   ids.forEach((id,i)=>{
     const rankNo=i+1,p=pid(id);
     if(!rowMatches(p,rankNo))return;
+    const isSearchMatch=rowSearchMatch(p,rankNo);
     if(legendFilterRange){
       if(rankNo<legendFilterRange.from||rankNo>legendFilterRange.to)return;
-    }else if(segs&&!inSegments(rankNo,segs)){
+    }else if(segs&&!inSegments(rankNo,segs)&&!isSearchMatch){
       if(gapStart===null)gapStart=rankNo;
       gapEnd=rankNo;
       return;
@@ -2109,7 +2124,7 @@ function renderMain(){
     flushGap();
     const g=gradeAt(i,n),zone=boundaryInfo(rankNo,n),locked=i<(locks[active]||0),inCmp=picked.has(id);
     const bandCls=zone.cls||(g==='S'||g==='A'?'band-a':g==='B+'?'band-bp':g==='B'?'band-b':'');
-    const cls=['rt-row',bandCls,selId===id?'sel':'',inCmp?'incmp':'',locked?'locked':''].join(' ');
+    const cls=['rt-row',bandCls,selId===id?'sel':'',inCmp?'incmp':'',locked?'locked':'',isSearchMatch?'match':''].join(' ');
     rows+=`<div class="${cls}" draggable="${locked?'false':'true'}" data-id="${id}" onclick="handleRowClick(event,${id})">${cols.map(c=>renderCell(c,p,rankNo,zone,locked,inCmp)).join('')}</div>`;
   });
   flushGap();
