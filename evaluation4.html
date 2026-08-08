@@ -704,18 +704,30 @@ function csvToTsv(text){
   if(field.length||row.length){row.push(field);rows.push(row);}
   return rows.filter(r=>r.some(f=>f.trim())).map(r=>r.map(f=>f.replace(/\t/g,' ')).join('\t')).join('\n');
 }
+function decodeFileBytes(buf){
+  const bytes=new Uint8Array(buf);
+  if(bytes.length>=3 && bytes[0]===0xEF && bytes[1]===0xBB && bytes[2]===0xBF){
+    return new TextDecoder('utf-8').decode(bytes.subarray(3));
+  }
+  try{
+    return new TextDecoder('utf-8',{fatal:true}).decode(bytes);
+  }catch(e){
+    try{ return new TextDecoder('euc-kr').decode(bytes); }
+    catch(e2){ return new TextDecoder('utf-8').decode(bytes); }
+  }
+}
 function handleFileUpload(ev){
   const file=ev.target.files[0];
   if(!file)return;
   const reader=new FileReader();
   reader.onload=e=>{
-    const text=String(e.target.result||'');
+    const text=decodeFileBytes(e.target.result);
     const looksCsv=file.name.toLowerCase().endsWith('.csv')||(!text.includes('\t')&&text.includes(','));
     document.getElementById('pasteBox').value=looksCsv?csvToTsv(text):text;
     applyPaste();
   };
   reader.onerror=()=>alert('파일을 읽는 중 오류가 발생했습니다.');
-  reader.readAsText(file,'UTF-8');
+  reader.readAsArrayBuffer(file);
   ev.target.value='';
 }
 function loadSample(){
