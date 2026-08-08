@@ -470,7 +470,7 @@
     .float-pick{bottom:auto;top:.6rem;}
   }
 
-  .rtable{max-height:calc(100vh - var(--topbar-h) - var(--banner-h) - 4.2rem);overflow:auto;}
+  .rtable{max-height:calc(100vh - var(--topbar-h) - var(--banner-h) - 5.55rem);overflow:auto;}
   .rt-head{top:1.85rem;z-index:42;min-height:2.25rem;padding:.3rem .4rem;}
   .rt-legend{position:sticky;top:0;z-index:43;display:flex;align-items:center;gap:.35rem;flex-wrap:nowrap;overflow-x:auto;background:var(--panel);padding:.28rem .5rem;height:1.85rem;box-sizing:border-box;border-bottom:1px solid var(--line2);}
   .rt-legend .tb-tag{flex:none;padding:.1rem .5rem;font-size:.72rem;}
@@ -1915,7 +1915,7 @@ function renderMain(){const m=document.getElementById('main');if(!people.length)
 /* ---- end request patch overrides ---- */
 
 /* ---- request patch final text overrides ---- */
-function renderBottom(){document.getElementById('undoBtn').disabled=!undoStack.length;document.getElementById('redoBtn').disabled=!redoStack.length;renderPickActions();if(!people.length){document.getElementById('statusMsg').innerHTML='';return;}const ids=order[active]||[],n=ids.length,{aEnd}=bounds(n),b=boundarySize(n);if(mainView==='stats'){document.getElementById('statusMsg').innerHTML=`\uC804\uCCB4 ${people.length}\uBA85 &nbsp; <b>\uC804\uCCB4 \uC694\uC57D/\uD1B5\uACC4</b>`;return;}document.getElementById('statusMsg').innerHTML=`${active} ${n}\uBA85 &nbsp; <b>A/B+ ${aEnd+1}~${Math.min(n,aEnd+b)}\uC704, B \uC0C1\uC704\uACBD\uACC4 ${boundaryRanges(n).bbFrom}~${boundaryRanges(n).bbTo}\uC704</b>`;}
+function renderBottom(){document.getElementById('undoBtn').disabled=!undoStack.length;document.getElementById('redoBtn').disabled=!redoStack.length;renderPickActions();document.getElementById('statusMsg').innerHTML='';}
 function openCompare(){
   if(picked.size<1)return;
   const ids=(order[active]||[]).filter(id=>picked.has(id)),n=(order[active]||[]).length;
