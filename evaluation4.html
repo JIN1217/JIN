@@ -568,9 +568,15 @@
 <!-- paste modal -->
 <div class="mbg" id="mbg"><div class="modal">
   <h2>평가 대상자 입력</h2>
-  <p>엑셀에서 아래 열 순서로 복사해 붙여넣으세요. 첫 줄이 머리글이면 자동 무시됩니다.<br>
-  <code>직급 · 이름 · 팀 · 직급/년차 · 작년평가 · 최근3년(A,B+,A) · 주요성과(줄바꿈은 / 로 구분) · 상세성과 · 입사일</code></p>
-  <textarea id="pasteBox" placeholder="대리	김철수	MS운영	4	A	A,A,B+	Cleverse 구축 PM/장애 Zero 달성/운영 자동화 개선	상세 성과 서술...	2020-03-02"></textarea>
+  <p>아래 양식을 다운로드해 엑셀에서 작성한 뒤, CSV로 저장해 업로드하세요. 첫 줄은 머리글입니다.<br>
+  <code>직급 · 이름 · 팀 · 담당 · S/P · 년차 · 25년 · 24년 · 23년 · 22년 · 21년 · 주요성과(줄바꿈은 / 로 구분) · 상세 · 입사일</code></p>
+  <div class="act" style="justify-content:flex-start;margin:0 0 .7rem">
+    <button class="btn" onclick="downloadTemplate()">⬇ 양식 다운로드</button>
+    <button class="btn" onclick="document.getElementById('uploadFileInput').click()">📁 파일 업로드</button>
+    <input type="file" id="uploadFileInput" accept=".csv,.tsv,.txt" style="display:none" onchange="handleFileUpload(event)">
+  </div>
+  <p style="margin:-.3rem 0 .6rem;font-size:.76rem;color:var(--muted)">또는 엑셀에서 표를 직접 복사해 아래에 붙여넣어도 됩니다.</p>
+  <textarea id="pasteBox" placeholder="차장	김철수	MS운영	서비스담당	5	A	A	B+	A	B+	장애 Zero 달성/운영 자동화 개선	상세 성과 서술...	2020-03-02"></textarea>
   <div class="act">
     <button class="btn" onclick="loadSample()">샘플 데이터</button>
     <button class="btn" onclick="closePaste()">취소</button>
@@ -669,6 +675,51 @@ let locks={};      // 직급별 잠금 인원 수 (상위 N명 확정)
 let changeLog=[];  // 순위 변경 자동 이력
 
 /* ---- data ---- */
+function downloadTemplate(){
+  const headers=['직급','이름','팀','담당','S/P','년차','25년','24년','23년','22년','21년','주요성과','상세','입사일'];
+  const example=['차장','김철수','MS운영','서비스담당','','5','A','A','B+','A','B+','장애 Zero 달성/운영 자동화 개선','상세 성과 서술...','2020-03-02'];
+  const csvEscape=v=>{v=String(v??'');return /[",\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v;};
+  const csv=[headers,example].map(r=>r.map(csvEscape).join(',')).join('\r\n');
+  const blob=new Blob(['﻿'+csv],{type:'text/csv;charset=utf-8;'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url;a.download='평가_업로드_양식.csv';
+  document.body.appendChild(a);a.click();document.body.removeChild(a);
+  setTimeout(()=>URL.revokeObjectURL(url),1000);
+}
+function csvToTsv(text){
+  const rows=[];
+  let row=[],field='',inQuotes=false;
+  for(let i=0;i<text.length;i++){
+    const ch=text[i];
+    if(inQuotes){
+      if(ch==='"'){ if(text[i+1]==='"'){field+='"';i++;} else inQuotes=false; }
+      else field+=ch;
+    }else{
+      if(ch==='"')inQuotes=true;
+      else if(ch===','){row.push(field);field='';}
+      else if(ch==='\r'){/* skip */}
+      else if(ch==='\n'){row.push(field);rows.push(row);row=[];field='';}
+      else field+=ch;
+    }
+  }
+  if(field.length||row.length){row.push(field);rows.push(row);}
+  return rows.filter(r=>r.some(f=>f.trim())).map(r=>r.map(f=>f.replace(/\t/g,' ')).join('\t')).join('\n');
+}
+function handleFileUpload(ev){
+  const file=ev.target.files[0];
+  if(!file)return;
+  const reader=new FileReader();
+  reader.onload=e=>{
+    const text=String(e.target.result||'');
+    const looksCsv=file.name.toLowerCase().endsWith('.csv')||(!text.includes('\t')&&text.includes(','));
+    document.getElementById('pasteBox').value=looksCsv?csvToTsv(text):text;
+    applyPaste();
+  };
+  reader.onerror=()=>alert('파일을 읽는 중 오류가 발생했습니다.');
+  reader.readAsText(file,'UTF-8');
+  ev.target.value='';
+}
 function loadSample(){
   const teams=['MS\uC6B4\uC601','\uD50C\uB7AB\uD3FC\uAC1C\uBC1C','\uD074\uB77C\uC6B0\uB4DC','ERP','\uADF8\uB8F9\uC6E8\uC5B4','\uBCF4\uC548','\uAE30\uD68D'];
   const teamOwners=['\uC11C\uBE44\uC2A4\uB2F4\uB2F9','\uAC1C\uBC1C\uB2F4\uB2F9','\uC778\uD504\uB77C\uB2F4\uB2F9','\uACBD\uC601\uC9C0\uC6D0\uB2F4\uB2F9','\uC11C\uBE44\uC2A4\uB2F4\uB2F9','\uAC1C\uBC1C\uB2F4\uB2F9','\uACBD\uC601\uC9C0\uC6D0\uB2F4\uB2F9'];
