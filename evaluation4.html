@@ -567,15 +567,16 @@
 <div class="mbg" id="mbg"><div class="modal">
   <h2>평가 대상자 입력</h2>
   <p>아래 양식을 다운로드해 엑셀에서 작성한 뒤, CSV로 저장해 업로드하세요. 첫 줄은 머리글입니다.<br>
-  <code>직급 · 이름 · 팀 · 담당 · S/P · 년차 · 25년 · 24년 · 23년 · 22년 · 21년 · 주요성과(줄바꿈은 / 로 구분) · 상세 · 입사일</code><br>
-  전 직급을 한 파일에 섞어 올려도 자동으로 각 탭에 분류됩니다. <b>직급</b>란에는 <code>차장/과장/대리/사원</code> 또는 <code>1/2갑/2을/3급</code> 표기를 모두 인식합니다.</p>
+  <code>직급 · 이름 · 팀 · 담당 · S/P · 년차 · 25년 · 24년 · 23년 · 22년 · 21년 · 주요성과</code><br>
+  전 직급을 한 파일에 섞어 올려도 자동으로 각 탭에 분류됩니다. <b>직급</b>란에는 <code>차장/과장/대리/사원</code> 또는 <code>1/2갑/2을/3급</code> 표기를 모두 인식합니다.<br>
+  <b>주요성과</b>는 여러 줄로 길게 작성해도 됩니다(엑셀 셀 안에서 Alt+Enter로 줄바꿈). 줄 단위로 그대로 표시됩니다.</p>
   <div class="act" style="justify-content:flex-start;margin:0 0 .7rem">
     <button class="btn" onclick="downloadTemplate()">⬇ 양식 다운로드</button>
     <button class="btn" onclick="document.getElementById('uploadFileInput').click()">📁 파일 업로드</button>
     <input type="file" id="uploadFileInput" accept=".csv,.tsv,.txt" style="display:none" onchange="handleFileUpload(event)">
   </div>
   <p style="margin:-.3rem 0 .6rem;font-size:.76rem;color:var(--muted)">또는 엑셀에서 표를 직접 복사해 아래에 붙여넣어도 됩니다.</p>
-  <textarea id="pasteBox" placeholder="차장	김철수	MS운영	서비스담당	5	A	A	B+	A	B+	장애 Zero 달성/운영 자동화 개선	상세 성과 서술...	2020-03-02"></textarea>
+  <textarea id="pasteBox" placeholder="차장	김철수	MS운영	서비스담당	5	A	A	B+	A	B+	장애 Zero 달성/운영 자동화 개선"></textarea>
   <div class="act">
     <button class="btn" onclick="loadSample()">샘플 데이터</button>
     <button class="btn" onclick="closePaste()">취소</button>
@@ -675,8 +676,9 @@ let changeLog=[];  // 순위 변경 자동 이력
 
 /* ---- data ---- */
 function downloadTemplate(){
-  const headers=['직급','이름','팀','담당','S/P','년차','25년','24년','23년','22년','21년','주요성과','상세','입사일'];
-  const example=['차장','김철수','MS운영','서비스담당','','5','A','A','B+','A','B+','장애 Zero 달성/운영 자동화 개선','상세 성과 서술...','2020-03-02'];
+  const headers=['직급','이름','팀','담당','S/P','년차','25년','24년','23년','22년','21년','주요성과'];
+  const example=['차장','김철수','MS운영','서비스담당','','5','A','A','B+','A','B+',
+    '○ 팀 매출 확대 및 원가절감 측면의 개선 노력\n- 그룹보안진단 후속과제를 도전적인 목표로 상반기 내 20개 계열사, 6개 서비스 동시 전개 완료\n○ 업무 자동화/효율화를 위한 AX 과제 수행\n- 상반기 기준 : 총 4건 절감'];
   const csvEscape=v=>{v=String(v??'');return /[",\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v;};
   const csv=[headers,example].map(r=>r.map(csvEscape).join(',')).join('\r\n');
   const blob=new Blob(['﻿'+csv],{type:'text/csv;charset=utf-8;'});
@@ -686,7 +688,7 @@ function downloadTemplate(){
   document.body.appendChild(a);a.click();document.body.removeChild(a);
   setTimeout(()=>URL.revokeObjectURL(url),1000);
 }
-function csvToTsv(text){
+function parseDelimitedText(text,delim){
   const rows=[];
   let row=[],field='',inQuotes=false;
   for(let i=0;i<text.length;i++){
@@ -696,14 +698,21 @@ function csvToTsv(text){
       else field+=ch;
     }else{
       if(ch==='"')inQuotes=true;
-      else if(ch===','){row.push(field);field='';}
+      else if(ch===delim){row.push(field);field='';}
       else if(ch==='\r'){/* skip */}
       else if(ch==='\n'){row.push(field);rows.push(row);row=[];field='';}
       else field+=ch;
     }
   }
   if(field.length||row.length){row.push(field);rows.push(row);}
-  return rows.filter(r=>r.some(f=>f.trim())).map(r=>r.map(f=>f.replace(/\t/g,' ')).join('\t')).join('\n');
+  return rows.filter(r=>r.some(f=>f.trim()));
+}
+function quoteTsvField(f){
+  f=String(f==null?'':f);
+  return /[\t\n\r"]/.test(f) ? '"'+f.replace(/"/g,'""')+'"' : f;
+}
+function csvToTsv(text){
+  return parseDelimitedText(text,',').map(r=>r.map(quoteTsvField).join('\t')).join('\n');
 }
 function decodeFileBytes(buf){
   const bytes=new Uint8Array(buf);
@@ -737,24 +746,23 @@ function loadSample(){
   const spVals=['','\uCC28\uAE30','\uCC28\uCC28\uAE30','T/P'];
   const evals=[['A','A','B+','A','B+'],['A','B+','A','A','B+'],['B+','A','B+','B+','A'],['S','A','A','A','B+'],['B+','B+','B+','A','B'],['B','B+','B+','B','B+']];
   const achLib=[['Cleverse \uAD6C\uCD95 PM','\uC7A5\uC560 Zero \uB2EC\uC131','\uC6B4\uC601 \uC790\uB3D9\uD654 \uAC1C\uC120'],['\uC2E0\uADDC API \uAC1C\uBC1C \uC8FC\uB3C4','\uC131\uB2A5 \uAC1C\uC120 30% \uB2EC\uC131','\uACE0\uAC1D\uC0AC \uAE30\uC220\uC9C0\uC6D0 \uC644\uC218'],['\uD074\uB77C\uC6B0\uB4DC \uB9C8\uC774\uADF8\uB808\uC774\uC158 PM','\uBE44\uC6A9 \uC808\uAC10 2.5\uC5B5','\uBCF4\uC548 \uAC15\uD654 \uD504\uB85C\uC81D\uD2B8 \uC8FC\uB3C4']];
-  const detailLib=['ERP \uBAA8\uB4C8 \uAE30\uB2A5 \uAC1C\uC120\n\uB370\uC774\uD130 \uD488\uC9C8 \uAC1C\uC120\n\uC5C5\uBB34 \uD504\uB85C\uC138\uC2A4 \uC790\uB3D9\uD654','\uC2E0\uADDC API 3\uC885 \uC124\uACC4 \uBC0F \uBC30\uD3EC\n\uC751\uB2F5\uC18D\uB3C4 30% \uB2E8\uCD95\n\uC0AC\uB0B4 \uC2DC\uC2A4\uD15C \uC5F0\uB3D9 \uD45C\uC900\uD654'];
   const baseNames=['\uAE40\uCCA0\uC218','\uC774\uC601\uD76C','\uBC15\uBBFC\uC218','\uCD5C\uC9C0\uD6C8','\uC815\uD558\uB298','\uC720\uC7AC\uC11D','\uAC15\uC544\uB984','\uC774\uBBFC\uD638'];
   const arr=[]; let id=1;
-  RANKS.forEach(rk=>{ const n=rk===RANKS[3]?120:rk===RANKS[2]?108:rk===RANKS[1]?95:77; for(let i=0;i<n;i++){ const ev=evals[i%evals.length]; arr.push({id:id++,rank:rk,baseNo:i+1,rawName:baseNames[i%baseNames.length]+(i>7?(Math.floor(i/8)+1):''),name:'',team:teams[i%teams.length],owner:teamOwners[i%teams.length],sp:spVals[i%spVals.length],yr:(i%6)+2,eval25:ev[0],eval24:ev[1],eval23:ev[2],eval22:ev[3],eval21:ev[4],prev:ev[0],three:[ev[1],ev[2],ev[3]],ach:achLib[i%achLib.length],detail:detailLib[i%detailLib.length],join:'20'+String(24-(i%6)).padStart(2,'0')+'-0'+((i%9)+1)+'-'+String((i%27)+1).padStart(2,'0'),sRec:false,cFlag:false,cNote:''}); } });
+  RANKS.forEach(rk=>{ const n=rk===RANKS[3]?120:rk===RANKS[2]?108:rk===RANKS[1]?95:77; for(let i=0;i<n;i++){ const ev=evals[i%evals.length]; arr.push({id:id++,rank:rk,baseNo:i+1,rawName:baseNames[i%baseNames.length]+(i>7?(Math.floor(i/8)+1):''),name:'',team:teams[i%teams.length],owner:teamOwners[i%teams.length],sp:spVals[i%spVals.length],yr:(i%6)+2,eval25:ev[0],eval24:ev[1],eval23:ev[2],eval22:ev[3],eval21:ev[4],prev:ev[0],three:[ev[1],ev[2],ev[3]],ach:achLib[i%achLib.length],sRec:false,cFlag:false,cNote:''}); } });
   dedupeNames(arr);
-  document.getElementById('pasteBox').value=arr.map(p=>[p.rank,p.rawName,p.team,p.owner,p.sp,p.yr,p.eval25,p.eval24,p.eval23,p.eval22,p.eval21,p.ach.join('/'),p.detail.replace(/\n/g,' ')].join('\t')).join('\n');
+  document.getElementById('pasteBox').value=arr.map(p=>[p.rank,p.rawName,p.team,p.owner,p.sp,p.yr,p.eval25,p.eval24,p.eval23,p.eval22,p.eval21,quoteTsvField(p.ach.join('\n'))].join('\t')).join('\n');
 }
 function applyPaste(){
   const raw=document.getElementById('pasteBox').value.trim();
   if(!raw){closePaste();return;}
-  const lines=raw.split(/\r?\n/).filter(l=>l.trim());
+  const lines=parseDelimitedText(raw,'\t');
   const out=[]; let id=1;
-  const first=lines[0].split('\t').map(x=>cleanHeader(x));
+  const first=lines[0].map(x=>cleanHeader(x));
   const hasHeader=first.includes('\uC774\uB984') || first.includes('\uC131\uBA85');
   const idx=name=>first.indexOf(cleanHeader(name));
   const val=(cols,c)=>{ for(const name of cols){const i=idx(name); if(i>=0 && c[i]!=null && c[i]!=="")return c[i].trim();} return ""; };
-  lines.forEach((l,lineIdx)=>{
-    const c=l.split('\t').map(x=>x.trim());
+  lines.forEach((c,lineIdx)=>{
+    c=c.map(x=>x.trim());
     if(hasHeader && lineIdx===0)return;
     if(c.length<2)return;
     let p;
@@ -762,16 +770,16 @@ function applyPaste(){
       const rank=normalizeRank(val(['\uC9C1\uAE09','rank'],c));
       const rawName=val(['\uC774\uB984','\uC131\uBA85','name'],c);
       if(!rawName)return;
-      p={id:id++,rank,rawName,name:'',team:val(['\uD300','\uC18C\uC18D\uD300'],c)||'-',owner:val(['\uB2F4\uB2F9','\uC18C\uC18D\uB2F4\uB2F9'],c),sp:normalizeSp(val(['S/P','SP','Succession Plan'],c)),yr:parseInt(val(['\uB144\uCC28','\uC9C1\uAE09/\uB144\uCC28'],c))||0,eval25:normalizeGrade(val(['25\uB144','2025','25\uB144 \uD3C9\uAC00','\uC791\uB144\uD3C9\uAC00'],c)),eval24:normalizeGrade(val(['24\uB144','2024'],c)),eval23:normalizeGrade(val(['23\uB144','2023'],c)),eval22:normalizeGrade(val(['22\uB144','2022'],c)),eval21:normalizeGrade(val(['21\uB144','2021'],c)),ach:(val(['\uC8FC\uC694\uC131\uACFC','\uC5C5\uC801','\uC8FC\uC694\uC5C5\uC801'],c)||'').split('/').map(x=>x.trim()).filter(Boolean),detail:val(['\uC0C1\uC138','\uC0C1\uC138\uC131\uACFC','\uC0C1\uC138\uC5C5\uC801'],c),join:val(['\uC785\uC0AC\uC77C'],c),sRec:false,cFlag:false,cNote:''};
+      p={id:id++,rank,rawName,name:'',team:val(['\uD300','\uC18C\uC18D\uD300'],c)||'-',owner:val(['\uB2F4\uB2F9','\uC18C\uC18D\uB2F4\uB2F9'],c),sp:normalizeSp(val(['S/P','SP','Succession Plan'],c)),yr:parseInt(val(['\uB144\uCC28','\uC9C1\uAE09/\uB144\uCC28'],c))||0,eval25:normalizeGrade(val(['25\uB144','2025','25\uB144 \uD3C9\uAC00','\uC791\uB144\uD3C9\uAC00'],c)),eval24:normalizeGrade(val(['24\uB144','2024'],c)),eval23:normalizeGrade(val(['23\uB144','2023'],c)),eval22:normalizeGrade(val(['22\uB144','2022'],c)),eval21:normalizeGrade(val(['21\uB144','2021'],c)),ach:(val(['\uC8FC\uC694\uC131\uACFC','\uC5C5\uC801','\uC8FC\uC694\uC5C5\uC801'],c)||'').split(/\r?\n/).map(x=>x.trim()).filter(Boolean),sRec:false,cFlag:false,cNote:''};
       const baseNo=parseInt(val(['\uBE44\uC728','\uCD5C\uCD08','\uC6D0\uC21C\uC704'],c)); if(baseNo)p.baseNo=baseNo;
-    }else if(RANKS.includes(c[0]) && c.length>=13){
-      p={id:id++,rank:c[0],baseNo:0,rawName:c[1]||'\uC774\uB984\uC5C6\uC74C',name:'',team:c[2]||'-',owner:c[3]||'',sp:normalizeSp(c[4]||''),yr:parseInt(c[5])||0,eval25:normalizeGrade(c[6]),eval24:normalizeGrade(c[7]),eval23:normalizeGrade(c[8]),eval22:normalizeGrade(c[9]),eval21:normalizeGrade(c[10]),ach:(c[11]||'').split('/').map(x=>x.trim()).filter(Boolean),detail:c[12]||'',join:c[13]||'',sRec:false,cFlag:false,cNote:''};
-    }else if(!RANKS.includes(c[0]) && c.length>=12){
+    }else if(RANKS.includes(c[0]) && c.length>=12){
+      p={id:id++,rank:c[0],baseNo:0,rawName:c[1]||'\uC774\uB984\uC5C6\uC74C',name:'',team:c[2]||'-',owner:c[3]||'',sp:normalizeSp(c[4]||''),yr:parseInt(c[5])||0,eval25:normalizeGrade(c[6]),eval24:normalizeGrade(c[7]),eval23:normalizeGrade(c[8]),eval22:normalizeGrade(c[9]),eval21:normalizeGrade(c[10]),ach:(c[11]||'').split(/\r?\n/).map(x=>x.trim()).filter(Boolean),sRec:false,cFlag:false,cNote:''};
+    }else if(!RANKS.includes(c[0]) && c.length>=11){
       const hasVisibleRanks=/^\d+$/.test(c[0]) && /^\d+$/.test(c[1]); const o=hasVisibleRanks?2:0;
-      p={id:id++,rank:active,baseNo:parseInt(c[1])||0,rawName:c[o]||'\uC774\uB984\uC5C6\uC74C',name:'',team:c[o+1]||'-',owner:c[o+2]||'',sp:normalizeSp(c[o+3]||''),yr:parseInt(c[o+4])||0,eval25:normalizeGrade(c[o+5]),eval24:normalizeGrade(c[o+6]),eval23:normalizeGrade(c[o+7]),eval22:normalizeGrade(c[o+8]),eval21:normalizeGrade(c[o+9]),ach:[],detail:c[o+10]||'',join:'',sRec:false,cFlag:false,cNote:''};
+      p={id:id++,rank:active,baseNo:parseInt(c[1])||0,rawName:c[o]||'\uC774\uB984\uC5C6\uC74C',name:'',team:c[o+1]||'-',owner:c[o+2]||'',sp:normalizeSp(c[o+3]||''),yr:parseInt(c[o+4])||0,eval25:normalizeGrade(c[o+5]),eval24:normalizeGrade(c[o+6]),eval23:normalizeGrade(c[o+7]),eval22:normalizeGrade(c[o+8]),eval21:normalizeGrade(c[o+9]),ach:(c[o+10]||'').split(/\r?\n/).map(x=>x.trim()).filter(Boolean),sRec:false,cFlag:false,cNote:''};
     }else{
       let rank=normalizeRank(c[0]); const three=(c[5]||c[4]||'').split(',').map(x=>normalizeGrade(x.trim())).filter(Boolean);
-      p={id:id++,rank,baseNo:0,rawName:c[1]||'\uC774\uB984\uC5C6\uC74C',name:'',team:c[2]||'-',owner:'',sp:'',yr:parseInt(c[3])||0,eval25:normalizeGrade(c[4]||three[0]||'-'),eval24:three[0]||'',eval23:three[1]||'',eval22:three[2]||'',eval21:'',prev:normalizeGrade(c[4]||three[0]||'-'),three:three.length?three:[normalizeGrade(c[4]||'-')],ach:(c[6]||'').split('/').map(x=>x.trim()).filter(Boolean),detail:c[7]||'',join:c[8]||'',sRec:false,cFlag:false,cNote:''};
+      p={id:id++,rank,baseNo:0,rawName:c[1]||'\uC774\uB984\uC5C6\uC74C',name:'',team:c[2]||'-',owner:'',sp:'',yr:parseInt(c[3])||0,eval25:normalizeGrade(c[4]||three[0]||'-'),eval24:three[0]||'',eval23:three[1]||'',eval22:three[2]||'',eval21:'',prev:normalizeGrade(c[4]||three[0]||'-'),three:three.length?three:[normalizeGrade(c[4]||'-')],ach:(c[6]||'').split('/').map(x=>x.trim()).filter(Boolean),sRec:false,cFlag:false,cNote:''};
     }
     out.push(p);
   });
@@ -1294,7 +1302,6 @@ function renderFloatingDetail(){
     <div>
       <div class="nm">${esc(p.name)} ${zone.key?`<span class="chip" style="background:${zone.color}">${rankNo}위 ${zone.label}</span>`:`<span class="chip" style="background:${gColor(gradeAt(rankNo-1,n))}">${rankNo}위</span>`}</div>
       <div class="meta">${esc(p.team)} | ${active} (${p.yr}년차)</div>
-      <div class="join">입사일: ${esc(p.join||'-')}</div>
     </div>
   </div>
   <div class="rbox">
@@ -1303,10 +1310,9 @@ function renderFloatingDetail(){
     <div class="row"><span class="lab">평가 이력</span><span class="link">전체보기 ›</span></div>
   </div>
   <div class="rbox aisum">
-    <div class="cap">주요 성과 <span style="color:var(--muted)">(AI 요약)</span></div>
-    <ol>${(p.ach||[]).map(a=>`<li>${esc(a)}</li>`).join('')||'<li>요약 없음</li>'}</ol>
+    <div class="cap">주요 성과</div>
+    <div style="font-size:.82rem;line-height:1.65;white-space:pre-wrap">${esc((p.ach||[]).join('\n'))||'등록된 성과가 없습니다.'}</div>
   </div>
-  <details class="accord"><summary>상세 성과 내용</summary><div class="in">${esc(p.detail||'상세 내용 없음')}</div></details>
   <div class="rbox">
     <div style="font-weight:700;margin-bottom:.5rem;font-size:.82rem">S등급 추천</div>
     <button class="cmp-open" style="background:${p.sRec?'var(--s)':'var(--blue-soft)'};color:${p.sRec?'#fff':'var(--blue)'};margin-top:0" onclick="toggleSFromPanel(${p.id})">${p.sRec?'⭐ S 추천 지정됨 (해제)':'⭐ S등급으로 추천'}</button>
@@ -1365,7 +1371,7 @@ function openCompare(){
         <span class="m">S추천 <b>${p.sRec?'○':'—'}</b></span>
         <span class="m">C후보 <b>${p.cFlag?'○':'—'}</b></span>
       </div>
-      <div class="body">${(p.ach||[]).map(a=>'· '+esc(a)).join('\n')}\n\n${esc(p.detail||'')}</div>
+      <div class="body">${(p.ach||[]).map(a=>'· '+esc(a)).join('\n')}</div>
       <div class="foot"><button class="up" onclick="moveCmp(${id},-1)" ${locked?'disabled':''}>▲ 위로</button><button class="dn" onclick="moveCmp(${id},1)" ${locked?'disabled':''}>▼ 아래로</button></div>
     </div>`;
   }).join('');
@@ -1410,9 +1416,8 @@ function openSpotlight(id){
       <div style="padding:1.4rem 2rem;display:flex;gap:.7rem;flex-wrap:wrap;border-bottom:1px solid var(--line)">
         <span style="font-size:1.05rem;padding:.5rem 1rem;background:var(--bg);border-radius:8px">작년 평가 <b style="margin-left:.3rem">${p.prev}</b></span>
         <span style="font-size:1.05rem;padding:.5rem 1rem;background:var(--bg);border-radius:8px">최근 3년 <b style="margin-left:.3rem">${(p.three||[]).join(' · ')}</b></span>
-        <span style="font-size:1.05rem;padding:.5rem 1rem;background:var(--bg);border-radius:8px">입사일 <b style="margin-left:.3rem">${esc(p.join||'-')}</b></span>
       </div>
-      <div style="padding:1.8rem 2rem;font-size:1.3rem;line-height:1.85;white-space:pre-wrap">${[...(p.ach||[]).map(a=>'• '+esc(a)),p.detail?esc(p.detail):''].filter(Boolean).join('\n\n')||'등록된 성과 내용이 없습니다.'}</div>
+      <div style="padding:1.8rem 2rem;font-size:1.3rem;line-height:1.85;white-space:pre-wrap">${esc((p.ach||[]).join('\n'))||'등록된 성과 내용이 없습니다.'}</div>
       ${p.cFlag?`<div style="margin:0 2rem 1.8rem;padding:1rem 1.2rem;background:#fdeaea;border-radius:10px;font-size:1.1rem;color:var(--warn);font-weight:700">🚩 C후보 등록 사유: ${esc(p.cNote||'(사유 없음)')}</div>`:''}
     </div>`;
   document.getElementById('spot').classList.add('show');
@@ -1595,7 +1600,7 @@ function exportCsv(){
   if(!people.length){alert('데이터 없음');return;}
   let rows=[["직급","최종순위","등급","S추천","C후보","C후보사유","이름","팀","년차","작년평가","최근3년","주요성과","상세"]];
   RANKS.forEach(rk=>{const ids=order[rk]||[],n=ids.length;ids.forEach((id,i)=>{const p=pid(id);
-    rows.push([rk,i+1,gradeAt(i,n),p.sRec?"Y":"",p.cFlag?"Y":"",`"${(p.cNote||'').replace(/"/g,'""')}"`,p.name,p.team,p.yr,p.prev,(p.three||[]).join('·'),`"${(p.ach||[]).join(' / ')}"`,`"${(memos[id]||'').replace(/"/g,'""')}"`]);});});
+    rows.push([rk,i+1,gradeAt(i,n),p.sRec?"Y":"",p.cFlag?"Y":"",`"${(p.cNote||'').replace(/"/g,'""')}"`,p.name,p.team,p.yr,p.prev,(p.three||[]).join('·'),`"${(p.ach||[]).join('\n').replace(/"/g,'""')}"`,`"${(memos[id]||'').replace(/"/g,'""')}"`]);});});
   const csv="﻿"+rows.map(r=>r.join(',')).join('\n');
   const b=new Blob([csv],{type:'text/csv;charset=utf-8'}),u=URL.createObjectURL(b);
   const a=document.createElement('a');a.href=u;a.download=`평가결과_${new Date().toISOString().slice(0,10)}.csv`;a.click();URL.revokeObjectURL(u);
