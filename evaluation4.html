@@ -137,7 +137,11 @@
   /* summary / stats */
   .stats-view{display:grid;gap:.9rem;}
   .stats-head{margin-bottom:0;}
-  .stats-kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:.7rem;}
+  .stats-kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(11rem,1fr));gap:.7rem;}
+  .stat-kpi.good{border-color:color-mix(in srgb,var(--ok) 35%,var(--line));}
+  .stat-kpi.good .v{color:var(--ok);}
+  .stat-kpi.bad{border-color:color-mix(in srgb,var(--warn) 35%,var(--line));}
+  .stat-kpi.bad .v{color:var(--warn);}
   .stat-kpi{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:.75rem .85rem;box-shadow:var(--sh);}
   .stat-kpi .k{font-size:.72rem;color:var(--muted2);font-weight:800;margin-bottom:.3rem;}
   .stat-kpi .v{font-size:1.45rem;line-height:1;font-weight:850;font-variant-numeric:tabular-nums;}
@@ -146,6 +150,21 @@
   .stats-card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:.9rem 1rem;box-shadow:var(--sh);min-width:0;}
   .stats-card h3{margin:0 0 .7rem;font-size:.92rem;color:var(--txt);}
   .stats-card .note{font-size:.74rem;color:var(--muted);margin-top:.45rem;}
+  .stats-card h3 .hint{font-size:.7rem;color:var(--muted);font-weight:600;margin-left:.5rem;}
+  .yoy-list{display:grid;gap:.6rem;}
+  .yoy-row{display:grid;grid-template-columns:3.2rem 1fr auto;align-items:center;gap:.6rem;font-size:.8rem;}
+  .yoy-row .yoy-lab{display:flex;align-items:center;gap:.35rem;font-weight:800;}
+  .yoy-row .yoy-lab .dot{width:.65rem;height:.65rem;border-radius:2px;background:var(--gc);display:inline-block;}
+  .yoy-nums{display:flex;flex-direction:column;gap:.1rem;min-width:0;}
+  .yoy-cur{font-weight:800;color:var(--gc);}
+  .yoy-vs{font-size:.7rem;color:var(--muted);}
+  .yoy-delta{font-weight:800;font-variant-numeric:tabular-nums;white-space:nowrap;text-align:right;}
+  .yoy-delta.up{color:var(--ok);}
+  .yoy-delta.down{color:var(--warn);}
+  .yoy-delta.flat{color:var(--muted);}
+  .grp-stack{display:flex;height:.5rem;background:var(--bg);border-radius:8px;overflow:hidden;min-width:6rem;}
+  .grp-stack i{height:100%;width:var(--w);background:var(--gc);}
+  .grp-detail{display:flex;gap:.45rem;flex-wrap:wrap;font-size:.72rem;font-weight:700;justify-content:flex-start;}
   .dist-list{display:grid;gap:.55rem;}
   .dist-row{display:grid;grid-template-columns:3.2rem 1fr 4.4rem;gap:.7rem;align-items:center;font-size:.8rem;}
   .dist-row .lab{font-weight:800;display:flex;align-items:center;gap:.35rem;}
@@ -900,27 +919,74 @@ function rankSummary(rk){
 }
 function renderToolbar(){return '';}
 function renderDist(counts,total){
-  return `<div class="dist-list">${GRADES.map(g=>{const n=counts[g.key]||0,p=pct(n,total);return `<div class="dist-row" style="--gc:${g.color};--w:${p}%"><div class="lab"><span class="dot"></span>${g.key}</div><div class="bar-track"><div class="bar-fill"></div></div><div class="num">${n}? ? ${p}%</div></div>`;}).join('')}</div>`;
+  return `<div class="dist-list">${GRADES.map(g=>{const n=counts[g.key]||0,p=pct(n,total);return `<div class="dist-row" style="--gc:${g.color};--w:${p}%"><div class="lab"><span class="dot"></span>${g.key}</div><div class="bar-track"><div class="bar-fill"></div></div><div class="num">${n}명 · ${p}%</div></div>`;}).join('')}</div>`;
+}
+function renderYoyCompare(cur,last,total){
+  return `<div class="yoy-list">${GRADES.map(g=>{
+    const c=cur[g.key]||0,l=last[g.key]||0,d=c-l;
+    const dLabel=d>0?`▲${d}`:d<0?`▼${Math.abs(d)}`:'변동없음';
+    const dCls=d>0?'up':d<0?'down':'flat';
+    return `<div class="yoy-row" style="--gc:${g.color}"><div class="yoy-lab"><span class="dot"></span>${g.key}</div><div class="yoy-nums"><span class="yoy-cur">${c}명 · ${pct(c,total)}%</span><span class="yoy-vs">작년 ${l}명</span></div><div class="yoy-delta ${dCls}">${dLabel}</div></div>`;
+  }).join('')}</div>`;
+}
+function renderGroupTable(groups,labelKey,titleLabel){
+  const rows=groups.map(g=>{
+    const total=g.total||0;
+    const stack=GRADES.map(gr=>`<i style="--gc:${gr.color};--w:${pct(g[gr.key]||0,total)}%"></i>`).join('');
+    const detail=GRADES.filter(gr=>(g[gr.key]||0)>0).map(gr=>`<span style="color:${gr.color}">${gr.key} ${g[gr.key]}</span>`).join('');
+    return `<tr><td><b>${esc(g[labelKey])}</b></td><td>${total}명</td><td><div class="grp-stack">${stack}</div></td><td><div class="grp-detail">${detail||'-'}</div></td></tr>`;
+  }).join('');
+  return `<table class="stat-table"><tr><th style="text-align:left">${titleLabel}</th><th>인원</th><th>등급 비중</th><th style="text-align:left">상세</th></tr>${rows}</table>`;
 }
 function aggregateSummary(){
-  const sums={rk:'??',ids:[],n:people.length,q:{S:0,A:0,"B+":0,B:0},counts:{S:0,A:0,"B+":0,B:0,C:0},prev:{S:0,A:0,"B+":0,B:0,C:0,"-":0},teams:{},sRec:0,cCnt:0,memo:0,avgYr:0};
+  const sums={rk:'전체',ids:[],n:people.length,q:{S:0,A:0,"B+":0,B:0},counts:{S:0,A:0,"B+":0,B:0,C:0},lastYear:{S:0,A:0,"B+":0,B:0,C:0,"-":0},teams:{},owners:{},byRank:{},sRec:0,cCnt:0,memo:0,avgYr:0};
   let yrSum=0;
   RANKS.forEach(rk=>{
     const ids=order[rk]||[],n=ids.length,q=quotas(n);
     ['S','A','B+','B'].forEach(g=>sums.q[g]+=q[g]||0);
-    ids.forEach((id,i)=>{const p=pid(id),g=gradeAt(i,n),key=String(p.team||'').trim();sums.ids.push(id);sums.counts[g]++;const ev=p.eval25||p.prev||'-';sums.prev[ev]=sums.prev[ev]==null?1:sums.prev[ev]+1;sums.teams[key]=sums.teams[key]||{team:p.team,owner:p.owner||'',total:0,S:0,A:0,"B+":0,B:0,C:0,recB:0};sums.teams[key].total++;sums.teams[key][g]++;if(p.sRec)sums.sRec++;if(p.cFlag)sums.cCnt++;if(memos[id])sums.memo++;yrSum+=p.yr||0;});
+    const rankBucket=sums.byRank[rk]=sums.byRank[rk]||{rk,total:0,S:0,A:0,"B+":0,B:0,C:0};
+    ids.forEach((id,i)=>{
+      const p=pid(id),g=gradeAt(i,n),teamKey=String(p.team||'').trim()||'미지정',ownerKey=String(p.owner||'').trim()||'미지정';
+      sums.ids.push(id);sums.counts[g]++;
+      const ly=normalizeGrade(p.eval24)||'-'; sums.lastYear[ly]=(sums.lastYear[ly]||0)+1;
+      sums.teams[teamKey]=sums.teams[teamKey]||{team:p.team,owner:p.owner||'',total:0,S:0,A:0,"B+":0,B:0,C:0,recB:0};
+      sums.teams[teamKey].total++; sums.teams[teamKey][g]++;
+      sums.owners[ownerKey]=sums.owners[ownerKey]||{owner:ownerKey,total:0,S:0,A:0,"B+":0,B:0,C:0};
+      sums.owners[ownerKey].total++; sums.owners[ownerKey][g]++;
+      rankBucket.total++; rankBucket[g]++;
+      if(p.sRec)sums.sRec++;if(p.cFlag)sums.cCnt++;if(memos[id])sums.memo++;yrSum+=p.yr||0;
+    });
   });
   Object.values(sums.teams).forEach(t=>{t.recB=Math.round(t.total*.10);});
   sums.teams=Object.values(sums.teams).sort((a,b)=>b.total-a.total||String(a.team).localeCompare(String(b.team)));
+  sums.owners=Object.values(sums.owners).sort((a,b)=>b.total-a.total||String(a.owner).localeCompare(String(b.owner)));
+  sums.byRank=RANKS.map(rk=>sums.byRank[rk]||{rk,total:0,S:0,A:0,"B+":0,B:0,C:0});
   sums.avgYr=sums.n?yrSum/sums.n:0;
   return sums;
 }
 function renderStatsScreen(){
   const s=aggregateSummary();
-  const all=RANKS.map(rankSummary);
-  const teamRows=s.teams.map(t=>{const status=t.B<t.recB?["??","warn"]:t.B>t.recB?["??","over"]:["??","ok"];return `<tr><td><b>${esc(t.team)}</b><div style="color:var(--muted);font-size:.72rem">${esc(t.owner||'-')}</div><div class="mini-meter" style="--w:${pct(t.B,t.total)}%;--gc:var(--b)"><i></i></div></td><td>${t.total}</td><td>${t.recB}</td><td>${t.B}</td><td class="st ${status[1]}">${status[0]}</td></tr>`;}).join('');
-  const rankRows=all.map(x=>`<tr><td><b>${x.rk}</b></td><td>${x.n}</td><td>${x.q.S}</td><td>${x.q.A}</td><td>${x.q["B+"]}</td><td>${x.q.B}</td><td>${x.sRec}</td></tr>`).join('');
-  return `<div class="stats-view"><div class="mhead stats-head"><span class="t">?? ??/??</span><span class="n">?? ${s.n}? ? ?? ${s.avgYr.toFixed(1)}??</span><span class="stage">S?? ${s.sRec}? ? C?? ${s.cCnt}? ? ?? ${s.memo}?</span></div><div class="stats-kpis"><div class="stat-kpi"><div class="k">?? ??</div><div class="v">${s.n}</div><div class="sub">?? ?? ??</div></div><div class="stat-kpi"><div class="k">A?? ??</div><div class="v">${s.q.S+s.q.A}</div><div class="sub">S ${s.q.S}? + A ${s.q.A}?</div></div><div class="stat-kpi"><div class="k">B?? ??</div><div class="v">${s.q.B}</div><div class="sub">??? ??? ??</div></div><div class="stat-kpi"><div class="k">S/P ??</div><div class="v">${people.filter(p=>p.sp).length}</div><div class="sub">???????T/P</div></div></div><div class="stats-grid"><section class="stats-card"><h3>?? ?? ??</h3>${renderDist(s.counts,s.n)}</section><section class="stats-card"><h3>25? ?? ??</h3>${renderDist(s.prev,s.n)}</section></div><div class="stats-grid"><section class="stats-card"><h3>?? B ?? ??</h3><table class="stat-table"><tr><th>?</th><th>??</th><th>??</th><th>??</th><th>??</th></tr>${teamRows}</table></section><section class="stats-card"><h3>??? ??</h3><table class="stat-table"><tr><th>??</th><th>??</th><th>S</th><th>A</th><th>B+</th><th>B</th><th>S??</th></tr>${rankRows}</table></section></div></div>`;
+  const aTotal=s.counts.S+s.counts.A;
+  const aLast=(s.lastYear.S||0)+(s.lastYear.A||0);
+  const aDelta=aTotal-aLast;
+  const aDeltaLabel=aDelta>0?`▲${aDelta}명`:aDelta<0?`▼${Math.abs(aDelta)}명`:'변동없음';
+  const aDeltaCls=aDelta>0?'up':aDelta<0?'down':'flat';
+  return `<div class="stats-view">
+    <div class="mhead stats-head"><span class="t">전체 요약 · 통계</span><span class="n">전체 ${s.n}명 · 평균 ${s.avgYr.toFixed(1)}년차</span><span class="stage">S추천 ${s.sRec}명 · C후보 ${s.cCnt}명 · 메모 ${s.memo}건</span></div>
+    <div class="stats-kpis">
+      <div class="stat-kpi"><div class="k">전체 인원</div><div class="v">${s.n}<small>명</small></div><div class="sub">4개 직급 합계</div></div>
+      <div class="stat-kpi"><div class="k">A등급 이상 (S+A)</div><div class="v">${aTotal}<small>명</small></div><div class="sub">${pct(aTotal,s.n)}% · S ${s.counts.S}명 + A ${s.counts.A}명</div></div>
+      <div class="stat-kpi"><div class="k">B+ 등급</div><div class="v">${s.counts["B+"]}<small>명</small></div><div class="sub">${pct(s.counts["B+"],s.n)}%</div></div>
+      <div class="stat-kpi"><div class="k">B 등급</div><div class="v">${s.counts.B}<small>명</small></div><div class="sub">${pct(s.counts.B,s.n)}%</div></div>
+      <div class="stat-kpi ${aDeltaCls==='up'?'good':aDeltaCls==='down'?'bad':''}"><div class="k">A등급 작년 대비</div><div class="v" style="font-size:1.1rem">${aDeltaLabel}</div><div class="sub">작년 A등급 ${aLast}명 → 올해 ${aTotal}명</div></div>
+    </div>
+    <div class="stats-grid">
+      <section class="stats-card"><h3>전체 등급 분포</h3>${renderDist(s.counts,s.n)}</section>
+      <section class="stats-card"><h3>작년 대비 등급 변화<span class="hint">24년 실제평가 기준</span></h3>${renderYoyCompare(s.counts,s.lastYear,s.n)}</section>
+    </div>
+    <section class="stats-card"><h3>직급별 현황</h3>${renderGroupTable(s.byRank,'rk','직급')}</section>
+    <section class="stats-card"><h3>담당별 현황</h3>${renderGroupTable(s.owners,'owner','담당')}</section>
+  </div>`;
 }
 function visibleColumns(){normalizeColumnState();return colState.map(x=>{const c=COLS.find(v=>v.key===x.key);const isEv=c.key==='evalHistory';return {...c,visible:x.visible,w:x.w||(isEv?evalColWidth():c.w),label:isEv?evalLabel():c.label};}).filter(c=>c.fixed||c.visible!==false);}
 function gridCols(){return visibleColumns().map(c=>c.w).join(' ');}
