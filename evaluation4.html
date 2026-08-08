@@ -431,6 +431,14 @@
   .btn.primary{background:var(--blue);color:#fff;border-color:var(--blue);}
   .btn.primary:hover{background:#3d5be0;border-color:#3d5be0;}
   .modal code{background:var(--bg);padding:.05rem .3rem;border-radius:4px;font-size:.72rem;}
+  .drop-zone{border:2px dashed var(--line);border-radius:12px;padding:1.1rem;text-align:center;cursor:pointer;background:var(--bg);transition:border-color .12s ease,background .12s ease;}
+  .drop-zone:hover{border-color:var(--blue);}
+  .drop-zone.drag{border-color:var(--blue);background:color-mix(in srgb,var(--blue) 8%,transparent);}
+  .drop-zone .dz-icon{font-size:1.4rem;line-height:1;margin-bottom:.25rem;}
+  .drop-zone .dz-text{font-size:.82rem;font-weight:700;}
+  .drop-zone .dz-sub{font-size:.74rem;color:var(--muted2);margin-top:.3rem;min-height:1.1em;}
+  .drop-zone .dz-sub.ok{color:var(--ok);font-weight:700;}
+  .drop-zone .dz-sub.err{color:var(--warn);font-weight:700;}
   .empty-main{text-align:center;padding:5rem;color:var(--muted);}
   @media (prefers-reduced-motion:reduce){
     .rt-row,.team-row,.ovcard{transition:none;}
@@ -573,11 +581,16 @@
   <b>주요성과</b>는 여러 줄로 길게 작성해도 됩니다(엑셀 셀 안에서 Alt+Enter로 줄바꿈). 줄 단위로 그대로 표시됩니다.</p>
   <div class="act" style="justify-content:flex-start;margin:0 0 .7rem">
     <button class="btn" onclick="downloadTemplate()">⬇ 양식 다운로드</button>
-    <button class="btn" onclick="document.getElementById('uploadFileInput').click()">📁 파일 업로드</button>
-    <input type="file" id="uploadFileInput" accept=".csv,.tsv,.txt" style="display:none" onchange="handleFileUpload(event)">
   </div>
-  <p style="margin:-.3rem 0 .6rem;font-size:.76rem;color:var(--muted)">또는 엑셀에서 표를 직접 복사해 아래에 붙여넣어도 됩니다.</p>
-  <textarea id="pasteBox" placeholder="차장	1	김철수	MS운영	서비스담당	5	A	A	B+	A	B+	장애 Zero 달성/운영 자동화 개선"></textarea>
+  <div id="dropZone" class="drop-zone" onclick="document.getElementById('uploadFileInput').click()">
+    <div class="dz-icon">📁</div>
+    <div class="dz-text">클릭해서 파일 선택 또는 CSV 파일을 여기로 끌어다 놓으세요</div>
+    <div class="dz-sub" id="dzFileInfo">아직 업로드된 파일이 없습니다.</div>
+  </div>
+  <input type="file" id="uploadFileInput" accept=".csv,.tsv,.txt" style="display:none" onchange="handleFileUpload(event)">
+  <p style="margin:.6rem 0 .5rem;font-size:.76rem;color:var(--muted)">또는 엑셀에서 표를 직접 복사해 아래에 붙여넣어도 됩니다.</p>
+  <textarea id="pasteBox" oninput="updatePasteCount()" placeholder="차장	1	김철수	MS운영	서비스담당	5	A	A	B+	A	B+	장애 Zero 달성/운영 자동화 개선"></textarea>
+  <div id="pasteCount" style="margin-top:.35rem;font-size:.76rem;color:var(--muted)"></div>
   <div class="act">
     <button class="btn" onclick="loadSample()">샘플 데이터</button>
     <button class="btn" onclick="closePaste()">취소</button>
@@ -727,19 +740,49 @@ function decodeFileBytes(buf){
     catch(e2){ return new TextDecoder('utf-8').decode(bytes); }
   }
 }
-function handleFileUpload(ev){
-  const file=ev.target.files[0];
+function processUploadedFile(file){
   if(!file)return;
+  const info=document.getElementById('dzFileInfo');
+  const setInfo=(msg,cls)=>{ if(info){info.textContent=msg;info.className='dz-sub'+(cls?' '+cls:'');} };
+  setInfo(`"${file.name}" 읽는 중...`);
   const reader=new FileReader();
   reader.onload=e=>{
     const text=decodeFileBytes(e.target.result);
     const looksCsv=file.name.toLowerCase().endsWith('.csv')||(!text.includes('\t')&&text.includes(','));
     document.getElementById('pasteBox').value=looksCsv?csvToTsv(text):text;
-    applyPaste();
+    updatePasteCount();
+    setInfo(`"${file.name}" 업로드됨 · 아래 내용을 확인하고 "불러오기"를 누르세요.`,'ok');
   };
-  reader.onerror=()=>alert('파일을 읽는 중 오류가 발생했습니다.');
+  reader.onerror=()=>setInfo('파일을 읽는 중 오류가 발생했습니다.','err');
   reader.readAsArrayBuffer(file);
+}
+function handleFileUpload(ev){
+  processUploadedFile(ev.target.files[0]);
   ev.target.value='';
+}
+function initUploadDropZone(){
+  const dz=document.getElementById('dropZone');
+  if(!dz||dz.dataset.wired)return;
+  dz.dataset.wired='1';
+  ['dragenter','dragover'].forEach(evt=>dz.addEventListener(evt,e=>{e.preventDefault();e.stopPropagation();dz.classList.add('drag');}));
+  ['dragleave','dragend'].forEach(evt=>dz.addEventListener(evt,e=>{e.preventDefault();dz.classList.remove('drag');}));
+  dz.addEventListener('drop',e=>{
+    e.preventDefault();e.stopPropagation();dz.classList.remove('drag');
+    const file=e.dataTransfer&&e.dataTransfer.files&&e.dataTransfer.files[0];
+    if(file)processUploadedFile(file);
+  });
+}
+function updatePasteCount(){
+  const el=document.getElementById('pasteCount');
+  if(!el)return;
+  const raw=document.getElementById('pasteBox').value.trim();
+  if(!raw){el.textContent='';return;}
+  const rows=parseDelimitedText(raw,'\t');
+  if(!rows.length){el.textContent='';return;}
+  const first=rows[0].map(x=>cleanHeader(x));
+  const hasHeader=first.includes('이름') || first.includes('성명');
+  const dataRows=rows.slice(hasHeader?1:0).filter(r=>r.length>=2);
+  el.textContent=dataRows.length?`${dataRows.length}명 인식됨 · "불러오기"를 누르면 반영됩니다.`:'인식된 데이터가 없습니다. 형식을 확인해주세요.';
 }
 function loadSample(){
   const teams=['MS\uC6B4\uC601','\uD50C\uB7AB\uD3FC\uAC1C\uBC1C','\uD074\uB77C\uC6B0\uB4DC','ERP','\uADF8\uB8F9\uC6E8\uC5B4','\uBCF4\uC548','\uAE30\uD68D'];
@@ -754,6 +797,9 @@ function loadSample(){
   const header=['직급','초기순위','이름','팀','담당','S/P','년차','25년','24년','23년','22년','21년','주요성과'];
   const body=arr.map(p=>[p.rank,'',p.rawName,p.team,p.owner,p.sp,p.yr,p.eval25,p.eval24,p.eval23,p.eval22,p.eval21,quoteTsvField(p.ach.join('\n'))].join('\t'));
   document.getElementById('pasteBox').value=[header.join('\t'),...body].join('\n');
+  updatePasteCount();
+  const info=document.getElementById('dzFileInfo');
+  if(info){info.textContent='아직 업로드된 파일이 없습니다.';info.className='dz-sub';}
 }
 function applyPaste(){
   const raw=document.getElementById('pasteBox').value.trim();
@@ -1629,7 +1675,7 @@ function closeHist(){document.getElementById('hbg').classList.remove('show');}
 function toggleFull(){if(!document.fullscreenElement){document.documentElement.requestFullscreen();document.getElementById('fsBtn').textContent='⛶ 전체화면 종료';}else{document.exitFullscreen();document.getElementById('fsBtn').textContent='⛶ 전체화면';}}
 function zoom(d){fs=Math.max(12,Math.min(22,fs+d));document.documentElement.style.setProperty('--fs',fs+'px');document.getElementById('zl').textContent=Math.round(fs/16*100)+'%';}
 function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
-function openPaste(){document.getElementById('mbg').classList.add('show');}
+function openPaste(){document.getElementById('mbg').classList.add('show');initUploadDropZone();updatePasteCount();}
 function closePaste(){document.getElementById('mbg').classList.remove('show');}
 
 /* ---- resizable layout ---- */
