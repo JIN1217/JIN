@@ -1078,6 +1078,11 @@ function toggleCFromPanel(id){
 function openDetail(id){viewRow(id);}
 
 /* ---- right panel ---- */
+function cutlineHtml(cls,ranges){
+  const isAb=cls==='ab-boundary';
+  const lab=isAb?`A경계 (${ranges.abFrom}~${ranges.abTo}위)`:`B경계 (${ranges.bbFrom}~${ranges.bbTo}위)`;
+  return `<div class="cutline ${isAb?'ab':'bb'}"><hr><span class="lab">${lab}</span></div>`;
+}
 function renderTeamRatio(counts,total){
   const keys=["A","B+","B"];
   const merged={A:(counts.S||0)+(counts.A||0),"B+":counts["B+"]||0,B:counts.B||0};
@@ -1098,6 +1103,7 @@ function renderRPanel(){
     return;
   }
   const s=rankSummary(active);
+  const ranges=boundaryRanges(s.n);
   const lockN=locks[active]||0;
   const groupKeyOf=p=>String(teamGroupBy==='owner'?p.owner:p.team||'').trim()||'미지정';
   const groups={};
@@ -1117,9 +1123,8 @@ function renderRPanel(){
       const personalShare=pct(teamNo,teamRows.length), zone=boundaryInfo(x.rankNo,s.n);
       const locked=x.rankNo<=lockN;
       if(zone.cls!==prevZone){
-        const closingCls=prevZone==='ab-boundary'?'ab':'bb';
-        if(prevZone)rows+=`<div class="cutline ${closingCls}"><hr></div>`;
-        if(zone.cls)rows+=`<div class="cutline ${zone.cls==='ab-boundary'?'ab':'bb'}"><hr></div>`;
+        if(prevZone)rows+=cutlineHtml(prevZone,ranges);
+        if(zone.cls)rows+=cutlineHtml(zone.cls,ranges);
       }
       prevZone=zone.cls;
       const subLabel=teamGroupBy==='owner'?`<span class="team-sub">${esc(x.p.team||'')}</span>`:'';
@@ -1130,7 +1135,7 @@ function renderRPanel(){
         <span class="share"><span class="chip" style="background:${gColor(dispG)}">${dispG}</span><span class="pct">${personalShare}%</span></span>
       </div>`;
     });
-    if(prevZone)rows+=`<div class="cutline ${prevZone==='ab-boundary'?'ab':'bb'}"><hr></div>`;
+    if(prevZone)rows+=cutlineHtml(prevZone,ranges);
     return `<section class="team-card">
       <div class="team-card-head"><b>${esc(gr.key)}</b><span>${gr.total}명</span></div>
       ${renderTeamRatio(gr,gr.total)}
@@ -1804,9 +1809,9 @@ function renderMain(){
     const g=gradeAt(i,n),zone=boundaryInfo(rankNo,n),locked=i<(locks[active]||0),inCmp=picked.has(id);
     if(onlyBoundary){const showA=rankNo>=aEnd-4&&rankNo<=ranges.abTo+1,showB=rankNo>=ranges.bbFrom-1&&rankNo<=Math.min(n,bStart+1),showTop=rankNo<=3;if(!(showA||showB||showTop)){if(!prevShownEllipsis){rows+=`<div class="rt-row ellipsis">⋯</div>`;prevShownEllipsis=true;}return;}prevShownEllipsis=false;}
     if(rankNo===ranges.abFrom)rows+=`<div class="cutline ab"><hr><span class="lab">A경계 (${ranges.abFrom}~${ranges.abTo}위)</span></div>`;
-    if(rankNo===ranges.abTo+1)rows+=`<div class="cutline ab"><hr></div>`;
+    if(rankNo===ranges.abTo+1)rows+=`<div class="cutline ab"><hr><span class="lab">A경계 (${ranges.abFrom}~${ranges.abTo}위)</span></div>`;
     if(rankNo===ranges.bbFrom)rows+=`<div class="cutline bb"><hr><span class="lab">B경계 (${ranges.bbFrom}~${ranges.bbTo}위)</span></div>`;
-    if(rankNo===bStart+1)rows+=`<div class="cutline bb"><hr></div>`;
+    if(rankNo===bStart+1)rows+=`<div class="cutline bb"><hr><span class="lab">B경계 (${ranges.bbFrom}~${ranges.bbTo}위)</span></div>`;
     const bandCls=zone.cls||(g==='S'||g==='A'?'band-a':g==='B+'?'band-bp':g==='B'?'band-b':'');
     const cls=['rt-row',bandCls,selId===id?'sel':'',inCmp?'incmp':'',locked?'locked':''].join(' ');
     rows+=`<div class="${cls}" draggable="${locked?'false':'true'}" data-id="${id}" onclick="handleRowClick(event,${id})">${cols.map(c=>renderCell(c,p,rankNo,zone,locked,inCmp)).join('')}</div>`;
