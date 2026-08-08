@@ -331,7 +331,9 @@
   .team-row .rank{font-weight:850;font-variant-numeric:tabular-nums;color:var(--muted2);font-size:.72rem;white-space:nowrap;}
   .team-row .name{font-weight:800;white-space:normal;overflow:visible;text-overflow:clip;line-height:1.25;word-break:keep-all;}
   .team-sub{font-size:.68rem;color:var(--muted2);font-weight:700;margin-left:.3rem;}
-  .team-row .share{text-align:right;color:var(--muted2);font-size:.68rem;white-space:nowrap;}
+  .team-row .share{display:grid;grid-template-columns:2.4rem 1fr;align-items:center;color:var(--muted2);font-size:.68rem;white-space:nowrap;}
+  .team-row .share .chip{justify-self:center;}
+  .team-row .share .pct{justify-self:end;}
 
   /* floating detail */
   .detail-backdrop{position:fixed;inset:0;background:rgba(30,37,48,.16);z-index:125;display:none;}
@@ -1124,7 +1126,7 @@ function renderRPanel(){
         <span class="grip">${locked?'🔒':'⋮⋮'}</span>
         <span class="rank">${x.rankNo}위</span>
         <span class="name">${esc(x.p.name)}${subLabel}${x.p.sRec?' ⭐':''}${x.p.cFlag?' 🚩':''}</span>
-        <span class="share"><span class="chip" style="background:${gColor(dispG)}">${dispG}</span> ${personalShare}%</span>
+        <span class="share"><span class="chip" style="background:${gColor(dispG)}">${dispG}</span><span class="pct">${personalShare}%</span></span>
       </div>`;
     });
     if(prevZone)rows+=`<div class="cutline ${prevZone==='ab-boundary'?'ab':'bb'}"><hr></div>`;
