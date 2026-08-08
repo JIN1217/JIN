@@ -1349,10 +1349,7 @@ function openCompare(){
       </div>
       <div class="meta">
         <span class="m">년차 <b>${p.yr}</b></span>
-        <span class="m">작년 <b>${p.prev}</b></span>
-        <span class="m">3년 <b>${(p.three||[]).join('·')}</b></span>
-        <span class="m">S추천 <b>${p.sRec?'○':'—'}</b></span>
-        <span class="m">C후보 <b>${p.cFlag?'○':'—'}</b></span>
+        ${EVAL_KEYS.map(k=>`<span class="m">${k.replace('eval','')}년 <b style="color:${gColor(p[k])}">${p[k]||'-'}</b></span>`).join('')}
       </div>
       <div class="body">${(p.ach||[]).map(a=>'· '+esc(a)).join('\n')}</div>
       <div class="foot"><button class="up" onclick="moveCmp(${id},-1)" ${locked?'disabled':''}>▲ 위로</button><button class="dn" onclick="moveCmp(${id},1)" ${locked?'disabled':''}>▼ 아래로</button></div>
@@ -1787,7 +1784,26 @@ function renderMain(){const m=document.getElementById('main');if(!people.length)
 
 /* ---- request patch final text overrides ---- */
 function renderBottom(){document.getElementById('undoBtn').disabled=!undoStack.length;document.getElementById('redoBtn').disabled=!redoStack.length;renderPickActions();if(!people.length){document.getElementById('statusMsg').innerHTML='';return;}const ids=order[active]||[],n=ids.length,{aEnd}=bounds(n),b=boundarySize(n);if(mainView==='stats'){document.getElementById('statusMsg').innerHTML=`\uC804\uCCB4 ${people.length}\uBA85 &nbsp; <b>\uC804\uCCB4 \uC694\uC57D/\uD1B5\uACC4</b>`;return;}document.getElementById('statusMsg').innerHTML=`${active} ${n}\uBA85 &nbsp; <b>A/B+ ${aEnd+1}~${Math.min(n,aEnd+b)}\uC704, B \uC0C1\uC704\uACBD\uACC4 ${boundaryRanges(n).bbFrom}~${boundaryRanges(n).bbTo}\uC704</b>`;}
-function openCompare(){if(picked.size<1)return;const ids=(order[active]||[]).filter(id=>picked.has(id)),n=(order[active]||[]).length;document.getElementById('ovg').innerHTML=ids.map(id=>{const p=pid(id),idx=order[active].indexOf(id),rn=idx+1,g=gradeAt(rn-1,n);return `<div class="ovcard" data-id="${id}"><div class="t" style="border-bottom-color:${gColor(g)}"><div class="rk">${rn}</div><div><div class="nm">${esc(p.name)}${p.sRec?' ?':''}${p.cFlag?' ??':''}</div><div class="tm">${esc(p.team)} / ${esc(p.owner||'')}</div></div><span class="chip" style="background:${gColor(g)};align-self:center;margin-left:auto">${g}</span></div><div class="meta"><span class="m">\uB144\uCC28 <b>${p.yr}</b></span><span class="m">S/P <b>${esc(p.sp||'-')}</b></span><span class="m">25\uB144 <b>${esc(p.eval25||'-')}</b></span><span class="m">24\uB144 <b>${esc(p.eval24||'-')}</b></span></div><div class="body">${(p.ach||[]).map(a=>'- '+esc(a)).join('\n')}\n\n${esc(p.detail||'')}</div></div>`;}).join('');document.getElementById('ov').classList.add('show');}
+function openCompare(){
+  if(picked.size<1)return;
+  const ids=(order[active]||[]).filter(id=>picked.has(id)),n=(order[active]||[]).length;
+  document.getElementById('ovg').innerHTML=ids.map(id=>{
+    const p=pid(id),idx=order[active].indexOf(id),rn=idx+1,g=gradeAt(rn-1,n);
+    return `<div class="ovcard" data-id="${id}">
+      <div class="t" style="border-bottom-color:${gColor(g)}">
+        <div class="rk">${rn}</div>
+        <div><div class="nm">${esc(p.name)}${p.sRec?' \u2B50':''}${p.cFlag?' \uD83D\uDEA9':''}</div><div class="tm">${esc(p.team)} \u00B7 ${p.yr}\uB144\uCC28</div></div>
+        <span class="chip" style="background:${gColor(g)};align-self:center;margin-left:auto">${g}</span>
+      </div>
+      <div class="meta">${EVAL_KEYS.map(k=>`<span class="m">${k.replace('eval','')}\uB144 <b style="color:${gColor(p[k])}">${esc(p[k]||'-')}</b></span>`).join('')}</div>
+      <div class="rbox aisum" style="margin:.6rem;">
+        <div class="cap">\uC8FC\uC694 \uC131\uACFC</div>
+        <div style="font-size:.82rem;line-height:1.6;white-space:pre-wrap">${esc((p.ach||[]).join('\n'))||'\uB4F1\uB85D\uB41C \uC131\uACFC\uAC00 \uC5C6\uC2B5\uB2C8\uB2E4.'}</div>
+      </div>
+    </div>`;
+  }).join('');
+  document.getElementById('ov').classList.add('show');
+}
 /* ---- end request patch final text overrides ---- */
 /* ---- request patch column button text override ---- */
 function renderColumnList(){const el=document.getElementById('colList');if(!el)return;el.innerHTML=colState.map((x,i)=>{const c=COLS.find(v=>v.key===x.key);const fixed=!!c.fixed;return '<div class="col-row"><label><input type="checkbox" '+(x.visible!==false?'checked':'')+' '+(fixed?'disabled':'')+' onchange="toggleColumnVisible(\''+x.key+'\',this.checked)"> '+esc(c.label)+'</label><button onclick="moveColumn(\''+x.key+'\',-1)" '+(fixed||i===0?'disabled':'')+'>&lt;</button><button onclick="moveColumn(\''+x.key+'\',1)" '+(fixed||i===colState.length-1?'disabled':'')+'>&gt;</button><button onclick="resetColumnOne(\''+x.key+'\')" '+(fixed?'disabled':'')+'>reset</button></div>';}).join('');}
