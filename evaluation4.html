@@ -196,7 +196,11 @@
 
   .grip{color:#c3cad6;font-size:.95rem;text-align:center;}
   .rt-row .rk{font-weight:800;font-size:1rem;text-align:center;font-variant-numeric:tabular-nums;}
+  .rt-row .rk .rksep{color:var(--muted);font-weight:600;margin:0 1px;}
+  .rt-row .rk .init{color:var(--muted2);font-weight:700;font-size:.8em;}
   .rt-row .rk .tag{display:block;font-size:.6rem;color:var(--buffer-line);font-weight:800;}
+  .evh{font-variant-numeric:tabular-nums;letter-spacing:-.2px;font-size:.78rem;}
+  .evh .evsep{color:var(--muted);margin:0 1px;font-weight:400;}
   .cc{text-align:center;}
   .cc input{width:1rem;height:1rem;cursor:pointer;accent-color:var(--blue);}
   .nm{font-weight:700;}
@@ -216,11 +220,10 @@
   .rt-head .rt-cell[data-colkey]{cursor:grab;}
   .rt-head .rt-cell[data-colkey].dragging{opacity:.4;}
   .rt-head .rt-cell[data-colkey].over{box-shadow:inset 0 0 0 2px var(--blue);}
-  .rt-cell.pin-final,.rt-cell.pin-ratio,.rt-cell.pin-name{position:sticky;z-index:3;background:inherit;}
-  .rt-head .rt-cell.pin-final,.rt-head .rt-cell.pin-ratio,.rt-head .rt-cell.pin-name{z-index:6;background:#fafbfd;}
+  .rt-cell.pin-final,.rt-cell.pin-name{position:sticky;z-index:3;background:inherit;}
+  .rt-head .rt-cell.pin-final,.rt-head .rt-cell.pin-name{z-index:6;background:#fafbfd;}
   .rt-cell.pin-final{left:.4rem;}
-  .rt-cell.pin-ratio{left:3.4rem;}
-  .rt-cell.pin-name{left:5.8rem;}
+  .rt-cell.pin-name{left:6rem;}
   .rt-filterbar{display:flex;align-items:center;gap:.45rem;flex-wrap:wrap;background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:.45rem .55rem;margin-bottom:.45rem;box-shadow:var(--sh);}
   .rt-filterbar input,.rt-filterbar select{height:2rem;border:1px solid var(--line);border-radius:8px;padding:0 .55rem;font-size:.78rem;background:#fff;min-width:7rem;}
   .rt-filterbar .mini{min-width:5.2rem;width:5.2rem;}
@@ -602,18 +605,13 @@ const GRADES=[
 ];
 const GRADE_VARS={S:'--s',A:'--a',"B+":'--bp',B:'--b',C:'--c'};
 const COLS=[
-  {key:'finalRank',label:'\uC21C\uC704',w:'3rem',fixed:true},
-  {key:'ratioRank',label:'\uCD08\uAE30',w:'2.4rem',fixed:true},
+  {key:'finalRank',label:'\uC21C\uC704',w:'5.6rem',fixed:true},
   {key:'name',label:'\uC774\uB984',w:'6.4rem',fixed:true},
   {key:'team',label:'\uD300',w:'4.6rem'},
   {key:'owner',label:'\uB2F4\uB2F9',w:'4.6rem'},
   {key:'sp',label:'S/P',w:'3.2rem'},
   {key:'yr',label:'\uC5F0\uCC28',w:'2.8rem'},
-  {key:'eval25',label:'25',w:'2rem'},
-  {key:'eval24',label:'24',w:'2rem'},
-  {key:'eval23',label:'23',w:'2rem'},
-  {key:'eval22',label:'22',w:'2rem'},
-  {key:'eval21',label:'21',w:'2rem'},
+  {key:'evalHistory',label:'25/24/23/22/21',w:'6.2rem'},
   {key:'detail',label:'\uC0C1\uC138',w:'3.2rem'}
 ];
 const DEFAULT_COL_STATE=COLS.map(c=>({key:c.key,visible:true}));
@@ -913,11 +911,11 @@ function renderStatsScreen(){
 }
 function visibleColumns(){normalizeColumnState();return colState.map(x=>{const c=COLS.find(v=>v.key===x.key);return {...c,visible:x.visible,w:x.w||c.w};}).filter(c=>c.fixed||c.visible!==false);}
 function gridCols(){return visibleColumns().map(c=>c.w).join(' ');}
-function pinClass(key){return key==='finalRank'?' pin-final':key==='ratioRank'?' pin-ratio':key==='name'?' pin-name':'';}
+function pinClass(key){return key==='finalRank'?' pin-final':key==='name'?' pin-name':'';}
 function evalChip(g){return g?`<span class="chip" style="background:${gColor(g)}">${esc(g)}</span>`:'';}
 function personValue(p,key,rankNo){
   const n=(order[active]||[]).length;
-  const vals={finalRank:rankNo,ratioRank:p.baseNo||'',name:p.name,team:p.team,owner:p.owner,sp:p.sp,yr:p.yr,eval25:p.eval25,eval24:p.eval24,eval23:p.eval23,eval22:p.eval22,eval21:p.eval21,detail:p.detail||''};
+  const vals={finalRank:rankNo,name:p.name,team:p.team,owner:p.owner,sp:p.sp,yr:p.yr,evalHistory:EVAL_KEYS.map(k=>p[k]||'-').join('/'),detail:p.detail||''};
   return vals[key]??'';
 }
 function rowMatches(p,rankNo){
@@ -1620,8 +1618,7 @@ function applyColumnSettings(){normalizeColumnState();persist();closeColumns();r
 function renderBanner(){
   const el=document.getElementById('topbanner');
   const rankTabs=`<div class="rank-tabs">${RANKS.map(rk=>`<button class="rank-tab ${rk===active&&mainView==='rank'?'active':''}" onclick="setRank('${rk}')">${rk}</button>`).join('')}</div>`;
-  const evalSeg=`<div class="seg" title="\uACFC\uAC70\uD3C9\uAC00 \uD45C\uC2DC \uBC94\uC704"><span class="seg-lab">\uACFC\uAC70\uD3C9\uAC00</span><button class="${evalRange==='recent1'?'on':''}" onclick="applyEvalRange('recent1')">\uCD5C\uADFC1\uB144</button><button class="${evalRange==='recent3'?'on':''}" onclick="applyEvalRange('recent3')">\uCD5C\uADFC3\uB144</button><button class="${evalRange==='recent5'?'on':''}" onclick="applyEvalRange('recent5')">\uCD5C\uADFC5\uB144</button></div>`;
-  const actions=`<button class="tbtn ${mainView==='stats'?'on':''}" onclick="setMainView('stats')">\uC804\uCCB4 \uC694\uC57D/\uD1B5\uACC4</button><span class="tb-sep"></span><button class="tbtn ${onlyBoundary?'on':''}" onclick="toggleBoundary()" ${mainView==='stats'?'disabled':''}>\uACBD\uACC4\uAD6C\uAC04</button><button class="tbtn" onclick="openColumns()">\uC5F4 \uC124\uC815</button><button class="tbtn" onclick="openSettings()">\uC124\uC815</button><button class="tbtn" onclick="openPaste()">\uB370\uC774\uD130 \uC785\uB825</button>${evalSeg}<button class="tbtn" onclick="exportCsv()">CSV</button>`;
+  const actions=`<button class="tbtn ${mainView==='stats'?'on':''}" onclick="setMainView('stats')">\uC804\uCCB4 \uC694\uC57D/\uD1B5\uACC4</button><span class="tb-sep"></span><button class="tbtn ${onlyBoundary?'on':''}" onclick="toggleBoundary()" ${mainView==='stats'?'disabled':''}>\uACBD\uACC4\uAD6C\uAC04</button><button class="tbtn" onclick="openColumns()">\uC5F4 \uC124\uC815</button><button class="tbtn" onclick="openSettings()">\uC124\uC815</button><button class="tbtn" onclick="openPaste()">\uB370\uC774\uD130 \uC785\uB825</button><button class="tbtn" onclick="exportCsv()">CSV</button>`;
   if(!people.length){el.innerHTML=`${rankTabs}<div class="tb-empty">\uB370\uC774\uD130\uB97C \uC785\uB825\uD558\uBA74 \uD3C9\uAC00 \uD45C\uAC00 \uD45C\uC2DC\uB429\uB2C8\uB2E4.</div><span class="grow"></span>${actions}`;return;}
   el.innerHTML=`${rankTabs}<span class="grow"></span><div class="tb-search"><input id="searchBox" placeholder="\uD589 \uAC80\uC0C9" value="${esc(query)}" oninput="query=this.value;renderMain()" onkeydown="if(event.key==='Enter')jumpFirst()">${query?`<button class="tb-x" onclick="query='';document.getElementById('searchBox').value='';renderMain()">\u2715</button>`:''}</div>${actions}`;
 }
@@ -1671,17 +1668,10 @@ function renderPivotMenu(anchor){if(!pivotDraft)return;const key=pivotDraft.key,
 function renderHeaderCell(c,allChecked,total,shown){const pin=pinClass(c.key),on=isColumnFiltered(c.key)?' on':'';const label=`<div class="rt-th-label"><span>${c.label}</span>${c.key==='finalRank'?`<span class="count">${shown}/${total}</span>`:''}</div><button class="rt-filter-toggle${on}" onclick="openPivotFilter('${c.key}',event)" title="\uD544\uD130">&#9662;</button>`;if(c.key==='finalRank')return `<div class="rt-cell rt-select${pin}"><input type="checkbox" ${allChecked?'checked':''} onclick="toggleSelectAll(event)" title="\uD604\uC7AC \uD45C\uC2DC \uD589 \uC120\uD0DD">${label}</div>`;return `<div class="rt-cell${pin}">${label}</div>`;}
 /* ---- end request patch pivot text override ---- */
 /* ---- request patch: 엑셀식 헤더 필터(검색/선택/해제) + 열 너비 조절 ---- */
-const PINNED_COLS=new Set(['finalRank','ratioRank','name']);
+const PINNED_COLS=new Set(['finalRank','name']);
 const EVAL_KEYS=['eval25','eval24','eval23','eval22','eval21'];
-const NO_FILTER_COLS=new Set(['finalRank','ratioRank',...EVAL_KEYS]);
-const NO_REORDER_COLS=new Set([...PINNED_COLS,...EVAL_KEYS]);
-let evalRange='recent5';
-function applyEvalRange(mode){
-  evalRange=mode;
-  const showCount=mode==='recent1'?1:mode==='recent3'?3:5;
-  EVAL_KEYS.forEach((k,i)=>{const x=colState.find(c=>c.key===k);if(x)x.visible=i<showCount;});
-  persist();render();
-}
+const NO_FILTER_COLS=new Set(['finalRank','evalHistory']);
+const NO_REORDER_COLS=new Set([...PINNED_COLS]);
 function pivotShownValues(){
   const key=pivotDraft.key,all=columnFilterValues(key),term=(pivotDraft.search||'').toLowerCase();
   return all.filter(x=>String(x.label).toLowerCase().includes(term));
@@ -1723,10 +1713,11 @@ function renderPivotMenu(anchor){
 function evalText(g){return g?`<span style="color:${gColor(g)};font-weight:800">${esc(g)}</span>`:'';}
 function renderCell(c,p,rankNo,zone,locked,inCmp){
   const cls=`rt-cell${pinClass(c.key)}`;
-  if(c.key==='finalRank')return `<div class="${cls} rt-select" onclick="event.stopPropagation();togglePick(${p.id},event)"><input type="checkbox" ${inCmp?'checked':''} title="선택"><span class="grip">${locked?'🔒':'⠿'}</span><span class="rk">${rankNo}${zone.key?`<span class="tag" style="color:${zone.color}">${zone.label}</span>`:''}</span></div>`;
+  if(c.key==='finalRank')return `<div class="${cls} rt-select" onclick="event.stopPropagation();togglePick(${p.id},event)"><input type="checkbox" ${inCmp?'checked':''} title="선택"><span class="grip">${locked?'🔒':'⠿'}</span><span class="rk">${rankNo}<span class="rksep">/</span><span class="init">${p.baseNo||'-'}</span>${zone.key?`<span class="tag" style="color:${zone.color}">${zone.label}</span>`:''}</span></div>`;
   if(c.key==='name')return `<div class="${cls} nm" title="${esc(p.name)}">${esc(p.name)}${p.sRec?' ⭐':''}${p.cFlag?' 🚩':''}</div>`;
   if(c.key==='detail')return `<div class="${cls} cc" onclick="event.stopPropagation()"><button class="memo-btn ${memos[p.id]?'has':''}" onclick="openDetail(${p.id})" title="상세">상세</button></div>`;
-  if(c.key.startsWith('eval'))return `<div class="${cls} cc">${evalText(personValue(p,c.key,rankNo))}</div>`;
+  if(c.key==='evalHistory')return `<div class="${cls} cc evh" title="25/24/23/22/21년: ${EVAL_KEYS.map(k=>p[k]||'-').join('/')}">${EVAL_KEYS.map(k=>evalText(p[k])||'-').join('<span class="evsep">/</span>')}</div>`;
+  if(c.key==='sp'||c.key==='yr')return `<div class="${cls} cc" title="${esc(personValue(p,c.key,rankNo))}">${esc(personValue(p,c.key,rankNo))}</div>`;
   return `<div class="${cls}" title="${esc(personValue(p,c.key,rankNo))}">${esc(personValue(p,c.key,rankNo))}</div>`;
 }
 function renderHeaderCell(c,allChecked,total,shown){
