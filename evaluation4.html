@@ -1293,10 +1293,10 @@ function renderFloatingDetail(){
   if(!selId||!people.length){bg.classList.remove('show');panel.innerHTML='';return;}
   const p=pid(selId), ids=order[active]||[], rankNo=ids.indexOf(selId)+1, n=ids.length;
   if(!p||rankNo<1){bg.classList.remove('show');panel.innerHTML='';return;}
-  const {aEnd}=bounds(n), zone=boundaryInfo(rankNo,n);
-  const cmpItems=[...picked].filter(id=>id!==undefined);
+  const zone=boundaryInfo(rankNo,n);
+  const evKeys=['eval25','eval24','eval23','eval22','eval21'];
   panel.innerHTML=`
-  <h4>후보자 상세 정보 <button class="tbtn" style="margin-left:auto;margin-right:.4rem" onclick="openSpotlight(${p.id})" title="화면 전체에 크게 표시">⛶ 크게 보기</button><button class="x" onclick="closeDetail()">✕</button></h4>
+  <h4>상세 정보 <button class="tbtn" style="margin-left:auto;margin-right:.4rem" onclick="openSpotlight(${p.id})" title="화면 전체에 크게 표시">⛶ 크게 보기</button><button class="x" onclick="closeDetail()">✕</button></h4>
   <div class="prof">
     <div class="ph">👤</div>
     <div>
@@ -1305,37 +1305,20 @@ function renderFloatingDetail(){
     </div>
   </div>
   <div class="rbox">
-    <div class="row"><span class="lab">작년 평가</span><span class="chip" style="background:${gColor(p.prev)}">${p.prev}</span></div>
-    <div class="row"><span class="lab">최근 3년 평가</span><span>${(p.three||[]).map(g=>`<span class="chip" style="background:${gColor(g)};margin-left:.2rem">${g}</span>`).join('')}</span></div>
-    <div class="row"><span class="lab">평가 이력</span><span class="link">전체보기 ›</span></div>
+    <div class="row"><span class="lab">최근 5개년 평가</span><span>${evKeys.map(k=>`<span class="chip" style="background:${gColor(p[k])};margin-left:.2rem">${k.replace('eval','')}년 ${p[k]||'-'}</span>`).join('')}</span></div>
   </div>
   <div class="rbox aisum">
     <div class="cap">주요 성과</div>
     <div style="font-size:.82rem;line-height:1.65;white-space:pre-wrap">${esc((p.ach||[]).join('\n'))||'등록된 성과가 없습니다.'}</div>
   </div>
-  <div class="rbox">
-    <div style="font-weight:700;margin-bottom:.5rem;font-size:.82rem">S등급 추천</div>
-    <button class="cmp-open" style="background:${p.sRec?'var(--s)':'var(--blue-soft)'};color:${p.sRec?'#fff':'var(--blue)'};margin-top:0" onclick="toggleSFromPanel(${p.id})">${p.sRec?'⭐ S 추천 지정됨 (해제)':'⭐ S등급으로 추천'}</button>
+  <div class="rbox" style="display:flex;gap:.5rem">
+    <button class="cmp-open" style="flex:1;margin-top:0;background:${p.sRec?'var(--s)':'var(--blue-soft)'};color:${p.sRec?'#fff':'var(--blue)'}" onclick="toggleSFromPanel(${p.id})">${p.sRec?'⭐ S 추천 해제':'⭐ S등급 추천'}</button>
+    <button class="cmp-open" style="flex:1;margin-top:0;background:${p.cFlag?'var(--c)':'var(--blue-soft)'};color:${p.cFlag?'#fff':'var(--blue)'}" onclick="toggleCFromPanel(${p.id})">${p.cFlag?'🚩 C후보 해제':'🚩 C후보 등록'}</button>
   </div>
+  ${p.cFlag?`<div style="margin:-.4rem 0 .7rem;padding:0 .2rem;font-size:.78rem;color:var(--muted2);white-space:pre-wrap">${esc(p.cNote||'(사유 없음)')}</div>`:''}
   <div class="rbox">
-    <div style="font-weight:700;margin-bottom:.5rem;font-size:.82rem">C 후보 등록 <span style="color:var(--muted);font-weight:500">(징계 등 순위와 무관한 사유)</span></div>
-    <button class="cmp-open" style="background:${p.cFlag?'var(--c)':'var(--blue-soft)'};color:${p.cFlag?'#fff':'var(--blue)'};margin-top:0" onclick="toggleCFromPanel(${p.id})">${p.cFlag?'🚩 C후보 등록됨 (해제)':'🚩 C후보로 등록'}</button>
-    ${p.cFlag?`<div style="margin-top:.5rem;font-size:.78rem;color:var(--muted2);white-space:pre-wrap">${esc(p.cNote||'(사유 없음)')}</div>`:''}
-  </div>
-  <div class="rbox">
-    <div style="font-weight:700;margin-bottom:.5rem;font-size:.82rem">구간 잠금</div>
-    ${rankNo<=(locks[active]||0)
-      ? `<div style="font-size:.8rem;color:var(--muted2)">이미 확정·잠긴 구간(1~${locks[active]}위)에 포함되어 있습니다.</div>`
-      : `<button class="cmp-open" style="margin-top:0" onclick="lockToSelected()">🔒 1~${rankNo}위 확정하고 잠금${(locks[active]||0)>0?' (범위 확장)':''}</button>`}
-  </div>
-  <div class="rbox">
-    <div style="font-weight:700;margin-bottom:.5rem;font-size:.82rem">비교 대상 <span style="color:var(--muted);font-weight:500">(최대 ${cfg.maxCompare}명 · Shift+클릭으로 추가/제외)</span></div>
-    ${cmpItems.length? `<div class="cmp-list">${cmpItems.map(id=>{const q=pid(id),rn=ids.indexOf(id)+1;return `<div class="c"><span class="r">${rn}위</span> ${esc(q.name)} <button onclick="picked.delete(${id});render()">✕</button></div>`;}).join('')}</div>`
-      : `<div class="cmp-slot">비교 목록이 비어 있습니다.<br>목록에서 Shift+클릭하면 담깁니다.</div>`}
-  </div>
-  <div class="rbox">
-    <div style="font-weight:700;margin-bottom:.5rem;font-size:.82rem">상세</div>
-    <textarea class="memo" id="memoBox" placeholder="상세 내용을 입력하세요..." oninput="memos[${p.id}]=this.value;persist()">${esc(memos[p.id]||'')}</textarea>
+    <div style="font-weight:700;margin-bottom:.5rem;font-size:.82rem">메모</div>
+    <textarea class="memo" id="memoBox" placeholder="메모를 입력하세요..." oninput="memos[${p.id}]=this.value;persist()">${esc(memos[p.id]||'')}</textarea>
     <button class="memo-save" onclick="render()">저장</button>
     <div style="clear:both"></div>
   </div>`;
