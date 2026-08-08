@@ -218,8 +218,8 @@
   .rt-cell.pin-final,.rt-cell.pin-ratio,.rt-cell.pin-name{position:sticky;z-index:3;background:inherit;}
   .rt-head .rt-cell.pin-final,.rt-head .rt-cell.pin-ratio,.rt-head .rt-cell.pin-name{z-index:6;background:#fafbfd;}
   .rt-cell.pin-final{left:.4rem;}
-  .rt-cell.pin-ratio{left:5.1rem;}
-  .rt-cell.pin-name{left:9.3rem;}
+  .rt-cell.pin-ratio{left:4.6rem;}
+  .rt-cell.pin-name{left:8.2rem;}
   .rt-filterbar{display:flex;align-items:center;gap:.45rem;flex-wrap:wrap;background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:.45rem .55rem;margin-bottom:.45rem;box-shadow:var(--sh);}
   .rt-filterbar input,.rt-filterbar select{height:2rem;border:1px solid var(--line);border-radius:8px;padding:0 .55rem;font-size:.78rem;background:#fff;min-width:7rem;}
   .rt-filterbar .mini{min-width:5.2rem;width:5.2rem;}
@@ -431,6 +431,7 @@
   .rt-head{top:0;z-index:42;min-height:2.25rem;padding:.3rem .4rem;}
   .rt-head .rt-cell{display:flex;flex-direction:row;align-items:center;gap:.28rem;justify-content:space-between;min-width:0;}
   .rt-th-label{display:flex;align-items:center;gap:.18rem;min-width:0;font-weight:850;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .rt-th-text{flex:none;}
   .rt-th-label span:first-child{overflow:hidden;text-overflow:ellipsis;}
   .rt-th-label .count{font-size:.66rem;color:var(--muted);font-weight:800;margin-left:.15rem;}
   .rt-filter-toggle{border:1px solid #b9c2cf;background:#eef3f8;color:#364152;border-radius:2px;width:1.05rem;height:1.05rem;display:grid;place-items:center;font-size:.62rem;line-height:1;cursor:pointer;flex:none;padding:0;}
@@ -600,13 +601,13 @@ const GRADES=[
 ];
 const GRADE_VARS={S:'--s',A:'--a',"B+":'--bp',B:'--b',C:'--c'};
 const COLS=[
-  {key:'finalRank',label:'\uC870\uC815',w:'4.7rem',fixed:true},
-  {key:'ratioRank',label:'\uCD08\uAE30',w:'4.2rem',fixed:true},
-  {key:'name',label:'\uC774\uB984',w:'8.4rem',fixed:true},
-  {key:'team',label:'\uD300',w:'6.2rem'},
-  {key:'owner',label:'\uB2F4\uB2F9',w:'6.2rem'},
-  {key:'sp',label:'S/P',w:'4rem'},
-  {key:'yr',label:'\uC5F0\uCC28',w:'3.4rem'},
+  {key:'finalRank',label:'\uC870\uC815',w:'4.2rem',fixed:true},
+  {key:'ratioRank',label:'\uCD08\uAE30',w:'3.6rem',fixed:true},
+  {key:'name',label:'\uC774\uB984',w:'6.4rem',fixed:true},
+  {key:'team',label:'\uD300',w:'4.6rem'},
+  {key:'owner',label:'\uB2F4\uB2F9',w:'4.6rem'},
+  {key:'sp',label:'S/P',w:'3.2rem'},
+  {key:'yr',label:'\uC5F0\uCC28',w:'2.8rem'},
   {key:'eval25',label:'25\uB144',w:'3.1rem'},
   {key:'eval24',label:'24\uB144',w:'3.1rem'},
   {key:'eval23',label:'23\uB144',w:'3.1rem'},
@@ -1718,10 +1719,9 @@ function renderCell(c,p,rankNo,zone,locked,inCmp){
 }
 function renderHeaderCell(c,allChecked,total,shown){
   const pin=pinClass(c.key),on=isColumnFiltered(c.key)?' on':'';
-  const countHtml=c.key==='finalRank'?`<span class="count">${shown}/${total}</span>`:'';
-  const label=`<div class="rt-th-label"><span>${c.label}</span><button class="rt-filter-toggle${on}" onclick="openPivotFilter('${c.key}',event)" title="필터">▾</button>${countHtml}</div>`;
+  const label=`<div class="rt-th-label"><span class="rt-th-text">${c.label}</span><button class="rt-filter-toggle${on}" onclick="openPivotFilter('${c.key}',event)" title="필터">▾</button></div>`;
   const resizer=PINNED_COLS.has(c.key)?'':`<span class="rt-resize" onmousedown="startColResize(event,'${c.key}')"></span>`;
-  if(c.key==='finalRank')return `<div class="rt-cell rt-select${pin}"><input type="checkbox" ${allChecked?'checked':''} onclick="toggleSelectAll(event)" title="현재 표시 행 선택">${label}${resizer}</div>`;
+  if(c.key==='finalRank')return `<div class="rt-cell rt-select${pin}"><input type="checkbox" ${allChecked?'checked':''} title="현재 표시 행 선택 (${shown}/${total}명 표시 중)" onclick="toggleSelectAll(event)">${label}${resizer}</div>`;
   const dragAttrs=PINNED_COLS.has(c.key)?'':` draggable="true" data-colkey="${c.key}"`;
   return `<div class="rt-cell${pin}"${dragAttrs}>${label}${resizer}</div>`;
 }
