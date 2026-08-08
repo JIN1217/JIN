@@ -312,6 +312,7 @@
   .team-ratio{display:flex;flex-wrap:wrap;justify-content:center;gap:.35rem;padding:.45rem .5rem;border-bottom:1px solid var(--line2);}
   .team-ratio span{font-size:.8rem;font-weight:700;color:var(--muted2);background:color-mix(in srgb,var(--gc) 10%,#fff);border:1px solid color-mix(in srgb,var(--gc) 24%,#fff);border-radius:6px;padding:.24rem .5rem;text-align:center;white-space:nowrap;}
   .team-ratio b{color:var(--gc);font-weight:800;}
+  .team-ratio .cnt{color:var(--txt);}
   .team-stack{display:flex;height:.34rem;background:var(--bg);overflow:hidden;}
   .team-stack i{height:100%;width:var(--w);background:var(--gc);}
   .team-rank{display:grid;}
@@ -1082,7 +1083,7 @@ function renderTeamRatio(counts,total){
   const merged={A:(counts.S||0)+(counts.A||0),"B+":counts["B+"]||0,B:counts.B||0};
   const chips=`<div class="team-ratio">${keys.map(g=>{
     const n=merged[g]||0,p=pct(n,total);
-    return `<span style="--gc:${gColor(g)}"><b>${g}</b> ${n}명 ${p}%</span>`;
+    return `<span style="--gc:${gColor(g)}"><b>${g}</b> ${p}% <span class="cnt">${n}명</span></span>`;
   }).join('')}</div>`;
   const stack=`<div class="team-stack">${keys.map(g=>`<i style="--gc:${gColor(g)};--w:${pct(merged[g]||0,total)}%"></i>`).join('')}</div>`;
   return chips+stack;
