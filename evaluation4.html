@@ -11,7 +11,7 @@
     --blue:#4f6df0; --blue-soft:#eef1fd;
     --s:#8b7fd6; --a:#4f7fe6; --bp:#4ba37c; --b:#d99a4a; --c:#d16b6b;
     --green-line:#4ba37c; --a-fill:#eef3fd; --bp-fill:#eff7f2; --b-fill:#fdf5e9; --buffer:#fdf4e3; --buffer-line:#d99a4a;
-    --ab-fill:#eaf0fd; --ab-line:#3a5fce; --bb-fill:#fff2e1; --bb-line:#d1893a; --hover-line:#e08a2e;
+    --ab-fill:#eaf0fd; --ab-line:#3a5fce; --bb-fill:#fff2e1; --bb-line:#d1893a; --hover-line:#e2531d;
     --ok:#3aa06c; --warn:#d16b6b; --over:#c8903e;
     --star:#eeab3d;
     --fs:16px;
@@ -249,7 +249,8 @@
   .rt-th-btn:disabled{opacity:.45;cursor:default;}
 
   /* cut line marker */
-  .cutline{position:relative;height:0;}
+  .cutline{position:relative;height:0;display:grid;grid-template-columns:var(--rt-cols);gap:.3rem;padding:0 .4rem;width:max-content;min-width:100%;}
+  .cutline hr{grid-column:1/-1;}
   .cutline .lab{position:absolute;right:.6rem;top:-.7rem;background:var(--panel);padding:0 .4rem;font-size:.72rem;font-weight:800;}
   .cutline.a .lab{color:var(--green-line);}
   .cutline.a hr{border:none;border-top:2px solid var(--green-line);margin:0;}
@@ -308,9 +309,9 @@
   .team-card-head{padding:.48rem .55rem;border-bottom:1px solid var(--line2);display:flex;align-items:center;gap:.45rem;}
   .team-card-head b{font-size:.82rem;white-space:normal;line-height:1.25;}
   .team-card-head span{margin-left:auto;color:var(--muted2);font-size:.68rem;font-weight:800;white-space:nowrap;}
-  .team-ratio{display:grid;grid-template-columns:repeat(2,1fr);gap:.2rem;padding:.38rem .45rem;border-bottom:1px solid var(--line2);}
-  .team-ratio span{font-size:.66rem;color:var(--muted2);background:color-mix(in srgb,var(--gc) 10%,#fff);border:1px solid color-mix(in srgb,var(--gc) 24%,#fff);border-radius:6px;padding:.16rem .22rem;text-align:center;white-space:nowrap;}
-  .team-ratio b{color:var(--gc);}
+  .team-ratio{display:flex;flex-wrap:wrap;justify-content:center;gap:.35rem;padding:.45rem .5rem;border-bottom:1px solid var(--line2);}
+  .team-ratio span{font-size:.8rem;font-weight:700;color:var(--muted2);background:color-mix(in srgb,var(--gc) 10%,#fff);border:1px solid color-mix(in srgb,var(--gc) 24%,#fff);border-radius:6px;padding:.24rem .5rem;text-align:center;white-space:nowrap;}
+  .team-ratio b{color:var(--gc);font-weight:800;}
   .team-stack{display:flex;height:.34rem;background:var(--bg);overflow:hidden;}
   .team-stack i{height:100%;width:var(--w);background:var(--gc);}
   .team-rank{display:grid;}
