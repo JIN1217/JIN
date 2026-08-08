@@ -52,8 +52,11 @@
   .tb-sep{width:1px;align-self:stretch;background:var(--line);margin:0 .15rem;}
   .rank-tab.active .cnt{background:rgba(255,255,255,.22);}
   .tb-cuts{display:flex;align-items:center;gap:.5rem;flex-wrap:wrap;flex:1;min-width:26rem;}
-  .tb-tag{font-size:.8rem;color:var(--txt);padding:.25rem .6rem;border-radius:20px;
-    background:color-mix(in srgb,var(--tc) 12%,#fff);border:1px solid color-mix(in srgb,var(--tc) 35%,#fff);white-space:nowrap;}
+  .tb-tag{font-size:.8rem;color:var(--txt);padding:.25rem .6rem;border-radius:20px;cursor:pointer;
+    background:color-mix(in srgb,var(--tc) 12%,#fff);border:1px solid color-mix(in srgb,var(--tc) 35%,#fff);white-space:nowrap;transition:box-shadow .12s ease,background .12s ease;}
+  .tb-tag:hover{background:color-mix(in srgb,var(--tc) 22%,#fff);}
+  .tb-tag.on{background:var(--tc);box-shadow:0 0 0 2px color-mix(in srgb,var(--tc) 45%,transparent);}
+  .tb-tag.on b{color:#fff;}
   .tb-tag b{color:var(--tc);}
   .tb-arrow{color:var(--muted);font-size:.8rem;}
   .tb-search{display:flex;align-items:center;gap:.3rem;}
@@ -212,8 +215,8 @@
   .rt-row.buffer{background:var(--buffer);}
   .rt-row.ab-boundary{background:repeating-linear-gradient(135deg,color-mix(in srgb,var(--ab-line) 11%,transparent) 0 7px,transparent 7px 14px);box-shadow:inset 3px 0 0 var(--ab-line);}
   .rt-row.bb-boundary{background:repeating-linear-gradient(135deg,color-mix(in srgb,var(--bb-line) 11%,transparent) 0 7px,transparent 7px 14px);box-shadow:inset 3px 0 0 var(--bb-line);}
-  .rt-row.ellipsis{justify-items:center;color:var(--muted);cursor:default;padding:.3rem;grid-template-columns:1fr;text-align:center;}
-  .rt-row.ellipsis:hover{background:none;box-shadow:none;}
+  .rt-row.ellipsis{justify-items:center;color:var(--blue);font-weight:700;cursor:pointer;padding:.4rem;grid-template-columns:1fr;text-align:center;background:var(--blue-soft);}
+  .rt-row.ellipsis:hover{background:color-mix(in srgb,var(--blue) 14%,var(--blue-soft));box-shadow:none;}
 
   .grip{color:#c3cad6;font-size:.95rem;text-align:center;}
   .rt-row .rk{flex:1;font-weight:800;font-size:1rem;text-align:center;font-variant-numeric:tabular-nums;}
@@ -348,6 +351,8 @@
   .team-row.ab-boundary{background:repeating-linear-gradient(135deg,color-mix(in srgb,var(--ab-line) 11%,transparent) 0 7px,transparent 7px 14px);box-shadow:inset 3px 0 0 var(--ab-line);}
   .team-row.bb-boundary{background:repeating-linear-gradient(135deg,color-mix(in srgb,var(--bb-line) 11%,transparent) 0 7px,transparent 7px 14px);box-shadow:inset 3px 0 0 var(--bb-line);}
   .team-row.incmp{box-shadow:inset 0 0 0 2px var(--blue);background:color-mix(in srgb,var(--blue) 7%,#fff);}
+  .team-row.ellipsis{grid-template-columns:1fr;justify-items:center;text-align:center;color:var(--blue);font-weight:700;font-size:.76rem;cursor:pointer;background:var(--blue-soft);}
+  .team-row.ellipsis:hover{background:color-mix(in srgb,var(--blue) 14%,var(--blue-soft));}
   .team-row .rank{font-weight:850;font-variant-numeric:tabular-nums;color:var(--muted2);font-size:.72rem;white-space:nowrap;}
   .team-row .name{font-weight:800;white-space:normal;overflow:visible;text-overflow:clip;line-height:1.25;word-break:keep-all;}
   .team-sub{font-size:.68rem;color:var(--muted2);font-weight:700;margin-left:.3rem;}
@@ -836,7 +841,7 @@ function applyPaste(){
   ensurePersonFields(); rebuild(); closePaste(); persist(); render();
 }
 function cleanHeader(s){return String(s||'').replace(/s/g,'').toLowerCase().replace('???','?');}
-const RANK_ALIASES={'1':'차장','1급':'차장','1을':'차장','2갑':'과장','2급갑':'과장','2을':'대리','2급을':'대리','3급':'사원','3':'사원'};
+const RANK_ALIASES={'1을':'차장','1급':'차장','2갑':'과장','2급갑':'과장','2을':'대리','2급을':'대리','3급':'사원','3':'사원'};
 function normalizeRank(v){
   v=String(v||'').trim();
   if(RANKS.includes(v))return v;
@@ -1018,7 +1023,7 @@ function jumpFirst(){
   if(row)row.scrollIntoView({behavior:'smooth',block:'center'});
 }
 
-function setRank(rk){keepScrollOnRender=false;active=rk;mainView='rank';picked.clear();selId=null;undoStack=[];redoStack=[];render();}
+function setRank(rk){keepScrollOnRender=false;active=rk;mainView='rank';picked.clear();selId=null;undoStack=[];redoStack=[];resetBoundaryView();render();}
 
 function stars(g){const v=ps(g);let s='';for(let i=0;i<5;i++)s+=`<span class="${i<v?'':'off'}">★</span>`;return `<span class="stars">${s}</span>`;}
 function pct(v,n){return n?Math.round(v/n*100):0;}
@@ -1177,8 +1182,69 @@ function renderMain(){
 
 let onlyBoundary=false;
 let teamGroupBy='owner';
-function setTeamGroupBy(mode){teamGroupBy=mode;renderRPanel();}
-function toggleBoundary(){onlyBoundary=!onlyBoundary;render();}
+let legendFilterRange=null;
+let boundaryExpandedGaps=[];
+let teamBoundaryExpandedGaps={};
+let boundaryPad=null;
+let boundaryFitAttempts=0;
+const TEAM_BOUNDARY_MIN=12;
+function setTeamGroupBy(mode){teamGroupBy=mode;teamBoundaryExpandedGaps={};renderRPanel();}
+function resetBoundaryView(){legendFilterRange=null;boundaryExpandedGaps=[];boundaryPad=null;boundaryFitAttempts=0;teamBoundaryExpandedGaps={};}
+function toggleBoundary(){onlyBoundary=!onlyBoundary;resetBoundaryView();render();}
+function mergeRanges(segs){
+  const sorted=segs.filter(s=>s.from<=s.to).sort((a,b)=>a.from-b.from);
+  const out=[];
+  sorted.forEach(s=>{
+    const last=out[out.length-1];
+    if(last&&s.from<=last.to+1)last.to=Math.max(last.to,s.to);
+    else out.push({from:s.from,to:s.to});
+  });
+  return out;
+}
+function boundaryCoreSegments(n,ranges){
+  if(!n)return [];
+  const pad=boundaryPad!=null?boundaryPad:Math.max(1,Math.round(n*.01));
+  return mergeRanges([
+    {from:1,to:Math.min(n,5)},
+    {from:Math.max(1,ranges.abFrom-pad),to:Math.min(n,ranges.abTo+pad)},
+    {from:Math.max(1,ranges.bbFrom-pad),to:Math.min(n,ranges.bbTo+pad)},
+    ...boundaryExpandedGaps
+  ]);
+}
+function inSegments(rankNo,segs){return segs.some(s=>rankNo>=s.from&&rankNo<=s.to);}
+function expandBoundaryGap(from,to){boundaryExpandedGaps.push({from,to});render();}
+function expandTeamBoundaryGap(keyEnc,from,to){
+  const key=decodeURIComponent(keyEnc);
+  teamBoundaryExpandedGaps[key]=teamBoundaryExpandedGaps[key]||[];
+  teamBoundaryExpandedGaps[key].push({from,to});
+  renderRPanel();
+}
+function toggleLegendFilter(from,to){
+  if(legendFilterRange&&legendFilterRange.from===from&&legendFilterRange.to===to)legendFilterRange=null;
+  else legendFilterRange={from,to};
+  render();
+}
+function fitBoundaryToViewport(){
+  if(!onlyBoundary||mainView!=='rank'||legendFilterRange)return;
+  if(boundaryFitAttempts>=8)return;
+  const rtable=document.querySelector('.rtable');
+  if(!rtable)return;
+  if(rtable.scrollHeight>rtable.clientHeight+4)return;
+  const rowEl=rtable.querySelector('.rt-row:not(.ellipsis)');
+  const rowH=rowEl?rowEl.getBoundingClientRect().height:0;
+  if(!rowH)return;
+  const n=(order[active]||[]).length;
+  const currentShown=rtable.querySelectorAll('.rt-row').length;
+  const capacity=Math.floor(rtable.clientHeight/rowH);
+  const spare=capacity-currentShown;
+  if(spare<=0)return;
+  const curPad=boundaryPad!=null?boundaryPad:Math.max(1,Math.round(n*.01));
+  const nextPad=curPad+Math.max(1,Math.ceil(spare/4));
+  if(nextPad===curPad)return;
+  boundaryPad=nextPad;
+  boundaryFitAttempts++;
+  render();
+}
 
 function renderLockControl(){
   const lockN=locks[active]||0;
@@ -1306,10 +1372,26 @@ function renderRPanel(){
   });
   Object.values(groups).forEach(g=>{g.recB=Math.round(g.total*.10);});
   const groupKeys=Object.values(groups).sort((a,b)=>b.total-a.total||String(a.key).localeCompare(String(b.key)));
+  const boundaryRangesForTeam=onlyBoundary?boundaryRanges(s.n):null;
+  const teamSegs=boundaryRangesForTeam?boundaryCoreSegments(s.n,boundaryRangesForTeam):null;
   const teamCards=groupKeys.map(gr=>{
     const teamRows=s.ids.map((id,i)=>({id,rankNo:i+1,p:pid(id),g:gradeAt(i,s.n)})).filter(x=>groupKeyOf(x.p)===gr.key);
-    let rows='';
+    const useBoundary=teamSegs&&teamRows.length>TEAM_BOUNDARY_MIN;
+    const extraGaps=teamBoundaryExpandedGaps[gr.key]||[];
+    const isVisible=x=>!useBoundary||inSegments(x.rankNo,teamSegs)||extraGaps.some(g=>x.rankNo>=g.from&&x.rankNo<=g.to);
+    let rows='',gapStart=null,gapEnd=null,gapCount=0;
+    const flushGap=()=>{
+      if(gapStart===null)return;
+      rows+=`<div class="team-row ellipsis" onclick="expandTeamBoundaryGap('${encodeURIComponent(gr.key)}',${gapStart},${gapEnd})" title="클릭하면 펼쳐봅니다">⋯ ${gapCount}명 더보기</div>`;
+      gapStart=null;gapEnd=null;gapCount=0;
+    };
     teamRows.forEach((x,j)=>{
+      if(!isVisible(x)){
+        if(gapStart===null)gapStart=x.rankNo;
+        gapEnd=x.rankNo;gapCount++;
+        return;
+      }
+      flushGap();
       const dispG=x.g==='S'?'A':x.g;
       const teamNo=j+1;
       const personalShare=pct(teamNo,teamRows.length), zone=boundaryInfo(x.rankNo,s.n);
@@ -1322,6 +1404,7 @@ function renderRPanel(){
         <span class="share"><span class="chip" style="background:${gColor(dispG)}">${dispG}</span><span class="pct">${personalShare}%</span></span>
       </div>`;
     });
+    flushGap();
     return `<section class="team-card">
       <div class="team-card-head"><b>${esc(gr.key)}</b><span>${gr.total}명</span></div>
       ${renderTeamRatio(gr,gr.total)}
@@ -1973,7 +2056,10 @@ function renderRankLegend(n,r){
     {label:'B경계',from:r.bbFrom,to:r.bbTo,tc:'var(--bb-line)'},
     {label:'B',from:r.bbTo+1,to:n,tc:'var(--b)'}
   ].filter(s=>s.from<=s.to&&s.to>=1);
-  return `<div class="rt-legend">${segs.map(s=>`<span class="tb-tag" style="--tc:${s.tc}"><b>${s.label}</b> ${s.from}~${s.to}위</span>`).join('')}</div>`;
+  return `<div class="rt-legend">${segs.map(s=>{
+    const on=legendFilterRange&&legendFilterRange.from===s.from&&legendFilterRange.to===s.to;
+    return `<span class="tb-tag${on?' on':''}" style="--tc:${s.tc}" onclick="toggleLegendFilter(${s.from},${s.to})" title="클릭하면 ${s.from}~${s.to}위만 필터링됩니다"><b>${s.label}</b> ${s.from}~${s.to}위</span>`;
+  }).join('')}</div>`;
 }
 let keepScrollOnRender=true;
 function renderMain(){
@@ -1986,21 +2072,36 @@ function renderMain(){
   const ids=order[active]||[],n=ids.length,{aEnd,bStart}=bounds(n),ranges=boundaryRanges(n),cols=visibleColumns(),shown=getVisibleRankIds(),grid=gridCols();
   const allChecked=shown.length>0&&shown.every(id=>picked.has(id));
   const th=`${renderRankLegend(n,ranges)}<div class="rt-head">${cols.map(c=>renderHeaderCell(c,allChecked,n,shown.length)).join('')}</div>`;
-  let rows='',prevShownEllipsis=false;
+  const segs=onlyBoundary?boundaryCoreSegments(n,ranges):null;
+  let rows='',gapStart=null,gapEnd=null;
+  const flushGap=()=>{
+    if(gapStart===null)return;
+    rows+=`<div class="rt-row ellipsis" onclick="expandBoundaryGap(${gapStart},${gapEnd})" title="클릭하면 펼쳐봅니다">⋯ ${gapEnd-gapStart+1}명 더보기 (${gapStart}~${gapEnd}위)</div>`;
+    gapStart=null;gapEnd=null;
+  };
   ids.forEach((id,i)=>{
     const rankNo=i+1,p=pid(id);
     if(!rowMatches(p,rankNo))return;
+    if(legendFilterRange){
+      if(rankNo<legendFilterRange.from||rankNo>legendFilterRange.to)return;
+    }else if(segs&&!inSegments(rankNo,segs)){
+      if(gapStart===null)gapStart=rankNo;
+      gapEnd=rankNo;
+      return;
+    }
+    flushGap();
     const g=gradeAt(i,n),zone=boundaryInfo(rankNo,n),locked=i<(locks[active]||0),inCmp=picked.has(id);
-    if(onlyBoundary){const showA=rankNo>=aEnd-4&&rankNo<=ranges.abTo+1,showB=rankNo>=ranges.bbFrom-1&&rankNo<=Math.min(n,bStart+1),showTop=rankNo<=3;if(!(showA||showB||showTop)){if(!prevShownEllipsis){rows+=`<div class="rt-row ellipsis">⋯</div>`;prevShownEllipsis=true;}return;}prevShownEllipsis=false;}
     const bandCls=zone.cls||(g==='S'||g==='A'?'band-a':g==='B+'?'band-bp':g==='B'?'band-b':'');
     const cls=['rt-row',bandCls,selId===id?'sel':'',inCmp?'incmp':'',locked?'locked':''].join(' ');
     rows+=`<div class="${cls}" draggable="${locked?'false':'true'}" data-id="${id}" onclick="handleRowClick(event,${id})">${cols.map(c=>renderCell(c,p,rankNo,zone,locked,inCmp)).join('')}</div>`;
   });
+  flushGap();
   m.innerHTML=`<div class="rtable" style="--rt-cols:${grid}">${th}${rows||'<div class="empty-main" style="padding:2rem">표시할 행이 없습니다.</div>'}</div>`;
   const newTable=document.querySelector('.rtable');
   if(newTable){newTable.scrollTop=prevScrollTop;newTable.scrollLeft=prevScrollLeft;}
   wireDrag();
   wireColDrag();
+  if(onlyBoundary&&!legendFilterRange)requestAnimationFrame(fitBoundaryToViewport);
 }
 let colDragKey=null;
 function wireColDrag(){
