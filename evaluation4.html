@@ -1731,7 +1731,7 @@ function renderPivotMenu(anchor){
 function evalText(g){return g?`<span style="color:${gColor(g)};font-weight:800">${esc(g)}</span>`:'';}
 function renderCell(c,p,rankNo,zone,locked,inCmp){
   const cls=`rt-cell${pinClass(c.key)}`;
-  if(c.key==='finalRank')return `<div class="${cls} rt-select" onclick="event.stopPropagation();togglePick(${p.id},event)"><input type="checkbox" ${inCmp?'checked':''} title="선택"><span class="rk">${rankNo}<span class="rksep">/</span><span class="init">${p.baseNo||'-'}</span>${zone.key?`<span class="tag" style="color:${zone.color}">${zone.label}</span>`:''}</span></div>`;
+  if(c.key==='finalRank')return `<div class="${cls} rt-select" onclick="event.stopPropagation();togglePick(${p.id},event)"><input type="checkbox" ${inCmp?'checked':''} title="선택"><span class="rk">${rankNo}<span class="rksep">/</span><span class="init">${p.baseNo||'-'}</span></span></div>`;
   if(c.key==='name')return `<div class="${cls} nm" title="${esc(p.name)}">${esc(p.name)}${p.sRec?' ⭐':''}${p.cFlag?' 🚩':''}</div>`;
   if(c.key==='detail')return `<div class="${cls} cc" onclick="event.stopPropagation()"><button class="memo-btn ${memos[p.id]?'has':''}" onclick="openDetail(${p.id})" title="상세">상세</button></div>`;
   if(c.key==='evalHistory'){const keys=evalKeysActive();return `<div class="${cls} cc evh" title="${keys.map(k=>k.replace('eval','')).join('/')}년: ${keys.map(k=>p[k]||'-').join('/')}">${keys.map(k=>evalText(p[k])||'-').join('<span class="evsep">/</span>')}</div>`;}
@@ -1778,8 +1778,9 @@ function renderMain(){
     const g=gradeAt(i,n),zone=boundaryInfo(rankNo,n),locked=i<(locks[active]||0),inCmp=picked.has(id);
     if(onlyBoundary){const showA=rankNo>=aEnd-4&&rankNo<=ranges.abTo+1,showB=rankNo>=ranges.bbFrom-1&&rankNo<=Math.min(n,bStart+1),showTop=rankNo<=3;if(!(showA||showB||showTop)){if(!prevShownEllipsis){rows+=`<div class="rt-row ellipsis">⋯</div>`;prevShownEllipsis=true;}return;}prevShownEllipsis=false;}
     if(rankNo===ranges.abFrom)rows+=`<div class="cutline ab"><hr><span class="lab">A경계 (${ranges.abFrom}~${ranges.abTo}위)</span></div>`;
+    if(rankNo===ranges.abTo+1)rows+=`<div class="cutline ab"><hr></div>`;
     if(rankNo===ranges.bbFrom)rows+=`<div class="cutline bb"><hr><span class="lab">B경계 (${ranges.bbFrom}~${ranges.bbTo}위)</span></div>`;
-    if(rankNo===bStart+1)rows+=`<div class="cutline bb"><hr><span class="lab">B (${bStart+1}위~)</span></div>`;
+    if(rankNo===bStart+1)rows+=`<div class="cutline bb"><hr></div>`;
     const bandCls=zone.cls||(g==='S'||g==='A'?'band-a':g==='B+'?'band-bp':g==='B'?'band-b':'');
     const cls=['rt-row',bandCls,selId===id?'sel':'',inCmp?'incmp':'',locked?'locked':''].join(' ');
     rows+=`<div class="${cls}" draggable="${locked?'false':'true'}" data-id="${id}" onclick="handleRowClick(event,${id})">${cols.map(c=>renderCell(c,p,rankNo,zone,locked,inCmp)).join('')}</div>`;
