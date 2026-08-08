@@ -445,7 +445,11 @@
   .ovh{background:var(--ink);color:#eef1f6;padding:.85rem 1.4rem;display:flex;align-items:center;gap:1rem;}
   .ovh h2{margin:0;font-size:1.1rem;}
   .ovh .hint{font-size:.8rem;color:#aeb6c4;}
-  .ovh .x{margin-left:auto;background:rgba(255,255,255,.12);border:none;color:#eef1f6;width:2.1rem;height:2.1rem;border-radius:9px;cursor:pointer;font-size:1rem;transition:background .12s ease;}
+  .ov-zoom{display:flex;align-items:center;gap:4px;margin-left:auto;}
+  .ov-zoom button{border:1px solid rgba(255,255,255,.14);background:rgba(255,255,255,.07);color:#eef1f6;border-radius:8px;height:1.9rem;width:2.1rem;font-size:.78rem;font-weight:700;cursor:pointer;transition:background .12s ease;}
+  .ov-zoom button:hover{background:rgba(255,255,255,.15);}
+  .ov-zoom span{font-size:.74rem;color:#aeb6c4;width:2.6rem;text-align:center;flex:none;}
+  .ovh .x{background:rgba(255,255,255,.12);border:none;color:#eef1f6;width:2.1rem;height:2.1rem;border-radius:9px;cursor:pointer;font-size:1rem;transition:background .12s ease;}
   .ovh .x:hover{background:rgba(255,255,255,.22);}
   .ovg{flex:1;display:grid;gap:1rem;padding:1.3rem;overflow:auto;grid-auto-flow:column;grid-auto-columns:minmax(19rem,1fr);}
   .ovcard{background:var(--panel);border:1px solid var(--line);border-radius:14px;display:flex;flex-direction:column;overflow:hidden;box-shadow:var(--sh);}
@@ -605,8 +609,11 @@
 
 <!-- compare overlay -->
 <div class="ov" id="ov" onclick="if(event.target===this)closeCompare()"><div class="ovp">
-  <div class="ovh"><h2>후보자 비교</h2>
+  <div class="ovh"><h2>성과 비교</h2>
     <span class="hint">업적을 나란히 놓고 비교합니다.</span>
+    <div class="ov-zoom">
+      <button onclick="zoom(-1)">A−</button><span id="cmpZl">100%</span><button onclick="zoom(1)">A+</button>
+    </div>
     <button class="x" onclick="closeCompare()">✕</button></div>
   <div class="ovg" id="ovg" onclick="if(event.target===this)closeCompare()"></div>
 </div></div>
@@ -1967,6 +1974,14 @@ function positionFloatPick(){
 window.addEventListener('scroll',positionFloatPick,{passive:true});
 window.addEventListener('resize',positionFloatPick);
 document.addEventListener('scroll',positionFloatPick,true);
+document.addEventListener('click',e=>{
+  if(!picked.size)return;
+  if(e.target.closest('#ov,#spot,#mbg,#sbg,#orgbg,#cbg,#hbg,#detailBackdrop,#floatPick'))return;
+  const row=e.target.closest('.rt-row,.team-row');
+  if(row&&picked.has(+row.dataset.id))return;
+  if(!e.target.closest('#main,#rpanel'))return;
+  clearPicked();
+});
 function scrollRowIntoView(id){
   const el=document.querySelector(`.rt-row[data-id="${id}"]`);
   if(el)el.scrollIntoView({behavior:'smooth',block:'center'});
@@ -2044,7 +2059,7 @@ function openHist(){
 }
 function closeHist(){document.getElementById('hbg').classList.remove('show');}
 function toggleFull(){if(!document.fullscreenElement){document.documentElement.requestFullscreen();document.getElementById('fsBtn').textContent='⛶ 전체화면 종료';}else{document.exitFullscreen();document.getElementById('fsBtn').textContent='⛶ 전체화면';}}
-function zoom(d){fs=Math.max(12,Math.min(22,fs+d));document.documentElement.style.setProperty('--fs',fs+'px');document.getElementById('zl').textContent=Math.round(fs/16*100)+'%';}
+function zoom(d){fs=Math.max(12,Math.min(22,fs+d));document.documentElement.style.setProperty('--fs',fs+'px');const pctTxt=Math.round(fs/16*100)+'%';document.getElementById('zl').textContent=pctTxt;const cz=document.getElementById('cmpZl');if(cz)cz.textContent=pctTxt;}
 function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
 function openPaste(){document.getElementById('mbg').classList.add('show');initUploadDropZone();updatePasteCount();}
 function closePaste(){document.getElementById('mbg').classList.remove('show');}
