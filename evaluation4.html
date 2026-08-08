@@ -208,7 +208,9 @@
   .memo-btn:hover{border-color:#c3cffb;background:var(--blue-soft);color:var(--blue);}
   .memo-btn.has{color:var(--blue);border-color:#c3cffb;background:var(--blue-soft);}
 
-  .rt-cell{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .rt-cell{position:relative;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .rt-resize{position:absolute;top:0;right:0;bottom:0;width:6px;cursor:col-resize;z-index:9;}
+  .rt-resize:hover,.rt-resize.active{background:color-mix(in srgb,var(--blue) 40%,transparent);}
   .rt-cell.pin-final,.rt-cell.pin-ratio,.rt-cell.pin-name{position:sticky;z-index:3;background:inherit;}
   .rt-head .rt-cell.pin-final,.rt-head .rt-cell.pin-ratio,.rt-head .rt-cell.pin-name{z-index:6;background:#fafbfd;}
   .rt-cell.pin-final{left:.55rem;}
@@ -712,7 +714,7 @@ function ensurePersonFields(){
 function normalizeColumnState(){
   const known=new Set(COLS.map(c=>c.key));
   const next=[];
-  (Array.isArray(colState)?colState:[]).forEach(x=>{ if(x&&known.has(x.key)&&!next.some(y=>y.key===x.key))next.push({key:x.key,visible:x.visible!==false}); });
+  (Array.isArray(colState)?colState:[]).forEach(x=>{ if(x&&known.has(x.key)&&!next.some(y=>y.key===x.key))next.push({key:x.key,visible:x.visible!==false,...(x.w?{w:x.w}:{})}); });
   COLS.forEach(c=>{ if(!next.some(x=>x.key===c.key))next.push({key:c.key,visible:true}); });
   colState=next;
 }
@@ -903,7 +905,7 @@ function renderStatsScreen(){
   const rankRows=all.map(x=>`<tr><td><b>${x.rk}</b></td><td>${x.n}</td><td>${x.q.S}</td><td>${x.q.A}</td><td>${x.q["B+"]}</td><td>${x.q.B}</td><td>${x.sRec}</td></tr>`).join('');
   return `<div class="stats-view"><div class="mhead stats-head"><span class="t">?? ??/??</span><span class="n">?? ${s.n}? ? ?? ${s.avgYr.toFixed(1)}??</span><span class="stage">S?? ${s.sRec}? ? C?? ${s.cCnt}? ? ?? ${s.memo}?</span></div><div class="stats-kpis"><div class="stat-kpi"><div class="k">?? ??</div><div class="v">${s.n}</div><div class="sub">?? ?? ??</div></div><div class="stat-kpi"><div class="k">A?? ??</div><div class="v">${s.q.S+s.q.A}</div><div class="sub">S ${s.q.S}? + A ${s.q.A}?</div></div><div class="stat-kpi"><div class="k">B?? ??</div><div class="v">${s.q.B}</div><div class="sub">??? ??? ??</div></div><div class="stat-kpi"><div class="k">S/P ??</div><div class="v">${people.filter(p=>p.sp).length}</div><div class="sub">???????T/P</div></div></div><div class="stats-grid"><section class="stats-card"><h3>?? ?? ??</h3>${renderDist(s.counts,s.n)}</section><section class="stats-card"><h3>25? ?? ??</h3>${renderDist(s.prev,s.n)}</section></div><div class="stats-grid"><section class="stats-card"><h3>?? B ?? ??</h3><table class="stat-table"><tr><th>?</th><th>??</th><th>??</th><th>??</th><th>??</th></tr>${teamRows}</table></section><section class="stats-card"><h3>??? ??</h3><table class="stat-table"><tr><th>??</th><th>??</th><th>S</th><th>A</th><th>B+</th><th>B</th><th>S??</th></tr>${rankRows}</table></section></div></div>`;
 }
-function visibleColumns(){normalizeColumnState();return colState.map(x=>({...COLS.find(c=>c.key===x.key),visible:x.visible})).filter(c=>c.fixed||c.visible!==false);}
+function visibleColumns(){normalizeColumnState();return colState.map(x=>{const c=COLS.find(v=>v.key===x.key);return {...c,visible:x.visible,w:x.w||c.w};}).filter(c=>c.fixed||c.visible!==false);}
 function gridCols(){return visibleColumns().map(c=>c.w).join(' ');}
 function pinClass(key){return key==='finalRank'?' pin-final':key==='ratioRank'?' pin-ratio':key==='name'?' pin-name':'';}
 function evalChip(g){return g?`<span class="chip" style="background:${gColor(g)}">${esc(g)}</span>`:'';}
@@ -1606,7 +1608,7 @@ function closeColumns(){document.getElementById('cbg').classList.remove('show');
 function renderColumnList(){const el=document.getElementById('colList');if(!el)return;el.innerHTML=colState.map((x,i)=>{const c=COLS.find(v=>v.key===x.key);const fixed=!!c.fixed;return '<div class="col-row"><label><input type="checkbox" '+(x.visible!==false?'checked':'')+' '+(fixed?'disabled':'')+' onchange="toggleColumnVisible(\''+x.key+'\',this.checked)"> '+esc(c.label)+'</label><button onclick="moveColumn(\''+x.key+'\',-1)" '+(fixed||i===0?'disabled':'')+'>?</button><button onclick="moveColumn(\''+x.key+'\',1)" '+(fixed||i===colState.length-1?'disabled':'')+'>?</button><button onclick="resetColumnOne(\''+x.key+'\')" '+(fixed?'disabled':'')+'>?</button></div>';}).join('');}
 function toggleColumnVisible(k,v){const x=colState.find(c=>c.key===k);const def=COLS.find(c=>c.key===k);if(x&&!def.fixed)x.visible=v;renderColumnList();}
 function moveColumn(k,d){const i=colState.findIndex(c=>c.key===k),j=i+d;if(i<0||j<0||j>=colState.length)return;if(COLS.find(c=>c.key===k)?.fixed)return;[colState[i],colState[j]]=[colState[j],colState[i]];renderColumnList();}
-function resetColumnOne(k){const x=colState.find(c=>c.key===k);if(x)x.visible=true;renderColumnList();}
+function resetColumnOne(k){const x=colState.find(c=>c.key===k);if(x){x.visible=true;delete x.w;}renderColumnList();}
 function resetColumns(){colState=DEFAULT_COL_STATE.map(x=>({...x}));renderColumnList();}
 function applyColumnSettings(){normalizeColumnState();persist();closeColumns();render();}
 function renderBanner(){
@@ -1665,6 +1667,110 @@ document.addEventListener('keydown',e=>{if(e.key==='Escape')closePivotMenu();});
 function renderPivotMenu(anchor){if(!pivotDraft)return;const key=pivotDraft.key,c=COLS.find(x=>x.key===key),all=columnFilterValues(key),term=(pivotDraft.search||'').toLowerCase(),shown=all.filter(x=>String(x.label).toLowerCase().includes(term));const el=ensurePivotMenu();el.innerHTML=`<div class="pm-sec"><div class="pm-title">${esc(c?c.label:key)} \uD544\uD130</div><input class="pm-search" id="pmSearch" placeholder="\uAC80\uC0C9" value="${esc(pivotDraft.search)}" oninput="pivotDraft.search=this.value;renderPivotMenu()"></div><div class="pm-sec"><label><input type="checkbox" ${shown.length&&shown.every(x=>pivotDraft.selected.has(x.value))?'checked':''} onchange="togglePivotAll(this.checked)"> (\uBAA8\uB450 \uC120\uD0DD)</label></div><div class="pm-list">${shown.map(x=>`<label title="${esc(x.label)}"><input type="checkbox" ${pivotDraft.selected.has(x.value)?'checked':''} onchange="togglePivotValue('${encodeURIComponent(x.value)}',this.checked)"> ${esc(x.label)} <span style="margin-left:auto;color:var(--muted)">${x.count}</span></label>`).join('')||'<div style="padding:.7rem;color:var(--muted);text-align:center">\uAC80\uC0C9 \uACB0\uACFC \uC5C6\uC74C</div>'}</div><div class="pm-actions"><button onclick="clearPivotFilter('${key}')">\uD574\uC81C</button><button onclick="hidePivotSelected()">\uC228\uAE40</button><button onclick="closePivotMenu()">\uB2EB\uAE30</button><button class="primary" onclick="applyPivotFilter()">\uC801\uC6A9</button></div>`;if(anchor){const r=anchor.getBoundingClientRect();let left=Math.max(8,Math.min(r.left,window.innerWidth-el.offsetWidth-8));let top=Math.min(r.bottom+4,window.innerHeight-el.offsetHeight-8);el.style.left=left+'px';el.style.top=top+'px';}else{const active=document.activeElement;const r=active&&active.getBoundingClientRect?active.getBoundingClientRect():{left:12,bottom:80};el.style.left=Math.max(8,Math.min(r.left,window.innerWidth-el.offsetWidth-8))+'px';el.style.top=Math.min(r.bottom+4,window.innerHeight-el.offsetHeight-8)+'px';}setTimeout(()=>{const input=document.getElementById('pmSearch');if(input)input.focus();},0);}
 function renderHeaderCell(c,allChecked,total,shown){const pin=pinClass(c.key),on=isColumnFiltered(c.key)?' on':'';const label=`<div class="rt-th-label"><span>${c.label}</span>${c.key==='finalRank'?`<span class="count">${shown}/${total}</span>`:''}</div><button class="rt-filter-toggle${on}" onclick="openPivotFilter('${c.key}',event)" title="\uD544\uD130">&#9662;</button>`;if(c.key==='finalRank')return `<div class="rt-cell rt-select${pin}"><input type="checkbox" ${allChecked?'checked':''} onclick="toggleSelectAll(event)" title="\uD604\uC7AC \uD45C\uC2DC \uD589 \uC120\uD0DD">${label}</div>`;return `<div class="rt-cell${pin}">${label}</div>`;}
 /* ---- end request patch pivot text override ---- */
+/* ---- request patch: 엑셀식 헤더 필터(검색/선택/해제) + 열 너비 조절 ---- */
+const PINNED_COLS=new Set(['finalRank','ratioRank','name']);
+function pivotShownValues(){
+  const key=pivotDraft.key,all=columnFilterValues(key),term=(pivotDraft.search||'').toLowerCase();
+  return all.filter(x=>String(x.label).toLowerCase().includes(term));
+}
+function renderPivotList(){
+  if(!pivotDraft)return;
+  const shown=pivotShownValues();
+  const allBox=document.getElementById('pmSelectAll');
+  if(allBox)allBox.checked=shown.length>0&&shown.every(x=>pivotDraft.selected.has(x.value));
+  const list=document.getElementById('pmList');
+  if(!list)return;
+  list.innerHTML=shown.map(x=>`<label title="${esc(x.label)}"><input type="checkbox" ${pivotDraft.selected.has(x.value)?'checked':''} onchange="togglePivotValue('${encodeURIComponent(x.value)}',this.checked)"> ${esc(x.label)} <span style="margin-left:auto;color:var(--muted)">${x.count}</span></label>`).join('')||'<div style="padding:.7rem;color:var(--muted);text-align:center">검색 결과 없음</div>';
+}
+function onPivotSearchInput(v){pivotDraft.search=v;renderPivotList();}
+function togglePivotAll(checked){
+  if(!pivotDraft)return;
+  pivotShownValues().forEach(x=>checked?pivotDraft.selected.add(x.value):pivotDraft.selected.delete(x.value));
+  renderPivotList();
+}
+function renderPivotMenu(anchor){
+  if(!pivotDraft)return;
+  const key=pivotDraft.key,c=COLS.find(x=>x.key===key);
+  const el=ensurePivotMenu();
+  el.innerHTML=`<div class="pm-sec"><div class="pm-title">${esc(c?c.label:key)} 필터</div><input class="pm-search" id="pmSearch" placeholder="검색" value="${esc(pivotDraft.search)}" oninput="onPivotSearchInput(this.value)"></div><div class="pm-sec"><label><input type="checkbox" id="pmSelectAll" onchange="togglePivotAll(this.checked)"> (모두 선택)</label></div><div class="pm-list" id="pmList"></div><div class="pm-actions"><button onclick="clearPivotFilter('${key}')">필터 해제</button><button class="primary" onclick="applyPivotFilter()">적용</button></div>`;
+  renderPivotList();
+  if(anchor){
+    const r=anchor.getBoundingClientRect();
+    const left=Math.max(8,Math.min(r.left,window.innerWidth-el.offsetWidth-8));
+    const top=Math.min(r.bottom+4,window.innerHeight-el.offsetHeight-8);
+    el.style.left=left+'px';el.style.top=top+'px';
+  }else{
+    const anchorEl=document.activeElement;
+    const r=anchorEl&&anchorEl.getBoundingClientRect?anchorEl.getBoundingClientRect():{left:12,bottom:80};
+    el.style.left=Math.max(8,Math.min(r.left,window.innerWidth-el.offsetWidth-8))+'px';
+    el.style.top=Math.min(r.bottom+4,window.innerHeight-el.offsetHeight-8)+'px';
+  }
+  setTimeout(()=>{const input=document.getElementById('pmSearch');if(input)input.focus();},0);
+}
+function renderHeaderCell(c,allChecked,total,shown){
+  const pin=pinClass(c.key),on=isColumnFiltered(c.key)?' on':'';
+  const label=`<div class="rt-th-label"><span>${c.label}</span>${c.key==='finalRank'?`<span class="count">${shown}/${total}</span>`:''}</div><button class="rt-filter-toggle${on}" onclick="openPivotFilter('${c.key}',event)" title="필터">▾</button>`;
+  const resizer=PINNED_COLS.has(c.key)?'':`<span class="rt-resize" onmousedown="startColResize(event,'${c.key}')"></span>`;
+  if(c.key==='finalRank')return `<div class="rt-cell rt-select${pin}"><input type="checkbox" ${allChecked?'checked':''} onclick="toggleSelectAll(event)" title="현재 표시 행 선택">${label}${resizer}</div>`;
+  return `<div class="rt-cell${pin}">${label}${resizer}</div>`;
+}
+function renderMain(){
+  const m=document.getElementById('main');
+  if(!people.length){m.innerHTML=`<div class="empty-main">평가 대상자 데이터가 없습니다.<br><br><button class="btn primary" onclick="openPaste()">데이터 입력하기</button></div>`;return;}
+  if(mainView==='stats'){m.innerHTML=renderStatsScreen();return;}
+  const ids=order[active]||[],n=ids.length,{aEnd,bStart}=bounds(n),ranges=boundaryRanges(n),cols=visibleColumns(),shown=getVisibleRankIds(),grid=gridCols();
+  const allChecked=shown.length>0&&shown.every(id=>picked.has(id));
+  const th=`<div class="rt-head">${cols.map(c=>renderHeaderCell(c,allChecked,n,shown.length)).join('')}</div>`;
+  let rows='',prevShownEllipsis=false;
+  ids.forEach((id,i)=>{
+    const rankNo=i+1,p=pid(id);
+    if(!rowMatches(p,rankNo))return;
+    const zone=boundaryInfo(rankNo,n),inACut=rankNo<=aEnd,locked=i<(locks[active]||0),inCmp=picked.has(id);
+    if(onlyBoundary){const showA=rankNo>=aEnd-4&&rankNo<=ranges.abTo+1,showB=rankNo>=ranges.bbFrom-1&&rankNo<=Math.min(n,bStart+1),showTop=rankNo<=3;if(!(showA||showB||showTop)){if(!prevShownEllipsis){rows+=`<div class="rt-row ellipsis">⋯</div>`;prevShownEllipsis=true;}return;}prevShownEllipsis=false;}
+    if(rankNo===ranges.abFrom)rows+=`<div class="cutline ab"><hr><span class="lab">A/B+ 경계구간 (${ranges.abFrom}~${ranges.abTo}위)</span></div>`;
+    if(rankNo===ranges.bbFrom)rows+=`<div class="cutline bb"><hr><span class="lab">B 상위경계 (${ranges.bbFrom}~${ranges.bbTo}위)</span></div>`;
+    if(rankNo===bStart+1)rows+=`<div class="cutline bb"><hr><span class="lab">B 기준 시작 (${bStart+1}위)</span></div>`;
+    const cls=['rt-row',inACut?'acut':'',zone.cls,selId===id?'sel':'',inCmp?'incmp':'',locked?'locked':''].join(' ');
+    rows+=`<div class="${cls}" draggable="${locked?'false':'true'}" data-id="${id}" onclick="handleRowClick(event,${id})">${cols.map(c=>renderCell(c,p,rankNo,zone,locked,inCmp)).join('')}</div>`;
+  });
+  m.innerHTML=`<div class="rtable" style="--rt-cols:${grid}">${th}${rows||'<div class="empty-main" style="padding:2rem">표시할 행이 없습니다.</div>'}</div>`;
+  wireDrag();
+}
+let colResize=null;
+function startColResize(e,key){
+  e.preventDefault();e.stopPropagation();
+  const cell=e.currentTarget.closest('.rt-cell');
+  if(!cell)return;
+  colResize={key,startX:e.clientX,startW:cell.getBoundingClientRect().width,liveW:null};
+  e.currentTarget.classList.add('active');
+  document.body.classList.add('resizing');
+  document.addEventListener('mousemove',onColResizeMove);
+  document.addEventListener('mouseup',endColResize);
+}
+function onColResizeMove(e){
+  if(!colResize)return;
+  const w=Math.max(48,Math.round(colResize.startW+(e.clientX-colResize.startX)));
+  colResize.liveW=w+'px';
+  const rt=document.querySelector('.rtable');
+  if(rt)rt.style.setProperty('--rt-cols',visibleColumns().map(c=>c.key===colResize.key?w+'px':c.w).join(' '));
+}
+function endColResize(){
+  if(!colResize)return;
+  const {key,liveW}=colResize;
+  document.removeEventListener('mousemove',onColResizeMove);
+  document.removeEventListener('mouseup',endColResize);
+  document.body.classList.remove('resizing');
+  document.querySelectorAll('.rt-resize.active').forEach(el=>el.classList.remove('active'));
+  colResize=null;
+  if(liveW){
+    const x=colState.find(c=>c.key===key);
+    if(x)x.w=liveW;
+    persist();
+    render();
+  }
+}
+/* ---- end request patch: 엑셀식 헤더 필터 + 열 너비 조절 ---- */
+
 /* ---- boot: 저장된 세션 복원 ---- */
 (function boot(){
   restoreCfg();
