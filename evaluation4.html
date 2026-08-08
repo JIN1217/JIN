@@ -536,8 +536,6 @@
   <span class="leg" style="display:flex;align-items:center;gap:.3rem"><i style="width:.8rem;height:.8rem;border-radius:3px;background:var(--bp-fill);border:1px solid var(--bp);display:inline-block"></i>B+</span>
   <span class="leg" style="display:flex;align-items:center;gap:.3rem"><i style="width:.8rem;height:.8rem;border-radius:3px;background:var(--bb-fill);border:1px solid var(--bb-line);display:inline-block"></i>B경계</span>
   <span class="leg" style="display:flex;align-items:center;gap:.3rem"><i style="width:.8rem;height:.8rem;border-radius:3px;background:var(--b-fill);border:1px solid var(--b);display:inline-block"></i>B</span>
-  <span class="leg" style="display:flex;align-items:center;gap:.3rem">⭐ S 추천 후보</span>
-  <span class="leg" style="display:flex;align-items:center;gap:.3rem">🚩 C 후보</span>
   <span class="grow"></span>
   <button class="tbtn" onclick="undo()" id="undoBtn">↶ 되돌리기</button>
   <button class="tbtn" onclick="redo()" id="redoBtn">↷ 다시 실행</button>
@@ -1464,11 +1462,9 @@ function renderFloatingDetail(){
     <div class="cap">주요 성과</div>
     <div style="font-size:.82rem;line-height:1.65;white-space:pre-wrap">${esc((p.ach||[]).join('\n'))||'등록된 성과가 없습니다.'}</div>
   </div>
-  <div class="rbox" style="display:flex;gap:.5rem">
-    <button class="cmp-open" style="flex:1;margin-top:0;background:${p.sRec?'var(--s)':'var(--blue-soft)'};color:${p.sRec?'#fff':'var(--blue)'}" onclick="toggleSFromPanel(${p.id})">${p.sRec?'⭐ S 추천 해제':'⭐ S등급 추천'}</button>
-    <button class="cmp-open" style="flex:1;margin-top:0;background:${p.cFlag?'var(--c)':'var(--blue-soft)'};color:${p.cFlag?'#fff':'var(--blue)'}" onclick="toggleCFromPanel(${p.id})">${p.cFlag?'🚩 C후보 해제':'🚩 C후보 등록'}</button>
+  <div class="rbox">
+    <button class="cmp-open" style="width:100%;margin-top:0;background:${p.sRec?'var(--s)':'var(--blue-soft)'};color:${p.sRec?'#fff':'var(--blue)'}" onclick="toggleSFromPanel(${p.id})">${p.sRec?'⭐ S 추천 해제':'⭐ S등급 추천'}</button>
   </div>
-  ${p.cFlag?`<div style="margin:-.4rem 0 .7rem;padding:0 .2rem;font-size:.78rem;color:var(--muted2);white-space:pre-wrap">${esc(p.cNote||'(사유 없음)')}</div>`:''}
   <div class="rbox">
     <div style="font-weight:700;margin-bottom:.5rem;font-size:.82rem">메모</div>
     <textarea class="memo" id="memoBox" placeholder="메모를 입력하세요..." oninput="memos[${p.id}]=this.value;persist()">${esc(memos[p.id]||'')}</textarea>
