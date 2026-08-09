@@ -177,10 +177,11 @@
   .yoy-delta.up{color:var(--ok);}
   .yoy-delta.down{color:var(--warn);}
   .yoy-delta.flat{color:var(--muted);}
-  .grp-stack{display:flex;height:.5rem;background:var(--bg);border-radius:8px;overflow:hidden;min-width:6rem;}
+  .grp-avgyr{font-size:.78rem;color:var(--muted);margin-top:.15rem;font-weight:600;}
+  .grp-stack{display:flex;height:.5rem;background:var(--bg);border-radius:8px;overflow:hidden;min-width:6rem;justify-content:center;}
   .grp-stack i{height:100%;width:var(--w);background:var(--gc);}
-  .grp-detail{display:flex;gap:.45rem;flex-wrap:wrap;font-size:.85rem;font-weight:700;justify-content:flex-start;}
-  .grp-ratio-text{display:flex;gap:.45rem;flex-wrap:wrap;font-size:.85rem;font-weight:700;margin-top:.3rem;}
+  .grp-detail{display:flex;gap:.45rem;flex-wrap:wrap;font-size:.85rem;font-weight:700;justify-content:center;}
+  .grp-ratio-text{display:flex;gap:.45rem;flex-wrap:wrap;font-size:.85rem;font-weight:700;margin-top:.3rem;justify-content:center;}
   .dist-list{display:grid;gap:.55rem;}
   .dist-row{display:grid;grid-template-columns:3.2rem 1fr 4.4rem;gap:.7rem;align-items:center;font-size:.8rem;}
   .dist-row .lab{font-weight:800;display:flex;align-items:center;gap:.35rem;}
@@ -190,7 +191,7 @@
   .bar-fill{height:100%;width:var(--w);background:var(--gc);border-radius:20px;}
   .stat-table{width:100%;border-collapse:collapse;font-size:.9rem;}
   .stat-table th{color:var(--muted);font-size:.82rem;text-align:center;padding:.5rem .4rem;border-bottom:1px solid var(--line);font-weight:800;}
-  .stat-table td:first-child{text-align:left;}
+  .stat-table td:first-child{text-align:center;}
   .stat-table td{padding:.52rem .4rem;text-align:right;border-bottom:1px solid var(--line2);vertical-align:middle;}
   .rank-link{border:none;background:var(--blue-soft);color:var(--blue);font-weight:800;font-size:1em;padding:.25rem .7rem;border-radius:8px;cursor:pointer;transition:background .12s ease,color .12s ease;}
   .rank-link:hover{background:var(--blue);color:#fff;}
@@ -199,7 +200,7 @@
   .opv-scroll{overflow-x:auto;border-radius:10px;border:1px solid var(--line);}
   .opv-table{white-space:nowrap;}
   .opv-table th{text-align:center;}
-  .opv-table td:nth-child(-n+2){text-align:left;}
+  .opv-table td:nth-child(-n+2){text-align:center;}
   .opv-table td:nth-child(n+3){border-left:1px solid var(--line2);}
   .opv-table .opv-pct{color:var(--muted2);font-weight:600;font-size:.88em;}
   .opv-table tr.opv-subtotal td{font-weight:800;background:var(--bg);}
@@ -1183,7 +1184,8 @@ function renderGroupTable(groups,labelKey,titleLabel,simple,showDetailBtn){
     const ratioText=GRADES.filter(gr=>(g[gr.key]||0)>0).map(gr=>`<span style="color:${gr.color}">${gr.key} ${pct(g[gr.key]||0,total)}%</span>`).join('');
     const detail=GRADES.filter(gr=>(g[gr.key]||0)>0).map(gr=>`<span style="color:${gr.color}">${gr.key} ${g[gr.key]}명</span>`).join('');
     const labelCell=showDetailBtn?rankLinkLabel(g[labelKey]):`<b>${esc(g[labelKey])}</b>`;
-    return `<tr><td>${labelCell}</td><td>${total}명</td><td><div class="grp-stack">${stack}</div><div class="grp-ratio-text">${ratioText}</div></td><td><div class="grp-detail">${detail||'-'}</div></td></tr>`;
+    const avgYrText=showDetailBtn?`<div class="grp-avgyr">평균 ${(g.avgYr||0).toFixed(1)}년차</div>`:'';
+    return `<tr><td>${labelCell}</td><td>${total}명${avgYrText}</td><td><div class="grp-stack">${stack}</div><div class="grp-ratio-text">${ratioText}</div></td><td><div class="grp-detail">${detail||'-'}</div></td></tr>`;
   }).join('');
   return `<table class="stat-table"><tr><th>${titleLabel}</th><th>인원</th><th>등급 비중</th><th>상세</th></tr>${rows}</table>`;
 }
@@ -1259,7 +1261,7 @@ function aggregateSummary(){
   RANKS.forEach(rk=>{
     const ids=order[rk]||[],n=ids.length,q=quotas(n);
     ['S','A','B+','B'].forEach(g=>sums.q[g]+=q[g]||0);
-    const rankBucket=sums.byRank[rk]=sums.byRank[rk]||{rk,total:0,S:0,A:0,"B+":0,B:0,C:0};
+    const rankBucket=sums.byRank[rk]=sums.byRank[rk]||{rk,total:0,S:0,A:0,"B+":0,B:0,C:0,yrSum:0,avgYr:0};
     ids.forEach((id,i)=>{
       const p=pid(id),g=gradeAt(i,n),teamKey=String(p.team||'').trim()||'미지정',ownerKey=String(p.owner||'').trim()||'미지정';
       sums.ids.push(id);sums.counts[g]++;
@@ -1267,14 +1269,15 @@ function aggregateSummary(){
       sums.teams[teamKey].total++; sums.teams[teamKey][g]++;
       sums.owners[ownerKey]=sums.owners[ownerKey]||{owner:ownerKey,total:0,S:0,A:0,"B+":0,B:0,C:0};
       sums.owners[ownerKey].total++; sums.owners[ownerKey][g]++;
-      rankBucket.total++; rankBucket[g]++;
+      rankBucket.total++; rankBucket[g]++; rankBucket.yrSum+=p.yr||0;
       if(p.sRec)sums.sRec++;if(p.cFlag)sums.cCnt++;if(memos[id])sums.memo++;yrSum+=p.yr||0;
     });
   });
+  Object.values(sums.byRank).forEach(rb=>{rb.avgYr=rb.total?rb.yrSum/rb.total:0;});
   Object.values(sums.teams).forEach(t=>{t.recB=Math.round(t.total*.10);});
   sums.teams=Object.values(sums.teams).sort((a,b)=>b.total-a.total||String(a.team).localeCompare(String(b.team)));
   sums.owners=Object.values(sums.owners).sort((a,b)=>b.total-a.total||String(a.owner).localeCompare(String(b.owner)));
-  sums.byRank=RANKS.map(rk=>sums.byRank[rk]||{rk,total:0,S:0,A:0,"B+":0,B:0,C:0});
+  sums.byRank=RANKS.map(rk=>sums.byRank[rk]||{rk,total:0,S:0,A:0,"B+":0,B:0,C:0,yrSum:0,avgYr:0});
   sums.avgYr=sums.n?yrSum/sums.n:0;
   return sums;
 }
@@ -1282,15 +1285,15 @@ function renderStatsScreen(){
   const s=aggregateSummary();
   const aTotal=s.counts.S+s.counts.A;
   return `<div class="stats-view">
-    <div class="mhead stats-head"><span class="t">전체 요약 · 통계</span><span class="n">전체 ${s.n}명 · 평균 ${s.avgYr.toFixed(1)}년차</span><span class="stage">S추천 ${s.sRec}명 · C후보 ${s.cCnt}명 · 메모 ${s.memo}건</span></div>
+    <div class="mhead stats-head"><span class="t">전체 요약 · 통계</span><span class="n">전체 ${s.n}명 · 평균 ${s.avgYr.toFixed(1)}년차</span><span class="stage">S추천 ${s.sRec}명</span></div>
     <div class="stats-kpis">
       <div class="stat-kpi"><div class="k">전체 인원</div><div class="v">${s.n}<small>명</small></div><div class="sub">4개 직급 합계</div></div>
       <div class="stat-kpi"><div class="k">A등급 이상 (S+A)</div><div class="v">${aTotal}<small>명</small></div><div class="sub">${pct(aTotal,s.n)}% · S ${s.counts.S}명 + A ${s.counts.A}명</div></div>
       <div class="stat-kpi"><div class="k">B+ 등급</div><div class="v">${s.counts["B+"]}<small>명</small></div><div class="sub">${pct(s.counts["B+"],s.n)}%</div></div>
       <div class="stat-kpi"><div class="k">B 등급</div><div class="v">${s.counts.B}<small>명</small></div><div class="sub">${pct(s.counts.B,s.n)}%</div></div>
     </div>
-    <section class="stats-card"><h3>직급별 현황<span class="hint">직급명 클릭 시 우측에 해당 직급의 담당별 순위표 표시</span></h3>${renderGroupTable(s.byRank,'rk','직급',false,true)}</section>
-    <section class="stats-card opv-card"><h3>담당·직급별 등급 현황<span class="hint">${OPV_EXCLUDE_RANK} 제외 · 직급명 클릭 시 우측에 담당별 순위표 표시</span></h3>
+    <section class="stats-card"><h3>직급별 현황</h3>${renderGroupTable(s.byRank,'rk','직급',false,true)}</section>
+    <section class="stats-card opv-card"><h3>담당·직급별 등급 현황<span class="hint">${OPV_EXCLUDE_RANK} 제외</span></h3>
       ${renderOwnerRankGradeTable()}
     </section>
   </div>`;
@@ -1643,7 +1646,7 @@ function renderRPanel(){
   }).join('');
   rp.innerHTML=`<div class="team-panel">
     <h4>${groupLabel} 순위표<div class="seg" style="margin-left:auto"><button class="${teamGroupBy==='owner'?'on':''}" onclick="setTeamGroupBy('owner')">담당</button><button class="${teamGroupBy==='team'?'on':''}" onclick="setTeamGroupBy('team')">팀</button></div></h4>
-    <div class="subline"><span>${active} ${s.n}명 · 좌측 전체순위 기준 자동 반영</span><span>A ${s.q.S+s.q.A} · B+ ${s.q["B+"]} · B ${s.q.B}</span></div>
+    <div class="subline"><span>${active} ${s.n}명</span><span>A ${s.q.S+s.q.A} · B+ ${s.q["B+"]} · B ${s.q.B}</span></div>
     <div class="team-list">${teamCards}</div>
   </div>`;
   renderFloatingDetail();
