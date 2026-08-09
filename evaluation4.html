@@ -1400,6 +1400,7 @@ function boundaryCoreSegments(n,ranges){
   const pad=boundaryPad!=null?boundaryPad:Math.max(1,Math.round(n*.01));
   return mergeRanges([
     {from:1,to:Math.min(n,5)},
+    {from:Math.max(1,n-4),to:n},
     {from:Math.max(1,ranges.abFrom-pad),to:Math.min(n,ranges.abTo+pad)},
     {from:Math.max(1,ranges.bbFrom-pad),to:Math.min(n,ranges.bbTo+pad)},
     ...boundaryExpandedGaps
@@ -1428,7 +1429,11 @@ function teamCardSegments(teamRows,n,ranges,minVisible){
   }
   return segs;
 }
-function expandBoundaryGap(from,to){boundaryExpandedGaps.push({from,to});render();}
+function expandBoundaryGap(from,to){
+  boundaryExpandedGaps.push({from,to:Math.min(to,from+4)});
+  boundaryExpandedGaps.push({from:Math.max(from,to-4),to});
+  render();
+}
 function expandTeamBoundaryGap(keyEnc,from,to){
   const key=decodeURIComponent(keyEnc);
   teamBoundaryExpandedGaps[key]=teamBoundaryExpandedGaps[key]||[];
