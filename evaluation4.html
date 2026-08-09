@@ -1523,6 +1523,20 @@ function handleRowClick(e,id){
     return;
   }
 }
+function handleTeamRowClick(e,id){
+  if(e&&e.shiftKey){
+    e.preventDefault();
+    e.stopPropagation();
+    pickRow(id);
+    return;
+  }
+  const p=pid(id);
+  if(!p)return;
+  query=p.name;
+  renderMain();
+  renderBanner();
+  scrollRowIntoView(id);
+}
 function viewRow(id){ selId=id; renderFloatingDetail(); document.querySelectorAll('.rt-row').forEach(r=>r.classList.toggle('sel',+r.dataset.id===id)); document.querySelectorAll('.team-row').forEach(r=>r.classList.toggle('sel',+r.dataset.id===id)); }
 function toggleSelectAll(e){
   if(e)e.stopPropagation();
@@ -1676,7 +1690,7 @@ function renderRPanel(){
       const personalShare=pct(teamNo,teamRows.length), zone=boundaryInfo(x.rankNo,s.n);
       const locked=x.rankNo<=lockN;
       const subLabel=teamGroupBy==='owner'?`<span class="team-sub">${esc(x.p.team||'')}</span>`:'';
-      rows+=`<div class="team-row ${selId===x.id?'sel':''} ${zone.cls} ${picked.has(x.id)?'incmp':''} ${locked?'locked':''}" draggable="${locked?'false':'true'}" data-id="${x.id}" onclick="handleRowClick(event,${x.id})" title="전체 ${x.rankNo}위 · ${dispG} · ${zone.label?zone.label+' 대상':''} · Shift+클릭 = 비교 담기/빼기 · 드래그 = 순위 교체 · ${esc(x.p.name)}">
+      rows+=`<div class="team-row ${selId===x.id?'sel':''} ${zone.cls} ${picked.has(x.id)?'incmp':''} ${locked?'locked':''}" draggable="${locked?'false':'true'}" data-id="${x.id}" onclick="handleTeamRowClick(event,${x.id})" title="전체 ${x.rankNo}위 · ${dispG} · ${zone.label?zone.label+' 대상':''} · Shift+클릭 = 비교 담기/빼기 · 드래그 = 순위 교체 · 클릭 = 직급별 순위표에서 위치 확인 · ${esc(x.p.name)}">
         <span class="grip">${locked?'🔒':'⋮⋮'}</span>
         <span class="rank">${x.rankNo}위</span>
         <span class="name">${esc(x.p.name)}${subLabel}${x.p.sRec?' ⭐':''}${x.p.cFlag?' 🚩':''}</span>
