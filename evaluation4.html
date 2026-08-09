@@ -241,6 +241,8 @@
   @keyframes rowJustMoved{0%{box-shadow:inset 0 0 0 3px var(--ok);background:color-mix(in srgb,var(--ok) 20%,#fff);}100%{box-shadow:none;}}
   .move-badge{position:fixed;transform:translate(-100%,-50%);background:var(--ink);color:#fff;font-size:.74rem;font-weight:700;padding:.3rem .6rem;border-radius:8px;box-shadow:0 6px 16px rgba(0,0,0,.25);opacity:0;transition:opacity .25s ease,transform .25s ease;z-index:200;pointer-events:none;white-space:nowrap;}
   .move-badge.show{opacity:1;transform:translate(-100%,-60%);}
+  .toast-msg{position:fixed;left:50%;top:4.6rem;transform:translateX(-50%) translateY(-8px);background:var(--ink);color:#fff;font-size:.85rem;font-weight:700;padding:.55rem 1.2rem;border-radius:999px;box-shadow:0 12px 30px rgba(0,0,0,.28);opacity:0;transition:opacity .22s ease,transform .22s ease;z-index:220;pointer-events:none;white-space:nowrap;}
+  .toast-msg.show{opacity:1;transform:translateX(-50%) translateY(0);}
   .rt-row.sel{background:var(--blue-soft);}
   .rt-row.band-a{background:var(--a-fill);}
   .rt-row.band-bp{background:var(--bp-fill);}
@@ -555,7 +557,7 @@
   </div>
   <button onclick="toggleFull()" id="fsBtn">⛶ 전체화면</button>
   <button onclick="openHist()">↻ 변경 이력</button>
-  <button onclick="takeSnapshot()">📸 스크린샷</button>
+  <button onclick="takeSnapshot()">💾 임시저장</button>
   <button class="primary" onclick="saveSession()">✓ 세션 종료 및 저장</button>
 </div>
 
@@ -624,7 +626,7 @@
 </div></div>
 
 <!-- paste modal -->
-<div class="mbg" id="mbg"><div class="modal">
+<div class="mbg" id="mbg" onclick="if(event.target===this)closePaste()"><div class="modal">
   <h2>평가 대상자 입력</h2>
   <p>아래 양식을 다운로드해 엑셀에서 작성한 뒤, CSV로 저장해 업로드하세요. 첫 줄은 머리글입니다.<br>
   <code>직급 · 초기순위 · 이름 · 사번 · 팀 · 담당 · S/P · 년차 · 25년 · 24년 · 23년 · 22년 · 21년 · 주요성과</code><br>
@@ -652,7 +654,7 @@
 </div></div>
 
 <!-- settings modal -->
-<div class="mbg" id="sbg"><div class="modal">
+<div class="mbg" id="sbg" onclick="if(event.target===this)closeSettings()"><div class="modal">
   <h2>세션 설정</h2>
   <p>담당·직급별로 비중이 다릅니다. 현재 <b id="setRankLbl"></b> 인원(<b id="setN"></b>명) 기준으로 조정하면 경계가 즉시 재계산됩니다.</p>
   <div class="set-grid" id="setGrid"></div>
@@ -678,7 +680,7 @@
 </div></div>
 
 <!-- org (담당/팀) order modal -->
-<div class="mbg" id="orgbg"><div class="modal" style="width:34rem">
+<div class="mbg" id="orgbg" onclick="if(event.target===this)closeOrgOrder()"><div class="modal" style="width:34rem">
   <h2>담당·팀 순서 설정</h2>
   <p>담당(굵은 제목)을 드래그하면 담당 순서가, 그 아래 팀 이름을 드래그하면 해당 담당 안에서의 팀 순서가 바뀝니다. 담당별/팀별 순위표에 그대로 적용됩니다.</p>
   <div id="orgList" style="max-height:26rem;overflow:auto;border:1px solid var(--line);border-radius:10px;padding:.6rem;background:var(--bg)"></div>
@@ -690,7 +692,7 @@
 </div></div>
 
 <!-- column settings modal -->
-<div class="mbg" id="cbg"><div class="modal" style="width:34rem">
+<div class="mbg" id="cbg" onclick="if(event.target===this)closeColumns()"><div class="modal" style="width:34rem">
   <h2>데이터 제목 설정</h2>
   <p>표시할 제목과 좌우 순서를 조정합니다. 확정·비율·이름은 화면 왼쪽에 고정됩니다.</p>
   <div id="colList" class="col-list"></div>
@@ -702,7 +704,7 @@
 </div></div>
 
 <!-- history modal -->
-<div class="mbg" id="hbg"><div class="modal" style="width:38rem">
+<div class="mbg" id="hbg" onclick="if(event.target===this)closeHist()"><div class="modal" style="width:38rem">
   <h2>변경 이력</h2>
   <p>드래그·순위 교체·팀 내 이동 시 자동으로 기록됩니다 (최신순, 별도 입력 불필요).</p>
   <div id="histList" style="max-height:24rem;overflow:auto;border:1px solid var(--line);border-radius:8px"></div>
@@ -1047,6 +1049,21 @@ function flashSaved(){
   if(!el)return;
   el.innerHTML='<span class="dot"></span>저장됨 '+fmtTime(lastSaved);
 }
+let toastTimer=null;
+function showToast(msg){
+  let el=document.getElementById('toastMsg');
+  if(!el){
+    el=document.createElement('div');
+    el.id='toastMsg';
+    el.className='toast-msg';
+    document.body.appendChild(el);
+  }
+  el.textContent=msg;
+  clearTimeout(toastTimer);
+  el.classList.remove('show');
+  requestAnimationFrame(()=>requestAnimationFrame(()=>el.classList.add('show')));
+  toastTimer=setTimeout(()=>el.classList.remove('show'),1600);
+}
 function markNoPersist(){
   const el=document.getElementById('saveState');
   if(el)el.innerHTML='<span class="dot" style="background:var(--warn)"></span>자동저장 불가 (파일을 PC에 저장 후 열면 동작)';
@@ -1064,18 +1081,18 @@ function takeSnapshot(){
     const list=snapshotList();
     list.push({id,t:payload.savedAt});
     localStorage.setItem(SNAP_LIST_KEY,JSON.stringify(list));
-  }catch(e){ alert('스크린샷 저장에 실패했습니다. (저장 공간 부족일 수 있습니다)'); return; }
-  changeLog.push({t:payload.savedAt,marker:true,label:'📸 스크린샷 저장',snapshotId:id});
+  }catch(e){ alert('임시저장에 실패했습니다. (저장 공간 부족일 수 있습니다)'); return; }
+  changeLog.push({t:payload.savedAt,marker:true,label:'💾 임시저장',snapshotId:id});
   if(changeLog.length>500)changeLog.shift();
   persist();
   flashSaved();
-  openHist();
+  showToast('저장되었습니다.');
 }
 function restoreSnapshot(id){
   let raw; try{ raw=localStorage.getItem('evalSession.snap.'+id); }catch(e){}
-  if(!raw){alert('저장된 스크린샷을 찾을 수 없습니다.');return;}
-  let d; try{ d=JSON.parse(raw); }catch(e){ alert('스크린샷 데이터가 손상되었습니다.'); return; }
-  if(!d||!Array.isArray(d.people)||!d.people.length){alert('스크린샷 데이터가 올바르지 않습니다.');return;}
+  if(!raw){alert('저장된 임시저장 데이터를 찾을 수 없습니다.');return;}
+  let d; try{ d=JSON.parse(raw); }catch(e){ alert('임시저장 데이터가 손상되었습니다.'); return; }
+  if(!d||!Array.isArray(d.people)||!d.people.length){alert('임시저장 데이터가 올바르지 않습니다.');return;}
   const stamp=fmtDateTime(d.savedAt);
   if(!confirm(`이 시점(${stamp})으로 되돌릴까요?\n현재 화면의 조정 내용은 사라집니다.`))return;
   people=d.people; order=d.order||{};
@@ -1090,7 +1107,7 @@ function restoreSnapshot(id){
   syncOrgOrder();
   RANKS.forEach(rk=>{ if(!order[rk]) order[rk]=people.filter(p=>p.rank===rk).map(p=>p.id); });
   picked.clear(); selId=null; undoStack=[]; redoStack=[];
-  changeLog.push({t:Date.now(),marker:true,label:'↩ 스크린샷으로 복원 · '+stamp});
+  changeLog.push({t:Date.now(),marker:true,label:'↩ 임시저장으로 복원 · '+stamp});
   if(changeLog.length>500)changeLog.shift();
   closeHist();
   persist(); persistCfg(); render();
