@@ -115,9 +115,9 @@
 
   /* main head */
   .mhead{display:flex;align-items:baseline;gap:.8rem;margin-bottom:.7rem;}
-  .mhead .t{font-size:1.25rem;font-weight:800;}
-  .mhead .n{color:var(--muted2);font-size:.85rem;}
-  .mhead .stage{margin-left:auto;color:var(--muted2);font-size:.82rem;}
+  .mhead .t{font-size:1.4rem;font-weight:800;}
+  .mhead .n{color:var(--muted2);font-size:.95rem;}
+  .mhead .stage{margin-left:auto;color:var(--muted2);font-size:.92rem;}
   .mhead .stage b{color:var(--blue);}
 
   .cards{display:grid;grid-template-columns:repeat(4,1fr) 1.6fr;gap:.7rem;margin-bottom:.9rem;}
@@ -158,14 +158,14 @@
   .stat-kpi.bad{border-color:color-mix(in srgb,var(--warn) 35%,var(--line));}
   .stat-kpi.bad .v{color:var(--warn);}
   .stat-kpi{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:.75rem .85rem;box-shadow:var(--sh);}
-  .stat-kpi .k{font-size:.72rem;color:var(--muted2);font-weight:800;margin-bottom:.3rem;}
-  .stat-kpi .v{font-size:1.45rem;line-height:1;font-weight:850;font-variant-numeric:tabular-nums;}
-  .stat-kpi .sub{font-size:.75rem;color:var(--muted);margin-top:.35rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .stat-kpi .k{font-size:.84rem;color:var(--muted2);font-weight:800;margin-bottom:.3rem;}
+  .stat-kpi .v{font-size:1.7rem;line-height:1;font-weight:850;font-variant-numeric:tabular-nums;}
+  .stat-kpi .sub{font-size:.88rem;color:var(--muted);margin-top:.35rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
   .stats-grid{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(18rem,.9fr);gap:.9rem;}
   .stats-card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:.9rem 1rem;box-shadow:var(--sh);min-width:0;}
-  .stats-card h3{margin:0 0 .7rem;font-size:.92rem;color:var(--txt);}
-  .stats-card .note{font-size:.74rem;color:var(--muted);margin-top:.45rem;}
-  .stats-card h3 .hint{font-size:.7rem;color:var(--muted);font-weight:600;margin-left:.5rem;}
+  .stats-card h3{margin:0 0 .7rem;font-size:1.1rem;color:var(--txt);}
+  .stats-card .note{font-size:.86rem;color:var(--muted);margin-top:.45rem;}
+  .stats-card h3 .hint{font-size:.82rem;color:var(--muted);font-weight:600;margin-left:.5rem;}
   .yoy-list{display:grid;gap:.6rem;}
   .yoy-row{display:grid;grid-template-columns:3.2rem 1fr auto;align-items:center;gap:.6rem;font-size:.8rem;}
   .yoy-row .yoy-lab{display:flex;align-items:center;gap:.35rem;font-weight:800;}
@@ -179,7 +179,10 @@
   .yoy-delta.flat{color:var(--muted);}
   .grp-stack{display:flex;height:.5rem;background:var(--bg);border-radius:8px;overflow:hidden;min-width:6rem;}
   .grp-stack i{height:100%;width:var(--w);background:var(--gc);}
-  .grp-detail{display:flex;gap:.45rem;flex-wrap:wrap;font-size:.72rem;font-weight:700;justify-content:flex-start;}
+  .grp-detail{display:flex;gap:.45rem;flex-wrap:wrap;font-size:.85rem;font-weight:700;justify-content:flex-start;}
+  .grp-ratio-text{display:flex;gap:.45rem;flex-wrap:wrap;font-size:.85rem;font-weight:700;margin-top:.3rem;}
+  .grp-detail-btn{font-size:.78rem;font-weight:700;color:var(--blue);background:var(--blue-soft);border:none;border-radius:20px;padding:.15rem .55rem;cursor:pointer;margin-right:.4rem;}
+  .grp-detail-btn.on{background:var(--blue);color:#fff;}
   .dist-list{display:grid;gap:.55rem;}
   .dist-row{display:grid;grid-template-columns:3.2rem 1fr 4.4rem;gap:.7rem;align-items:center;font-size:.8rem;}
   .dist-row .lab{font-weight:800;display:flex;align-items:center;gap:.35rem;}
@@ -187,38 +190,22 @@
   .dist-row .num{text-align:right;color:var(--muted2);font-variant-numeric:tabular-nums;}
   .bar-track{height:.55rem;background:var(--bg);border-radius:20px;overflow:hidden;}
   .bar-fill{height:100%;width:var(--w);background:var(--gc);border-radius:20px;}
-  .stat-table{width:100%;border-collapse:collapse;font-size:.78rem;}
-  .stat-table th{color:var(--muted);font-size:.72rem;text-align:right;padding:.42rem .35rem;border-bottom:1px solid var(--line);font-weight:800;}
+  .stat-table{width:100%;border-collapse:collapse;font-size:.9rem;}
+  .stat-table th{color:var(--muted);font-size:.82rem;text-align:right;padding:.5rem .4rem;border-bottom:1px solid var(--line);font-weight:800;}
   .stat-table th:first-child,.stat-table td:first-child{text-align:left;}
-  .stat-table td{padding:.46rem .35rem;text-align:right;border-bottom:1px solid var(--line2);vertical-align:middle;}
+  .stat-table td{padding:.52rem .4rem;text-align:right;border-bottom:1px solid var(--line2);vertical-align:middle;}
   .stat-table tr:last-child td{border-bottom:none;}
   .opv-scroll{overflow-x:auto;border-radius:10px;border:1px solid var(--line);}
-  .opv-table{width:100%;border-collapse:collapse;font-size:.78rem;white-space:nowrap;}
-  .opv-table th{background:var(--panel);color:var(--muted2);font-weight:800;font-size:.72rem;padding:.4rem .5rem;border-bottom:1px solid var(--line);position:sticky;top:0;z-index:2;}
-  .opv-table thead tr:first-child th{top:0;}
-  .opv-table thead tr.opv-sub th{top:1.9rem;font-size:.68rem;color:var(--muted);font-weight:700;padding:.3rem .5rem;}
-  .opv-table th.opv-owner{text-align:center;border-left:2px solid var(--line);}
-  .opv-table td{padding:.36rem .55rem;text-align:right;border-bottom:1px solid var(--line2);font-variant-numeric:tabular-nums;}
-  .opv-table td.opv-rk{text-align:left;font-weight:800;color:var(--txt);vertical-align:middle;background:var(--panel);position:sticky;left:0;z-index:1;}
-  .opv-table td.opv-g{text-align:left;font-weight:800;padding-left:.9rem;}
-  .opv-table td.opv-n{color:var(--muted2);border-left:2px solid var(--line);min-width:3rem;}
-  .opv-table td.opv-p{font-weight:800;min-width:3.6rem;}
-  .opv-table tr.opv-stripe-a td.opv-g{background:color-mix(in srgb, var(--blue-soft) 55%, var(--panel));}
-  .opv-table tr.opv-stripe-b td.opv-g{background:color-mix(in srgb, var(--bp-fill) 65%, var(--panel));}
-  .opv-table tr.opv-ranktotal td{font-weight:800;border-top:1px solid var(--line);border-bottom:1px solid var(--line);}
-  .opv-table tr.opv-ranktotal.opv-stripe-a td{background:var(--blue-soft);}
-  .opv-table tr.opv-ranktotal.opv-stripe-b td{background:var(--bp-fill);}
-  .opv-table tr.opv-gradetotal td{font-weight:800;background:var(--buffer);border-top:1px solid var(--buffer-line);border-bottom:1px solid var(--buffer-line);}
-  .opv-table tr.opv-gradetotal td.opv-rk{background:var(--buffer);}
-  .opv-table tr.opv-grand td{background:var(--ink);color:#eef1f6;font-weight:850;font-size:.82rem;border:none;}
-  .opv-table tr.opv-grand td.opv-rk{background:var(--ink);color:#eef1f6;}
-  .opv-ratio-wrap{margin-top:1rem;}
-  .opv-ratio-wrap h4{margin:0 0 .5rem;font-size:.82rem;color:var(--muted2);}
-  .stat-table.opv-ratio th{text-align:center;}
-  .stat-table.opv-ratio td{text-align:center;font-weight:800;}
-  .stat-table.opv-ratio tr.opv-grand td{background:var(--ink);color:#eef1f6;border-radius:0;}
-  .stat-table.opv-ratio tr.opv-grand td:first-child{border-radius:8px 0 0 8px;}
-  .stat-table.opv-ratio tr.opv-grand td:last-child{border-radius:0 8px 8px 0;}
+  .opv-table{white-space:nowrap;}
+  .opv-table th{text-align:right;}
+  .opv-table th:nth-child(-n+2){text-align:left;}
+  .opv-table td:nth-child(-n+2){text-align:left;}
+  .opv-table td:nth-child(n+3){border-left:1px solid var(--line2);}
+  .opv-table .opv-pct{color:var(--muted2);font-weight:600;font-size:.88em;}
+  .opv-table tr.opv-subtotal td{font-weight:800;background:var(--bg);}
+  .opv-table tr.opv-totalgroup{border-top:2px solid var(--line);}
+  .opv-table tr.opv-totalgroup td{font-weight:800;}
+  .opv-table tr.opv-grand td{font-weight:850;background:var(--bg);border-top:2px solid var(--line);}
   .mini-meter{height:.4rem;background:var(--bg);border-radius:12px;overflow:hidden;margin-top:.2rem;}
   .mini-meter i{display:block;height:100%;width:var(--w);background:var(--gc);border-radius:12px;}
   .boundary-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.7rem;}
@@ -1180,7 +1167,7 @@ function rankSummary(rk){
   return {rk,ids,n,q,aEnd,bStart,counts,prev,teams:Object.values(teams).sort((a,b)=>b.total-a.total||String(a.team).localeCompare(String(b.team))),sRec:ids.filter(id=>pid(id).sRec).length,cCnt:ids.filter(id=>pid(id).cFlag).length,memo:ids.filter(id=>memos[id]).length,avgYr:n?(ids.reduce((sum,id)=>sum+(pid(id).yr||0),0)/n):0};
 }
 function renderToolbar(){return '';}
-function renderGroupTable(groups,labelKey,titleLabel,simple){
+function renderGroupTable(groups,labelKey,titleLabel,simple,showDetailBtn){
   if(simple){
     const grand=groups.reduce((a,g)=>a+(g.total||0),0);
     const rows=groups.map(g=>`<tr><td><b>${esc(g[labelKey])}</b></td><td>${g.total||0}명</td><td>${pct(g.total||0,grand)}%</td></tr>`).join('');
@@ -1189,10 +1176,17 @@ function renderGroupTable(groups,labelKey,titleLabel,simple){
   const rows=groups.map(g=>{
     const total=g.total||0;
     const stack=GRADES.map(gr=>`<i style="--gc:${gr.color};--w:${pct(g[gr.key]||0,total)}%"></i>`).join('');
-    const detail=GRADES.filter(gr=>(g[gr.key]||0)>0).map(gr=>`<span style="color:${gr.color}">${gr.key} ${g[gr.key]}</span>`).join('');
-    return `<tr><td><b>${esc(g[labelKey])}</b></td><td>${total}명</td><td><div class="grp-stack">${stack}</div></td><td><div class="grp-detail">${detail||'-'}</div></td></tr>`;
+    const ratioText=GRADES.filter(gr=>(g[gr.key]||0)>0).map(gr=>`<span style="color:${gr.color}">${gr.key} ${pct(g[gr.key]||0,total)}%</span>`).join('');
+    const detail=GRADES.filter(gr=>(g[gr.key]||0)>0).map(gr=>`<span style="color:${gr.color}">${gr.key} ${g[gr.key]}명</span>`).join('');
+    const detailBtn=showDetailBtn?`<button class="grp-detail-btn ${g[labelKey]===active?'on':''}" onclick="viewRankInPanel('${g[labelKey]}')" title="우측 담당별 순위표에서 ${esc(g[labelKey])} 확인">상세</button>`:'';
+    return `<tr><td><b>${esc(g[labelKey])}</b></td><td>${detailBtn}${total}명</td><td><div class="grp-stack">${stack}</div><div class="grp-ratio-text">${ratioText}</div></td><td><div class="grp-detail">${detail||'-'}</div></td></tr>`;
   }).join('');
   return `<table class="stat-table"><tr><th style="text-align:left">${titleLabel}</th><th>인원</th><th>등급 비중</th><th style="text-align:left">상세</th></tr>${rows}</table>`;
+}
+function viewRankInPanel(rk){
+  if(!RANKS.includes(rk))return;
+  active=rk;
+  render();
 }
 const OPV_EXCLUDE_RANK='3급';
 function ownerRankGradeStats(){
@@ -1224,60 +1218,36 @@ function ownerRankGradeStats(){
   const grandTotal=ownerList.reduce((a,o)=>a+ownerTotal[o],0);
   return {inclRanks,grades,ownerList,matrix,ownerTotal,grandTotal};
 }
-function opvHeatStyle(colorVar,pctVal){
-  const alpha=Math.max(0,Math.min(65,Math.round(pctVal*1.3)));
-  return `background:color-mix(in srgb, ${colorVar} ${alpha}%, white);`;
-}
-function opvCell(v,base,colorVar){
+function opvCell(v,base){
   const p=base?pct(v,base):0;
-  return `<td class="opv-n">${v}</td><td class="opv-p" style="${opvHeatStyle(colorVar,p)}">${p}%</td>`;
+  return `<td>${v}명 <span class="opv-pct">(${p}%)</span></td>`;
 }
 function renderOwnerRankGradeTable(){
   const d=ownerRankGradeStats();
   if(!d.ownerList.length)return '<div class="empty-rp">데이터가 없습니다.</div>';
   const gVar=g=>`var(${GRADE_VARS[g]})`;
-  let head=`<tr><th class="opv-rk" style="text-align:left">직급</th><th style="text-align:left">등급</th>${d.ownerList.map(o=>`<th colspan="2" class="opv-owner">${esc(o)}</th>`).join('')}</tr>`;
-  head+=`<tr class="opv-sub"><th></th><th></th>${d.ownerList.map(()=>`<th>인원</th><th>비율</th>`).join('')}</tr>`;
+  const head=`<tr><th style="text-align:left">직급</th><th style="text-align:left">등급</th>${d.ownerList.map(o=>`<th>${esc(o)}</th>`).join('')}</tr>`;
   let body='';
-  d.inclRanks.forEach((rk,ri)=>{
-    const stripe=ri%2===0?'opv-stripe-a':'opv-stripe-b';
+  d.inclRanks.forEach(rk=>{
     d.grades.forEach((g,gi)=>{
-      body+=`<tr class="${stripe}">${gi===0?`<td class="opv-rk" rowspan="${d.grades.length+1}">${esc(rk)}</td>`:''}<td class="opv-g" style="color:${gVar(g)}">${g}</td>${d.ownerList.map(o=>opvCell(d.matrix[rk][g][o]||0,d.ownerTotal[o],gVar(g))).join('')}</tr>`;
+      body+=`<tr>${gi===0?`<td rowspan="${d.grades.length+1}"><b>${esc(rk)}</b></td>`:''}<td style="color:${gVar(g)}"><b>${g}</b></td>${d.ownerList.map(o=>opvCell(d.matrix[rk][g][o]||0,d.ownerTotal[o])).join('')}</tr>`;
     });
     const rankCells=d.ownerList.map(o=>{
       const v=d.grades.reduce((a,g)=>a+(d.matrix[rk][g][o]||0),0);
-      return opvCell(v,d.ownerTotal[o],'var(--muted2)');
+      return opvCell(v,d.ownerTotal[o]);
     }).join('');
-    body+=`<tr class="opv-ranktotal ${stripe}"><td class="opv-g">합계</td>${rankCells}</tr>`;
+    body+=`<tr class="opv-subtotal"><td>소계</td>${rankCells}</tr>`;
   });
-  d.grades.forEach(g=>{
+  d.grades.forEach((g,gi)=>{
     const row=d.ownerList.map(o=>{
       const v=d.inclRanks.reduce((a,rk)=>a+(d.matrix[rk][g][o]||0),0);
-      return opvCell(v,d.ownerTotal[o],gVar(g));
+      return opvCell(v,d.ownerTotal[o]);
     }).join('');
-    body+=`<tr class="opv-gradetotal"><td class="opv-rk">합계</td><td class="opv-g" style="color:${gVar(g)}">${g}</td>${row}</tr>`;
+    body+=`<tr class="opv-totalgroup">${gi===0?`<td rowspan="${d.grades.length}"><b>전체</b></td>`:''}<td style="color:${gVar(g)}"><b>${g}</b></td>${row}</tr>`;
   });
-  const grandCells=d.ownerList.map(o=>opvCell(d.ownerTotal[o],d.ownerTotal[o],'var(--ink)')).join('');
-  body+=`<tr class="opv-grand"><td class="opv-rk" colspan="2">전체 합계</td>${grandCells}</tr>`;
-  return `<div class="opv-scroll"><table class="opv-table">${head}${body}</table></div>`;
-}
-function renderOwnerGradeRatioTable(){
-  const d=ownerRankGradeStats();
-  if(!d.ownerList.length)return '';
-  const gVar=g=>`var(${GRADE_VARS[g]})`;
-  const rows=d.ownerList.map(o=>{
-    const cells=d.grades.map(g=>{
-      const v=d.inclRanks.reduce((a,rk)=>a+(d.matrix[rk][g][o]||0),0);
-      const p=pct(v,d.ownerTotal[o]);
-      return `<td style="${opvHeatStyle(gVar(g),p)}color:${gVar(g)}">${p}%</td>`;
-    }).join('');
-    return `<tr><td class="opv-rk" style="text-align:left"><b>${esc(o)}</b></td>${cells}</tr>`;
-  }).join('');
-  const totalCells=d.grades.map(g=>{
-    const v=d.ownerList.reduce((a,o)=>a+d.inclRanks.reduce((s2,rk)=>s2+(d.matrix[rk][g][o]||0),0),0);
-    return `<td>${pct(v,d.grandTotal)}%</td>`;
-  }).join('');
-  return `<table class="stat-table opv-ratio"><tr><th style="text-align:left">담당</th>${d.grades.map(g=>`<th>${g} 비율</th>`).join('')}</tr>${rows}<tr class="opv-grand"><td style="text-align:left"><b>사업부 합계</b></td>${totalCells}</tr></table>`;
+  const grandCells=d.ownerList.map(o=>opvCell(d.ownerTotal[o],d.ownerTotal[o])).join('');
+  body+=`<tr class="opv-grand"><td colspan="2">전체 합계</td>${grandCells}</tr>`;
+  return `<div class="opv-scroll"><table class="stat-table opv-table">${head}${body}</table></div>`;
 }
 function aggregateSummary(){
   const sums={rk:'전체',ids:[],n:people.length,q:{S:0,A:0,"B+":0,B:0},counts:{S:0,A:0,"B+":0,B:0,C:0},teams:{},owners:{},byRank:{},sRec:0,cCnt:0,memo:0,avgYr:0};
@@ -1315,13 +1285,9 @@ function renderStatsScreen(){
       <div class="stat-kpi"><div class="k">B+ 등급</div><div class="v">${s.counts["B+"]}<small>명</small></div><div class="sub">${pct(s.counts["B+"],s.n)}%</div></div>
       <div class="stat-kpi"><div class="k">B 등급</div><div class="v">${s.counts.B}<small>명</small></div><div class="sub">${pct(s.counts.B,s.n)}%</div></div>
     </div>
-    <section class="stats-card"><h3>직급별 현황</h3>${renderGroupTable(s.byRank,'rk','직급')}</section>
+    <section class="stats-card"><h3>직급별 현황<span class="hint">상세 버튼 클릭 시 우측에 해당 직급의 담당별 순위표 표시</span></h3>${renderGroupTable(s.byRank,'rk','직급',false,true)}</section>
     <section class="stats-card opv-card"><h3>담당·직급별 등급 현황<span class="hint">${OPV_EXCLUDE_RANK} 제외 · 좌측 순위표 기준 자동 반영</span></h3>
       ${renderOwnerRankGradeTable()}
-      <div class="opv-ratio-wrap">
-        <h4>담당별 등급 비율</h4>
-        ${renderOwnerGradeRatioTable()}
-      </div>
     </section>
   </div>`;
 }
