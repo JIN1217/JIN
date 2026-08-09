@@ -198,8 +198,11 @@
   .rank-link.on{background:var(--blue);color:#fff;box-shadow:0 0 0 2px color-mix(in srgb,var(--blue) 35%,transparent);}
   .stat-table tr:last-child td{border-bottom:none;}
   .opv-scroll{overflow-x:auto;border-radius:10px;border:1px solid var(--line);}
-  .opv-table{white-space:nowrap;}
-  .opv-table th{text-align:center;}
+  .opv-table{table-layout:fixed;width:100%;}
+  .opv-table th{text-align:center;white-space:normal;word-break:keep-all;line-height:1.3;}
+  .opv-table td{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .opv-table th:nth-child(1),.opv-table td:nth-child(1){width:4.6rem;}
+  .opv-table th:nth-child(2),.opv-table td:nth-child(2){width:3.8rem;}
   .opv-table td:nth-child(-n+2){text-align:center;}
   .opv-table td:nth-child(n+3){border-left:1px solid var(--line2);}
   .opv-table .opv-pct{color:var(--muted2);font-weight:600;font-size:.88em;}
