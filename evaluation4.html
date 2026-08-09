@@ -569,8 +569,8 @@
   </div>
   <button onclick="toggleFull()" id="fsBtn">⛶ 전체화면</button>
   <button onclick="openHist()">↻ 변경 이력</button>
-  <button onclick="takeSnapshot()">💾 임시저장</button>
-  <button class="primary" onclick="saveSession()">✓ 세션 종료 및 저장</button>
+  <button onclick="takeSnapshot()" title="지금 상태를 브라우저에 체크포인트로 저장 (변경 이력에서 언제든 복원 가능)">💾 임시저장</button>
+  <button class="primary" onclick="saveSession()" title="평가 결과와 통계를 엑셀 파일로 내보냅니다">✓ 세션 종료 및 저장</button>
 </div>
 
 <div class="topbanner" id="topbanner"></div>
@@ -2194,15 +2194,71 @@ function moveToRank(){
 /* ---- misc ---- */
 function csvField(v){return `"${String(v==null?'':v).replace(/"/g,'""')}"`;}
 function exportCsv(){
-  if(!people.length){alert('데이터 없음');return;}
-  let rows=[["직급","조정된 최종순위","담당","팀","이름","사번","메모"]];
-  RANKS.forEach(rk=>{const ids=order[rk]||[];ids.forEach((id,i)=>{const p=pid(id);
-    rows.push([csvField(rk),i+1,csvField(p.owner),csvField(p.team),csvField(p.name),csvField(p.empId),csvField(memos[id]||'')]);});});
-  const csv="﻿"+rows.map(r=>r.join(',')).join('\n');
+  if(!people.length){alert('내보낼 데이터가 없습니다.');return;}
+  const headers=['직급','초기순위','이름','사번','팀','담당','S/P','년차','25년','24년','23년','22년','21년','주요성과'];
+  const rows=[headers];
+  RANKS.forEach(rk=>{
+    (order[rk]||[]).forEach((id,i)=>{
+      const p=pid(id); if(!p)return;
+      rows.push([rk,i+1,p.name,p.empId||'',p.team||'',p.owner||'',p.sp||'',p.yr||'',p.eval25||'',p.eval24||'',p.eval23||'',p.eval22||'',p.eval21||'',(p.ach||[]).join('\n')].map(csvField));
+    });
+  });
+  const csv="﻿"+rows.map(r=>r.join(',')).join('\r\n');
   const b=new Blob([csv],{type:'text/csv;charset=utf-8'}),u=URL.createObjectURL(b);
-  const a=document.createElement('a');a.href=u;a.download=`평가결과_${new Date().toISOString().slice(0,10)}.csv`;a.click();URL.revokeObjectURL(u);
+  const a=document.createElement('a');a.href=u;a.download=`평가작업중_${new Date().toISOString().slice(0,10)}.csv`;a.click();URL.revokeObjectURL(u);
 }
-function saveSession(){persist();exportCsv();alert('평가 결과를 엑셀(CSV)로 내보냈습니다.\n작업 내용은 이 브라우저에 자동 저장되어, 새로고침·창 닫기 후 다시 열어도 복원됩니다.');}
+/* ---- Excel(SpreadsheetML) export: 결과 + 통계, 외부 라이브러리 없이 순수 XML로 생성 ---- */
+function xlsXmlEscape(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function xlsCell(v){
+  if(typeof v==='number'&&isFinite(v))return `<Cell><Data ss:Type="Number">${v}</Data></Cell>`;
+  return `<Cell><Data ss:Type="String">${xlsXmlEscape(v)}</Data></Cell>`;
+}
+function xlsSheet(name,rows){
+  return `<Worksheet ss:Name="${xlsXmlEscape(name)}"><Table>${rows.map(r=>`<Row>${r.map(xlsCell).join('')}</Row>`).join('')}</Table></Worksheet>`;
+}
+function buildWorkbookXml(sheets){
+  return `<?xml version="1.0"?><?mso-application progid="Excel.Sheet"?><Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet" xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet">${sheets.map(s=>xlsSheet(s.name,s.rows)).join('')}</Workbook>`;
+}
+function exportSessionExcel(){
+  if(!people.length){alert('내보낼 데이터가 없습니다.');return false;}
+  const s=aggregateSummary();
+  const resultRows=[['직급','순위','이름','사번','팀','담당','S/P','년차','25년','24년','23년','22년','21년','주요성과','메모','S추천','C후보']];
+  RANKS.forEach(rk=>{
+    (order[rk]||[]).forEach((id,i)=>{
+      const p=pid(id); if(!p)return;
+      resultRows.push([rk,i+1,p.name,p.empId||'',p.team||'',p.owner||'',p.sp||'',p.yr||0,p.eval25||'',p.eval24||'',p.eval23||'',p.eval22||'',p.eval21||'',(p.ach||[]).join('\n'),memos[id]||'',p.sRec?'O':'',p.cFlag?'O':'']);
+    });
+  });
+  const rankRows=[['직급','인원','S','A','B+','B','C','평균연차']];
+  s.byRank.forEach(rb=>rankRows.push([rb.rk,rb.total,rb.S,rb.A,rb['B+'],rb.B,rb.C,Number((rb.avgYr||0).toFixed(1))]));
+  rankRows.push(['전체',s.n,s.counts.S,s.counts.A,s.counts['B+'],s.counts.B,s.counts.C,Number((s.avgYr||0).toFixed(1))]);
+  const d=ownerRankGradeStats();
+  const ownerRows=[['직급','등급',...d.ownerList,'합계']];
+  d.inclRanks.forEach(rk=>{
+    d.grades.forEach(g=>{
+      const vals=d.ownerList.map(o=>d.matrix[rk][g][o]||0);
+      ownerRows.push([rk,g,...vals,vals.reduce((a,b)=>a+b,0)]);
+    });
+  });
+  d.grades.forEach(g=>{
+    const vals=d.ownerList.map(o=>d.inclRanks.reduce((a,rk)=>a+(d.matrix[rk][g][o]||0),0));
+    ownerRows.push(['전체',g,...vals,vals.reduce((a,b)=>a+b,0)]);
+  });
+  ownerRows.push(['전체합계','',...d.ownerList.map(o=>d.ownerTotal[o]),d.grandTotal]);
+  const xml=buildWorkbookXml([
+    {name:'순위결과',rows:resultRows},
+    {name:'직급별_현황',rows:rankRows},
+    {name:'담당별_등급현황',rows:ownerRows},
+  ]);
+  const b=new Blob(['﻿'+xml],{type:'application/vnd.ms-excel;charset=utf-8'}),u=URL.createObjectURL(b);
+  const a=document.createElement('a');a.href=u;a.download=`평가결과_${new Date().toISOString().slice(0,10)}.xls`;a.click();URL.revokeObjectURL(u);
+  return true;
+}
+function saveSession(){
+  persist();
+  if(!exportSessionExcel())return;
+  alert('평가 결과와 통계를 엑셀 파일로 내보냈습니다.\n작업 내용은 이 브라우저에 자동 저장되어, 새로고침·창 닫기 후 다시 열어도 복원됩니다.');
+}
 function logMove(p,rank,fromNo,toNo,type){
   if(!p||fromNo===toNo)return;
   changeLog.push({t:Date.now(),rank,name:p.name,team:p.team,from:fromNo,to:toNo,type});
@@ -2506,7 +2562,7 @@ function applyColumnSettings(){normalizeColumnState();persist();closeColumns();r
 function renderBanner(){
   const el=document.getElementById('topbanner');
   const rankTabs=`<div class="rank-tabs">${RANKS.map(rk=>`<button class="rank-tab ${rk===active&&mainView==='rank'?'active':''}" onclick="setRank('${rk}')"><span>${rk}</span><span class="cnt">${(order[rk]||[]).length}\uBA85</span></button>`).join('')}</div>`;
-  const actions=`<button class="tbtn ${mainView==='stats'?'on':''}" onclick="setMainView('stats')">\uC804\uCCB4 \uC694\uC57D/\uD1B5\uACC4</button><span class="tb-sep"></span><button class="tbtn ${onlyBoundary?'on':''}" onclick="toggleBoundary()" ${mainView==='stats'?'disabled':''}>\uACBD\uACC4\uAD6C\uAC04</button><button class="tbtn" onclick="openSettings()">\uC124\uC815</button><button class="tbtn" onclick="openPaste()">\uB370\uC774\uD130 \uC785\uB825</button><button class="tbtn" onclick="exportCsv()">CSV</button>`;
+  const actions=`<button class="tbtn ${mainView==='stats'?'on':''}" onclick="setMainView('stats')">\uC804\uCCB4 \uC694\uC57D/\uD1B5\uACC4</button><span class="tb-sep"></span><button class="tbtn ${onlyBoundary?'on':''}" onclick="toggleBoundary()" ${mainView==='stats'?'disabled':''}>\uACBD\uACC4\uAD6C\uAC04</button><button class="tbtn" onclick="openSettings()">\uC124\uC815</button><button class="tbtn" onclick="openPaste()">\uB370\uC774\uD130 \uC785\uB825</button><button class="tbtn" onclick="exportCsv()" title="\uD604\uC7AC \uC791\uC5C5 \uB370\uC774\uD130\uB97C \uC5C5\uB85C\uB4DC\uC6A9 CSV\uB85C \uB2E4\uC6B4\uB85C\uB4DC (\uC774 CSV\uC640 html \uD30C\uC77C\uC744 \uD568\uAED8 \uC62E\uAE30\uBA74 \uB2E4\uB978 PC\uC5D0\uC11C \uC774\uC5B4\uC11C \uC791\uC5C5 \uAC00\uB2A5)">CSV</button>`;
   if(!people.length){el.innerHTML=`${rankTabs}<div class="tb-empty">\uB370\uC774\uD130\uB97C \uC785\uB825\uD558\uBA74 \uD3C9\uAC00 \uD45C\uAC00 \uD45C\uC2DC\uB429\uB2C8\uB2E4.</div><span class="grow"></span>${actions}`;return;}
   el.innerHTML=`${rankTabs}<span class="grow"></span><div class="tb-search"><input id="searchBox" placeholder="\uC774\uB984/\uD300 \uAC80\uC0C9" value="${esc(query)}" oninput="query=this.value;renderMain();jumpFirst()" onkeydown="if(event.key==='Enter')jumpFirst()">${query?`<button class="tb-x" onclick="query='';document.getElementById('searchBox').value='';renderMain()">\u2715</button>`:''}</div>${actions}`;
 }
