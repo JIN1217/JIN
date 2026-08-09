@@ -181,8 +181,6 @@
   .grp-stack i{height:100%;width:var(--w);background:var(--gc);}
   .grp-detail{display:flex;gap:.45rem;flex-wrap:wrap;font-size:.85rem;font-weight:700;justify-content:flex-start;}
   .grp-ratio-text{display:flex;gap:.45rem;flex-wrap:wrap;font-size:.85rem;font-weight:700;margin-top:.3rem;}
-  .grp-detail-btn{font-size:.78rem;font-weight:700;color:var(--blue);background:var(--blue-soft);border:none;border-radius:20px;padding:.15rem .55rem;cursor:pointer;margin-right:.4rem;}
-  .grp-detail-btn.on{background:var(--blue);color:#fff;}
   .dist-list{display:grid;gap:.55rem;}
   .dist-row{display:grid;grid-template-columns:3.2rem 1fr 4.4rem;gap:.7rem;align-items:center;font-size:.8rem;}
   .dist-row .lab{font-weight:800;display:flex;align-items:center;gap:.35rem;}
@@ -191,14 +189,16 @@
   .bar-track{height:.55rem;background:var(--bg);border-radius:20px;overflow:hidden;}
   .bar-fill{height:100%;width:var(--w);background:var(--gc);border-radius:20px;}
   .stat-table{width:100%;border-collapse:collapse;font-size:.9rem;}
-  .stat-table th{color:var(--muted);font-size:.82rem;text-align:right;padding:.5rem .4rem;border-bottom:1px solid var(--line);font-weight:800;}
-  .stat-table th:first-child,.stat-table td:first-child{text-align:left;}
+  .stat-table th{color:var(--muted);font-size:.82rem;text-align:center;padding:.5rem .4rem;border-bottom:1px solid var(--line);font-weight:800;}
+  .stat-table td:first-child{text-align:left;}
   .stat-table td{padding:.52rem .4rem;text-align:right;border-bottom:1px solid var(--line2);vertical-align:middle;}
+  .rank-link{border:none;background:var(--blue-soft);color:var(--blue);font-weight:800;font-size:1em;padding:.25rem .7rem;border-radius:8px;cursor:pointer;transition:background .12s ease,color .12s ease;}
+  .rank-link:hover{background:var(--blue);color:#fff;}
+  .rank-link.on{background:var(--blue);color:#fff;box-shadow:0 0 0 2px color-mix(in srgb,var(--blue) 35%,transparent);}
   .stat-table tr:last-child td{border-bottom:none;}
   .opv-scroll{overflow-x:auto;border-radius:10px;border:1px solid var(--line);}
   .opv-table{white-space:nowrap;}
-  .opv-table th{text-align:right;}
-  .opv-table th:nth-child(-n+2){text-align:left;}
+  .opv-table th{text-align:center;}
   .opv-table td:nth-child(-n+2){text-align:left;}
   .opv-table td:nth-child(n+3){border-left:1px solid var(--line2);}
   .opv-table .opv-pct{color:var(--muted2);font-weight:600;font-size:.88em;}
@@ -1167,21 +1167,25 @@ function rankSummary(rk){
   return {rk,ids,n,q,aEnd,bStart,counts,prev,teams:Object.values(teams).sort((a,b)=>b.total-a.total||String(a.team).localeCompare(String(b.team))),sRec:ids.filter(id=>pid(id).sRec).length,cCnt:ids.filter(id=>pid(id).cFlag).length,memo:ids.filter(id=>memos[id]).length,avgYr:n?(ids.reduce((sum,id)=>sum+(pid(id).yr||0),0)/n):0};
 }
 function renderToolbar(){return '';}
+function rankLinkLabel(rk){
+  const on=rk===active;
+  return `<button class="rank-link ${on?'on':''}" onclick="viewRankInPanel('${rk}')" title="우측에 ${esc(rk)} 담당별 순위표 표시">${esc(rk)}</button>`;
+}
 function renderGroupTable(groups,labelKey,titleLabel,simple,showDetailBtn){
   if(simple){
     const grand=groups.reduce((a,g)=>a+(g.total||0),0);
     const rows=groups.map(g=>`<tr><td><b>${esc(g[labelKey])}</b></td><td>${g.total||0}명</td><td>${pct(g.total||0,grand)}%</td></tr>`).join('');
-    return `<table class="stat-table"><tr><th style="text-align:left">${titleLabel}</th><th>인원</th><th>비중</th></tr>${rows}</table>`;
+    return `<table class="stat-table"><tr><th>${titleLabel}</th><th>인원</th><th>비중</th></tr>${rows}</table>`;
   }
   const rows=groups.map(g=>{
     const total=g.total||0;
     const stack=GRADES.map(gr=>`<i style="--gc:${gr.color};--w:${pct(g[gr.key]||0,total)}%"></i>`).join('');
     const ratioText=GRADES.filter(gr=>(g[gr.key]||0)>0).map(gr=>`<span style="color:${gr.color}">${gr.key} ${pct(g[gr.key]||0,total)}%</span>`).join('');
     const detail=GRADES.filter(gr=>(g[gr.key]||0)>0).map(gr=>`<span style="color:${gr.color}">${gr.key} ${g[gr.key]}명</span>`).join('');
-    const detailBtn=showDetailBtn?`<button class="grp-detail-btn ${g[labelKey]===active?'on':''}" onclick="viewRankInPanel('${g[labelKey]}')" title="우측 담당별 순위표에서 ${esc(g[labelKey])} 확인">상세</button>`:'';
-    return `<tr><td><b>${esc(g[labelKey])}</b></td><td>${detailBtn}${total}명</td><td><div class="grp-stack">${stack}</div><div class="grp-ratio-text">${ratioText}</div></td><td><div class="grp-detail">${detail||'-'}</div></td></tr>`;
+    const labelCell=showDetailBtn?rankLinkLabel(g[labelKey]):`<b>${esc(g[labelKey])}</b>`;
+    return `<tr><td>${labelCell}</td><td>${total}명</td><td><div class="grp-stack">${stack}</div><div class="grp-ratio-text">${ratioText}</div></td><td><div class="grp-detail">${detail||'-'}</div></td></tr>`;
   }).join('');
-  return `<table class="stat-table"><tr><th style="text-align:left">${titleLabel}</th><th>인원</th><th>등급 비중</th><th style="text-align:left">상세</th></tr>${rows}</table>`;
+  return `<table class="stat-table"><tr><th>${titleLabel}</th><th>인원</th><th>등급 비중</th><th>상세</th></tr>${rows}</table>`;
 }
 function viewRankInPanel(rk){
   if(!RANKS.includes(rk))return;
@@ -1226,11 +1230,11 @@ function renderOwnerRankGradeTable(){
   const d=ownerRankGradeStats();
   if(!d.ownerList.length)return '<div class="empty-rp">데이터가 없습니다.</div>';
   const gVar=g=>`var(${GRADE_VARS[g]})`;
-  const head=`<tr><th style="text-align:left">직급</th><th style="text-align:left">등급</th>${d.ownerList.map(o=>`<th>${esc(o)}</th>`).join('')}</tr>`;
+  const head=`<tr><th>직급</th><th>등급</th>${d.ownerList.map(o=>`<th>${esc(o)}</th>`).join('')}</tr>`;
   let body='';
   d.inclRanks.forEach(rk=>{
     d.grades.forEach((g,gi)=>{
-      body+=`<tr>${gi===0?`<td rowspan="${d.grades.length+1}"><b>${esc(rk)}</b></td>`:''}<td style="color:${gVar(g)}"><b>${g}</b></td>${d.ownerList.map(o=>opvCell(d.matrix[rk][g][o]||0,d.ownerTotal[o])).join('')}</tr>`;
+      body+=`<tr>${gi===0?`<td rowspan="${d.grades.length+1}">${rankLinkLabel(rk)}</td>`:''}<td style="color:${gVar(g)}"><b>${g}</b></td>${d.ownerList.map(o=>opvCell(d.matrix[rk][g][o]||0,d.ownerTotal[o])).join('')}</tr>`;
     });
     const rankCells=d.ownerList.map(o=>{
       const v=d.grades.reduce((a,g)=>a+(d.matrix[rk][g][o]||0),0);
@@ -1285,8 +1289,8 @@ function renderStatsScreen(){
       <div class="stat-kpi"><div class="k">B+ 등급</div><div class="v">${s.counts["B+"]}<small>명</small></div><div class="sub">${pct(s.counts["B+"],s.n)}%</div></div>
       <div class="stat-kpi"><div class="k">B 등급</div><div class="v">${s.counts.B}<small>명</small></div><div class="sub">${pct(s.counts.B,s.n)}%</div></div>
     </div>
-    <section class="stats-card"><h3>직급별 현황<span class="hint">상세 버튼 클릭 시 우측에 해당 직급의 담당별 순위표 표시</span></h3>${renderGroupTable(s.byRank,'rk','직급',false,true)}</section>
-    <section class="stats-card opv-card"><h3>담당·직급별 등급 현황<span class="hint">${OPV_EXCLUDE_RANK} 제외 · 좌측 순위표 기준 자동 반영</span></h3>
+    <section class="stats-card"><h3>직급별 현황<span class="hint">직급명 클릭 시 우측에 해당 직급의 담당별 순위표 표시</span></h3>${renderGroupTable(s.byRank,'rk','직급',false,true)}</section>
+    <section class="stats-card opv-card"><h3>담당·직급별 등급 현황<span class="hint">${OPV_EXCLUDE_RANK} 제외 · 직급명 클릭 시 우측에 담당별 순위표 표시</span></h3>
       ${renderOwnerRankGradeTable()}
     </section>
   </div>`;
