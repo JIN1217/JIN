@@ -1375,7 +1375,6 @@ function renderMain(){
 
 let onlyBoundary=false;
 let teamGroupBy='owner';
-let legendFilterRange=null;
 let boundaryExpandedGaps=[];
 let teamBoundaryExpandedGaps={};
 let boundaryPad=null;
@@ -1383,7 +1382,7 @@ let boundaryFitAttempts=0;
 const TEAM_BOUNDARY_MIN=12;
 const TEAM_MIN_VISIBLE=15;
 function setTeamGroupBy(mode){teamGroupBy=mode;teamBoundaryExpandedGaps={};renderRPanel();}
-function resetBoundaryView(){legendFilterRange=null;boundaryExpandedGaps=[];boundaryPad=null;boundaryFitAttempts=0;teamBoundaryExpandedGaps={};}
+function resetBoundaryView(){boundaryExpandedGaps=[];boundaryPad=null;boundaryFitAttempts=0;teamBoundaryExpandedGaps={};}
 function toggleBoundary(){onlyBoundary=!onlyBoundary;resetBoundaryView();render();}
 function mergeRanges(segs){
   const sorted=segs.filter(s=>s.from<=s.to).sort((a,b)=>a.from-b.from);
@@ -1445,13 +1444,35 @@ function expandTeamBoundaryAll(keyEnc,n){
   teamBoundaryExpandedGaps[key]=[{from:1,to:n}];
   renderRPanel();
 }
-function toggleLegendFilter(from,to){
-  if(legendFilterRange&&legendFilterRange.from===from&&legendFilterRange.to===to)legendFilterRange=null;
-  else legendFilterRange={from,to};
-  render();
+function scrollToLegendRange(from){
+  const ids=order[active]||[];
+  if(from<1||from>ids.length)return;
+  if(onlyBoundary){
+    const n=ids.length;
+    const ranges=boundaryRanges(n);
+    const segs=boundaryCoreSegments(n,ranges);
+    if(!inSegments(from,segs)){
+      boundaryExpandedGaps.push({from:Math.max(1,from-2),to:Math.min(n,from+2)});
+      render();
+    }
+  }
+  requestAnimationFrame(()=>{
+    const id=ids[from-1];
+    const rtable=document.querySelector('.rtable');
+    const rowEl=document.querySelector(`.rt-row[data-id="${id}"]`);
+    if(!rtable||!rowEl)return;
+    const headEl=rtable.querySelector('.rt-head');
+    const legendEl=rtable.querySelector('.rt-legend');
+    const stickyH=(legendEl?legendEl.getBoundingClientRect().height:0)+(headEl?headEl.getBoundingClientRect().height:0);
+    const rtableRect=rtable.getBoundingClientRect();
+    const rowRect=rowEl.getBoundingClientRect();
+    const rowH=rowRect.height||36;
+    const desiredTop=rtableRect.top+stickyH+2*rowH;
+    rtable.scrollTop+=(rowRect.top-desiredTop);
+  });
 }
 function fitBoundaryToViewport(){
-  if(!onlyBoundary||mainView!=='rank'||legendFilterRange)return;
+  if(!onlyBoundary||mainView!=='rank')return;
   if(boundaryFitAttempts>=8)return;
   const rtable=document.querySelector('.rtable');
   if(!rtable)return;
@@ -2477,8 +2498,7 @@ function renderRankLegend(n,r){
     {label:'B',from:r.bbTo+1,to:n,tc:'var(--b)'}
   ].filter(s=>s.from<=s.to&&s.to>=1):[];
   const badges=segs.map(s=>{
-    const on=legendFilterRange&&legendFilterRange.from===s.from&&legendFilterRange.to===s.to;
-    return `<span class="tb-tag${on?' on':''}" style="--tc:${s.tc}" onclick="toggleLegendFilter(${s.from},${s.to})" title="클릭하면 ${s.from}~${s.to}위만 필터링됩니다"><b>${s.label}</b> ${s.from}~${s.to}위</span>`;
+    return `<span class="tb-tag" style="--tc:${s.tc}" onclick="scrollToLegendRange(${s.from})" title="클릭하면 ${s.from}위로 이동합니다"><b>${s.label}</b> ${s.from}~${s.to}위</span>`;
   }).join('');
   const controls=`<span class="tb-sep"></span><button class="rt-legend-btn" onclick="openColumns()">열 설정</button><div class="rt-legend-seg" title="과거평가 표시 범위"><span class="seg-lab">과거평가</span><button class="${evalRange==='recent3'?'on':''}" onclick="applyEvalRange('recent3')">최근3년</button><button class="${evalRange==='recent5'?'on':''}" onclick="applyEvalRange('recent5')">최근5년</button></div>`;
   return `<div class="rt-legend">${badges}${controls}</div>`;
@@ -2505,9 +2525,7 @@ function renderMain(){
     const rankNo=i+1,p=pid(id);
     if(!rowMatches(p,rankNo))return;
     const isSearchMatch=rowSearchMatch(p,rankNo);
-    if(legendFilterRange){
-      if(rankNo<legendFilterRange.from||rankNo>legendFilterRange.to)return;
-    }else if(segs&&!inSegments(rankNo,segs)&&!isSearchMatch){
+    if(segs&&!inSegments(rankNo,segs)&&!isSearchMatch){
       if(gapStart===null)gapStart=rankNo;
       gapEnd=rankNo;
       return;
@@ -2525,7 +2543,7 @@ function renderMain(){
   fitTableHeight();
   wireDrag();
   wireColDrag();
-  if(onlyBoundary&&!legendFilterRange)requestAnimationFrame(fitBoundaryToViewport);
+  if(onlyBoundary)requestAnimationFrame(fitBoundaryToViewport);
 }
 let colDragKey=null;
 function wireColDrag(){
