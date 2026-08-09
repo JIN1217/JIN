@@ -467,7 +467,7 @@
   /* paste modal */
   .mbg{position:fixed;inset:0;background:rgba(30,37,48,.5);z-index:140;display:none;place-items:center;}
   .mbg.show{display:grid;}
-  .modal{background:var(--panel);border-radius:18px;padding:1.4rem;width:42rem;max-width:92vw;box-shadow:0 20px 60px rgba(20,24,36,.22);}
+  .modal{background:var(--panel);border-radius:18px;padding:1.4rem;width:42rem;max-width:92vw;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(20,24,36,.22);}
   .modal h2{margin:0 0 .4rem;font-size:1.1rem;}
   .modal p{margin:0 0 .8rem;color:var(--muted2);font-size:.82rem;}
   .modal textarea{width:100%;height:13rem;border:1px solid var(--line);border-radius:10px;padding:.7rem;font-family:ui-monospace,Menlo,monospace;font-size:.76rem;resize:vertical;transition:border-color .12s ease,box-shadow .12s ease;}
@@ -486,6 +486,11 @@
   .drop-zone .dz-sub{font-size:.74rem;color:var(--muted2);margin-top:.3rem;min-height:1.1em;}
   .drop-zone .dz-sub.ok{color:var(--ok);font-weight:700;}
   .drop-zone .dz-sub.err{color:var(--warn);font-weight:700;}
+  .paste-preview-scroll{max-height:15rem;overflow:auto;border:1px solid var(--line);border-radius:10px;margin-top:.4rem;}
+  .paste-preview-table{border-collapse:collapse;font-size:.74rem;white-space:nowrap;width:100%;}
+  .paste-preview-table th{position:sticky;top:0;background:var(--bg);color:var(--muted2);font-weight:800;padding:.4rem .5rem;border-bottom:1px solid var(--line);text-align:left;}
+  .paste-preview-table td{padding:.4rem .5rem;border-bottom:1px solid var(--line2);max-width:11rem;overflow:hidden;text-overflow:ellipsis;}
+  .paste-preview-note{font-size:.74rem;color:var(--muted);margin-top:.35rem;}
   .empty-main{text-align:center;padding:5rem;color:var(--muted);}
   @media (prefers-reduced-motion:reduce){
     .rt-row,.team-row,.ovcard{transition:none;}
@@ -644,12 +649,25 @@
   </div>
   <input type="file" id="uploadFileInput" accept=".csv,.tsv,.txt" style="display:none" onchange="handleFileUpload(event)">
   <p style="margin:.6rem 0 .5rem;font-size:.76rem;color:var(--muted)">또는 엑셀에서 표를 직접 복사해 아래에 붙여넣어도 됩니다.</p>
-  <textarea id="pasteBox" oninput="updatePasteCount()" placeholder="1을	1	김철수	202608001	MS운영	서비스담당	5	A	A	B+	A	B+	장애 Zero 달성/운영 자동화 개선"></textarea>
+  <textarea id="pasteBox" oninput="pasteVerified=false;updateApplyBtnState();updatePasteCount();" placeholder="1을	1	김철수	202608001	MS운영	서비스담당	5	A	A	B+	A	B+	장애 Zero 달성/운영 자동화 개선"></textarea>
   <div id="pasteCount" style="margin-top:.35rem;font-size:.76rem;color:var(--muted)"></div>
+  <div class="act" style="justify-content:flex-start;margin:.6rem 0">
+    <button class="btn" onclick="checkPasteData()">🔍 데이터 확인</button>
+    <button class="btn" onclick="resetPasteInput()">↺ 초기화</button>
+  </div>
+  <div id="pastePreview"></div>
   <div class="act">
-    <button class="btn" onclick="loadSample()">샘플 데이터</button>
+    <div class="with" style="margin-right:auto">
+      <select id="sampleSize" style="border:1px solid var(--line);border-radius:8px;padding:.4rem .5rem;font-size:.8rem">
+        <option value="100">100명</option>
+        <option value="500">500명</option>
+        <option value="1000">1000명</option>
+        <option value="2000">2000명</option>
+      </select>
+      <button class="btn" onclick="loadSample()">샘플 데이터</button>
+    </div>
     <button class="btn" onclick="closePaste()">취소</button>
-    <button class="btn primary" onclick="applyPaste()">불러오기</button>
+    <button class="btn primary" id="pasteApplyBtn" onclick="applyPaste()" disabled title="먼저 '데이터 확인'을 눌러주세요">불러오기</button>
   </div>
 </div></div>
 
@@ -819,8 +837,12 @@ function processUploadedFile(file){
     const text=decodeFileBytes(e.target.result);
     const looksCsv=file.name.toLowerCase().endsWith('.csv')||(!text.includes('\t')&&text.includes(','));
     document.getElementById('pasteBox').value=looksCsv?csvToTsv(text):text;
+    pasteVerified=false;
+    const previewEl=document.getElementById('pastePreview');
+    if(previewEl)previewEl.innerHTML='';
+    updateApplyBtnState();
     updatePasteCount();
-    setInfo(`"${file.name}" 업로드됨 · 아래 내용을 확인하고 "불러오기"를 누르세요.`,'ok');
+    setInfo(`"${file.name}" 업로드됨 · "데이터 확인"을 눌러 내용을 확인해주세요.`,'ok');
   };
   reader.onerror=()=>setInfo('파일을 읽는 중 오류가 발생했습니다.','err');
   reader.readAsArrayBuffer(file);
@@ -851,21 +873,91 @@ function updatePasteCount(){
   const first=rows[0].map(x=>cleanHeader(x));
   const hasHeader=first.includes('이름') || first.includes('성명');
   const dataRows=rows.slice(hasHeader?1:0).filter(r=>r.length>=2);
-  el.textContent=dataRows.length?`${dataRows.length}명 인식됨 · "불러오기"를 누르면 반영됩니다.`:'인식된 데이터가 없습니다. 형식을 확인해주세요.';
+  el.textContent=dataRows.length?`${dataRows.length}명 인식됨 · "데이터 확인"을 눌러 내용을 확인해주세요.`:'인식된 데이터가 없습니다. 형식을 확인해주세요.';
+}
+let pasteVerified=false;
+function updateApplyBtnState(){
+  const btn=document.getElementById('pasteApplyBtn');
+  if(btn)btn.disabled=!pasteVerified;
+}
+function checkPasteData(){
+  const previewEl=document.getElementById('pastePreview');
+  const raw=document.getElementById('pasteBox').value.trim();
+  pasteVerified=false;
+  if(!raw){ if(previewEl)previewEl.innerHTML='<div class="paste-preview-note">확인할 내용이 없습니다. 파일을 업로드하거나 내용을 붙여넣어주세요.</div>'; updateApplyBtnState(); return; }
+  const rows=parseDelimitedText(raw,'\t');
+  if(!rows.length){ if(previewEl)previewEl.innerHTML='<div class="paste-preview-note">인식된 데이터가 없습니다. 형식을 확인해주세요.</div>'; updateApplyBtnState(); return; }
+  const first=rows[0].map(x=>cleanHeader(x));
+  const hasHeader=first.includes('이름')||first.includes('성명');
+  const headerCells=hasHeader?rows[0]:['직급','초기순위','이름','사번','팀','담당','S/P','년차','25년','24년','23년','22년','21년','주요성과'].slice(0,Math.max(rows[0].length,2));
+  const dataRows=(hasHeader?rows.slice(1):rows).filter(r=>r.length>=2);
+  if(!dataRows.length){ if(previewEl)previewEl.innerHTML='<div class="paste-preview-note">인식된 데이터가 없습니다. 형식을 확인해주세요.</div>'; updateApplyBtnState(); return; }
+  const MAX_PREVIEW=50;
+  const shown=dataRows.slice(0,MAX_PREVIEW);
+  const theadHtml=`<tr>${headerCells.map(h=>`<th>${esc(h)}</th>`).join('')}</tr>`;
+  const tbodyHtml=shown.map(r=>`<tr>${headerCells.map((_,i)=>`<td title="${esc(r[i]||'')}">${esc(String(r[i]||'').slice(0,60))}</td>`).join('')}</tr>`).join('');
+  const moreNote=dataRows.length>MAX_PREVIEW?`<div class="paste-preview-note">외 ${dataRows.length-MAX_PREVIEW}명 더 (총 ${dataRows.length}명) · 스크롤해서 확인하세요</div>`:`<div class="paste-preview-note">총 ${dataRows.length}명 인식됨</div>`;
+  if(previewEl)previewEl.innerHTML=`<div class="paste-preview-scroll"><table class="paste-preview-table">${theadHtml}${tbodyHtml}</table></div>${moreNote}`;
+  pasteVerified=true;
+  updateApplyBtnState();
+}
+function resetPasteInput(){
+  const box=document.getElementById('pasteBox');
+  if(box)box.value='';
+  const fileInput=document.getElementById('uploadFileInput');
+  if(fileInput)fileInput.value='';
+  const info=document.getElementById('dzFileInfo');
+  if(info){info.textContent='아직 업로드된 파일이 없습니다.';info.className='dz-sub';}
+  const previewEl=document.getElementById('pastePreview');
+  if(previewEl)previewEl.innerHTML='';
+  pasteVerified=false;
+  updatePasteCount();
+  updateApplyBtnState();
+}
+const SAMPLE_SURNAMES=['김','이','박','최','정','강','조','윤','장','임','한','오','서','신','권','황','안','송','전','홍','유','고','문','양','손','배','백','허','남','심'];
+const SAMPLE_GIVEN=['철수','영희','민수','지훈','하늘','재석','아름','민호','서준','도윤','시우','지우','주원','지호','은우','정우','승우','예준','현우','우진','민재','건우','선우','예성','동현','성민','재원','태윤','상원','지원'];
+function buildSampleNamePool(min){
+  const pool=[];
+  for(const s of SAMPLE_SURNAMES){
+    for(const g of SAMPLE_GIVEN){
+      pool.push(s+g);
+      if(pool.length>=min)return pool;
+    }
+  }
+  return pool;
 }
 function loadSample(){
-  const teams=['MS\uC6B4\uC601','\uD50C\uB7AB\uD3FC\uAC1C\uBC1C','\uD074\uB77C\uC6B0\uB4DC','ERP','\uADF8\uB8F9\uC6E8\uC5B4','\uBCF4\uC548','\uAE30\uD68D'];
-  const teamOwners=['\uC11C\uBE44\uC2A4\uB2F4\uB2F9','\uAC1C\uBC1C\uB2F4\uB2F9','\uC778\uD504\uB77C\uB2F4\uB2F9','\uACBD\uC601\uC9C0\uC6D0\uB2F4\uB2F9','\uC11C\uBE44\uC2A4\uB2F4\uB2F9','\uAC1C\uBC1C\uB2F4\uB2F9','\uACBD\uC601\uC9C0\uC6D0\uB2F4\uB2F9'];
-  const spVals=['','\uCC28\uAE30','\uCC28\uCC28\uAE30','T/P'];
+  const total=parseInt(document.getElementById('sampleSize')?.value)||100;
+  const teams=['MS운영','플랫폼개발','클라우드','ERP','그룹웨어','보안','기획'];
+  const teamOwners=['서비스담당','개발담당','인프라담당','경영지원담당','서비스담당','개발담당','경영지원담당'];
+  const spVals=['','차기','차차기','T/P'];
   const evals=[['A','A','B+','A','B+'],['A','B+','A','A','B+'],['B+','A','B+','B+','A'],['S','A','A','A','B+'],['B+','B+','B+','A','B'],['B','B+','B+','B','B+']];
-  const achLib=[['Cleverse \uAD6C\uCD95 PM','\uC7A5\uC560 Zero \uB2EC\uC131','\uC6B4\uC601 \uC790\uB3D9\uD654 \uAC1C\uC120'],['\uC2E0\uADDC API \uAC1C\uBC1C \uC8FC\uB3C4','\uC131\uB2A5 \uAC1C\uC120 30% \uB2EC\uC131','\uACE0\uAC1D\uC0AC \uAE30\uC220\uC9C0\uC6D0 \uC644\uC218'],['\uD074\uB77C\uC6B0\uB4DC \uB9C8\uC774\uADF8\uB808\uC774\uC158 PM','\uBE44\uC6A9 \uC808\uAC10 2.5\uC5B5','\uBCF4\uC548 \uAC15\uD654 \uD504\uB85C\uC81D\uD2B8 \uC8FC\uB3C4']];
-  const baseNames=['\uAE40\uCCA0\uC218','\uC774\uC601\uD76C','\uBC15\uBBFC\uC218','\uCD5C\uC9C0\uD6C8','\uC815\uD558\uB298','\uC720\uC7AC\uC11D','\uAC15\uC544\uB984','\uC774\uBBFC\uD638'];
-  const arr=[]; let id=1;
-  RANKS.forEach(rk=>{ const n=rk===RANKS[3]?120:rk===RANKS[2]?108:rk===RANKS[1]?95:77; for(let i=0;i<n;i++){ const ev=evals[i%evals.length],curId=id++; arr.push({id:curId,rank:rk,baseNo:i+1,rawName:baseNames[i%baseNames.length]+(i>7?(Math.floor(i/8)+1):''),name:'',empId:'202608'+String(curId).padStart(3,'0'),team:teams[i%teams.length],owner:teamOwners[i%teams.length],sp:spVals[i%spVals.length],yr:(i%6)+2,eval25:ev[0],eval24:ev[1],eval23:ev[2],eval22:ev[3],eval21:ev[4],prev:ev[0],three:[ev[1],ev[2],ev[3]],ach:achLib[i%achLib.length],sRec:false,cFlag:false,cNote:''}); } });
+  const achLib=[['Cleverse 구축 PM','장애 Zero 달성','운영 자동화 개선'],['신규 API 개발 주도','성능 개선 30% 달성','고객사 기술지원 완수'],['클라우드 마이그레이션 PM','비용 절감 2.5억','보안 강화 프로젝트 주도']];
+  const ratios=[0.1925,0.2375,0.27,0.30];
+  const counts=ratios.map(r=>Math.max(1,Math.round(total*r)));
+  const diff=total-counts.reduce((a,b)=>a+b,0);
+  counts[counts.length-1]+=diff;
+  const MAX_DUP=10;
+  const namePool=buildSampleNamePool(Math.ceil(total/MAX_DUP)+2);
+  const arr=[]; let id=1,nameCounter=0;
+  RANKS.forEach((rk,rIdx)=>{
+    const n=counts[rIdx];
+    for(let i=0;i<n;i++){
+      const ev=evals[i%evals.length],curId=id++;
+      const nameBase=namePool[Math.floor(nameCounter/MAX_DUP)%namePool.length];
+      const suffix=(nameCounter%MAX_DUP)+1;
+      nameCounter++;
+      arr.push({id:curId,rank:rk,baseNo:i+1,rawName:nameBase+suffix,name:'',empId:'202608'+String(curId).padStart(3,'0'),team:teams[i%teams.length],owner:teamOwners[i%teams.length],sp:spVals[i%spVals.length],yr:(i%6)+2,eval25:ev[0],eval24:ev[1],eval23:ev[2],eval22:ev[3],eval21:ev[4],prev:ev[0],three:[ev[1],ev[2],ev[3]],ach:achLib[i%achLib.length],sRec:false,cFlag:false,cNote:''});
+    }
+  });
   dedupeNames(arr);
   const header=['직급','초기순위','이름','사번','팀','담당','S/P','년차','25년','24년','23년','22년','21년','주요성과'];
   const body=arr.map(p=>[p.rank,'',p.rawName,p.empId,p.team,p.owner,p.sp,p.yr,p.eval25,p.eval24,p.eval23,p.eval22,p.eval21,quoteTsvField(p.ach.join('\n'))].join('\t'));
   document.getElementById('pasteBox').value=[header.join('\t'),...body].join('\n');
+  pasteVerified=false;
+  const previewEl=document.getElementById('pastePreview');
+  if(previewEl)previewEl.innerHTML='';
+  updateApplyBtnState();
   updatePasteCount();
   const info=document.getElementById('dzFileInfo');
   if(info){info.textContent='아직 업로드된 파일이 없습니다.';info.className='dz-sub';}
@@ -873,6 +965,7 @@ function loadSample(){
 function applyPaste(){
   const raw=document.getElementById('pasteBox').value.trim();
   if(!raw){closePaste();return;}
+  if(!pasteVerified){alert('먼저 "데이터 확인"을 눌러 내용을 확인해주세요.');return;}
   const lines=parseDelimitedText(raw,'\t');
   const out=[]; let id=1;
   const first=lines[0].map(x=>cleanHeader(x));
@@ -902,7 +995,7 @@ function applyPaste(){
     out.push(p);
   });
   people=out; picked.clear(); selId=null; undoStack=[]; redoStack=[]; query=''; columnFilters={}; hiddenRows={};
-  ensurePersonFields(); rebuild(); syncOrgOrder(); closePaste(); persist(); persistCfg(); render();
+  ensurePersonFields(); rebuild(); syncOrgOrder(); pasteVerified=false; closePaste(); persist(); persistCfg(); render();
 }
 function cleanHeader(s){return String(s||'').replace(/s/g,'').toLowerCase().replace('???','?');}
 const RANK_ALIASES={...RANK_LEGACY_MIGRATE,'1급':'1을','2갑':'1갑','2급갑':'1갑'};
@@ -2139,7 +2232,7 @@ function cmpZoom(d){
   if(cz)cz.textContent=cmpZoomPct+'%';
 }
 function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
-function openPaste(){document.getElementById('mbg').classList.add('show');initUploadDropZone();updatePasteCount();}
+function openPaste(){document.getElementById('mbg').classList.add('show');initUploadDropZone();updatePasteCount();updateApplyBtnState();}
 function closePaste(){document.getElementById('mbg').classList.remove('show');}
 
 /* ---- resizable layout ---- */
