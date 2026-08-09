@@ -84,8 +84,11 @@
   .org-owner-head.drop-before{box-shadow:inset 0 3px 0 0 var(--blue)!important;}
   .org-owner-head.drop-after{box-shadow:inset 0 -3px 0 0 var(--blue)!important;}
   .org-owner-head .cnt{margin-left:auto;font-weight:600;color:var(--muted2);font-size:.74rem;}
+  .org-collapse-btn{background:none;border:none;cursor:pointer;color:var(--muted2);font-size:.68rem;padding:0;width:1.15rem;height:1.15rem;flex:none;display:flex;align-items:center;justify-content:center;border-radius:5px;}
+  .org-collapse-btn:hover{background:color-mix(in srgb,var(--blue) 14%,transparent);color:var(--blue);}
   .org-team-list{padding:.4rem .5rem .4rem 0;display:flex;flex-direction:column;gap:.3rem;position:relative;margin:.35rem 0 .35rem 1.3rem;padding-left:.9rem;border-left:2px solid var(--line2);}
   .org-team-list:empty{border-left:none;margin:0;}
+  .org-team-list.collapsed{display:none;}
   .org-team{display:flex;align-items:center;gap:.4rem;padding:.4rem .6rem;background:var(--bg);border-radius:8px;cursor:grab;font-size:.82rem;transition:box-shadow .12s ease,background-color .12s ease;position:relative;}
   .org-team::before{content:'';position:absolute;left:-.9rem;top:50%;width:.7rem;height:2px;background:var(--line2);}
   .org-team:hover{background:#eef1fd;}
@@ -2375,27 +2378,42 @@ function restoreCfg(){ try{ const r=localStorage.getItem("evalSession.cfg"); if(
 
 /* ---- org (담당/팀) order ---- */
 let draftOrgOrder=null;
+let orgCollapsed=new Set();
 function openOrgOrder(){
   syncOrgOrder();
   draftOrgOrder={owners:[...cfg.orgOrder.owners],teams:Object.fromEntries(Object.entries(cfg.orgOrder.teams).map(([k,v])=>[k,[...v]]))};
+  orgCollapsed=new Set(draftOrgOrder.owners);
   renderOrgOrderList();
   document.getElementById('orgbg').classList.add('show');
 }
 function closeOrgOrder(){document.getElementById('orgbg').classList.remove('show');draftOrgOrder=null;}
+function toggleOrgCollapse(owner){
+  if(orgCollapsed.has(owner))orgCollapsed.delete(owner);else orgCollapsed.add(owner);
+  renderOrgOrderList();
+}
 function renderOrgOrderList(){
   const el=document.getElementById('orgList');
   if(!el||!draftOrgOrder)return;
   const {owners,teams}=draftOrgOrder;
   if(!owners.length){el.innerHTML='<div style="padding:1rem;color:var(--muted);text-align:center;font-size:.82rem">데이터를 입력하면 담당·팀 목록이 표시됩니다.</div>';return;}
-  el.innerHTML=owners.map(o=>`
+  el.innerHTML=owners.map(o=>{
+    const collapsed=orgCollapsed.has(o);
+    return `
     <div class="org-owner">
-      <div class="org-owner-head" draggable="true" data-owner="${esc(o)}"><span class="grip">⋮⋮</span><span>${esc(o)}</span><span class="cnt">${(teams[o]||[]).length}개 팀</span></div>
-      <div class="org-team-list">${(teams[o]||[]).map(t=>`<div class="org-team" draggable="true" data-owner="${esc(o)}" data-team="${esc(t)}"><span class="grip">⋮⋮</span>${esc(t)}</div>`).join('')}</div>
-    </div>`).join('');
+      <div class="org-owner-head" draggable="true" data-owner="${esc(o)}"><span class="grip">⋮⋮</span><button type="button" class="org-collapse-btn" draggable="false" data-owner="${esc(o)}" title="팀 목록 펼치기/접기">${collapsed?'▸':'▾'}</button><span>${esc(o)}</span><span class="cnt">${(teams[o]||[]).length}개 팀</span></div>
+      <div class="org-team-list${collapsed?' collapsed':''}">${(teams[o]||[]).map(t=>`<div class="org-team" draggable="true" data-owner="${esc(o)}" data-team="${esc(t)}"><span class="grip">⋮⋮</span>${esc(t)}</div>`).join('')}</div>
+    </div>`;
+  }).join('');
   wireOrgDrag();
 }
 let orgDragOwner=null,orgDragTeam=null;
 function wireOrgDrag(){
+  document.querySelectorAll('.org-collapse-btn').forEach(btn=>{
+    btn.addEventListener('click',e=>{
+      e.preventDefault();e.stopPropagation();
+      toggleOrgCollapse(btn.dataset.owner);
+    });
+  });
   document.querySelectorAll('.org-owner-head').forEach(head=>{
     head.addEventListener('dragstart',e=>{e.stopPropagation();orgDragOwner=head.dataset.owner;head.classList.add('dragging');});
     head.addEventListener('dragend',()=>{head.classList.remove('dragging');document.querySelectorAll('.org-owner-head').forEach(h=>h.classList.remove('drop-before','drop-after'));orgDragOwner=null;});
@@ -2467,6 +2485,7 @@ function applyOrgOrder(){
 function resetOrgOrder(){
   const fresh=buildOrgFromData();
   draftOrgOrder=fresh;
+  orgCollapsed=new Set(fresh.owners);
   renderOrgOrderList();
 }
 document.addEventListener('keydown',e=>{
