@@ -414,9 +414,9 @@
   .fp-count{font-size:.82rem;font-weight:700;white-space:nowrap;}
   .fp-sep{width:1px;align-self:stretch;background:rgba(255,255,255,.18);}
   .fp-rank-group{display:flex;align-items:center;gap:.35rem;}
-  .fp-rank-input{width:4.2rem;border:none;border-radius:var(--radius-pill);padding:.42rem .7rem;font-size:.8rem;font-weight:700;background:rgba(255,255,255,.12);color:#fff;text-align:center;font-variant-numeric:tabular-nums;}
-  .fp-rank-input::placeholder{color:rgba(255,255,255,.55);}
-  .fp-rank-input:focus{outline:none;background:rgba(255,255,255,.2);}
+  .fp-rank-input{width:4.4rem;border:1.5px solid rgba(255,255,255,.5);border-radius:8px;padding:.4rem .5rem;font-size:.85rem;font-weight:800;background:#fff;color:var(--ink);text-align:center;font-variant-numeric:tabular-nums;box-sizing:border-box;}
+  .fp-rank-input::placeholder{color:var(--muted);font-weight:600;}
+  .fp-rank-input:focus{outline:none;border-color:var(--blue);box-shadow:0 0 0 3px rgba(79,109,240,.4);}
   .fp-btn{border:none;background:rgba(255,255,255,.1);color:#eef1f6;border-radius:var(--radius-pill);padding:.44rem .95rem;font-size:.8rem;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;gap:.35rem;transition:background .12s ease;}
   .fp-btn:hover:not(:disabled){background:rgba(255,255,255,.2);}
   .fp-btn.primary{background:var(--blue);}
@@ -432,10 +432,10 @@
   .ovh{background:var(--ink);color:#eef1f6;padding:.85rem 1.4rem;display:flex;align-items:center;gap:1rem;}
   .ovh h2{margin:0;font-size:1.1rem;}
   .ovh .hint{font-size:.8rem;color:#aeb6c4;}
-  .ov-zoom{display:flex;align-items:center;gap:4px;margin-left:auto;}
-  .ov-zoom button{border:1px solid rgba(255,255,255,.14);background:rgba(255,255,255,.07);color:#eef1f6;border-radius:8px;height:1.9rem;width:2.1rem;font-size:.78rem;font-weight:700;cursor:pointer;transition:background .12s ease;}
+  .ov-zoom{display:flex;align-items:center;gap:4px;margin-left:auto;flex:none;}
+  .ov-zoom button{border:1px solid rgba(255,255,255,.14);background:rgba(255,255,255,.07);color:#eef1f6;border-radius:8px;height:30px;width:34px;font-size:12px;font-weight:700;cursor:pointer;transition:background .12s ease;flex:none;box-sizing:border-box;}
   .ov-zoom button:hover{background:rgba(255,255,255,.15);}
-  .ov-zoom span{font-size:.74rem;color:#aeb6c4;width:2.6rem;text-align:center;flex:none;}
+  .ov-zoom span{font-size:12px;color:#aeb6c4;width:38px;text-align:center;flex:none;}
   .ovh .x{background:rgba(255,255,255,.12);border:none;color:#eef1f6;width:2.1rem;height:2.1rem;border-radius:9px;cursor:pointer;font-size:1rem;transition:background .12s ease;}
   .ovh .x:hover{background:rgba(255,255,255,.22);}
   .ovg{flex:1;display:grid;gap:1rem;padding:1.3rem;overflow:auto;grid-auto-flow:column;grid-auto-columns:minmax(19rem,1fr);}
@@ -605,7 +605,7 @@
   <div class="ovh"><h2>성과 비교</h2>
     <span class="hint">업적을 나란히 놓고 비교합니다.</span>
     <div class="ov-zoom">
-      <button onclick="zoom(-1)">A−</button><span id="cmpZl">100%</span><button onclick="zoom(1)">A+</button>
+      <button onclick="cmpZoom(-1)">A−</button><span id="cmpZl">100%</span><button onclick="cmpZoom(1)">A+</button>
     </div>
     <button class="x" onclick="closeCompare()">✕</button></div>
   <div class="ovg" id="ovg" onclick="if(event.target===this)closeCompare()"></div>
@@ -1518,6 +1518,8 @@ function swapPickedRanks(){
   if(ovOpen)openCompare();
   else scrollRowIntoView(pair[1]);
   requestAnimationFrame(positionFloatPick);
+  showMoveEffect(pair[0],a+1,b+1);
+  showMoveEffect(pair[1],b+1,a+1);
 }
 function togglePick(id,e){if(e)e.stopPropagation();pickRow(id);}
 function toggleSFromPanel(id){pid(id).sRec=!pid(id).sRec;persist();render();}
@@ -1823,7 +1825,7 @@ function showMoveEffect(id,fromNo,toNo){
     badge.style.top=Math.max(8,rect.top+rect.height/2)+'px';
     document.body.appendChild(badge);
     requestAnimationFrame(()=>badge.classList.add('show'));
-    setTimeout(()=>{badge.classList.remove('show');setTimeout(()=>badge.remove(),300);},1300);
+    setTimeout(()=>{badge.classList.remove('show');setTimeout(()=>badge.remove(),300);},2700);
   });
 }
 function wireDrag(){
@@ -1907,11 +1909,13 @@ function renderPickActions(){
   document.getElementById('fpCompareBtn').disabled=!chosen.length;
   document.getElementById('fpSwapBtn').disabled=chosen.length!==2;
   const rankGroup=document.getElementById('fpRankGroup');
+  const rankGroupWasHidden=rankGroup.style.display==='none'||!rankGroup.style.display;
   if(chosen.length===1){
     rankGroup.style.display='flex';
     const rankInput=document.getElementById('fpRankInput');
     rankInput.max=ids.length;
     rankInput.placeholder=`현재 ${ids.indexOf(chosen[0])+1}위`;
+    if(rankGroupWasHidden){rankInput.value='';requestAnimationFrame(()=>rankInput.focus());}
   }else{
     rankGroup.style.display='none';
   }
@@ -1979,6 +1983,7 @@ function moveToRank(){
   logMove(person,active,from+1,target,'순위 직접 입력');
   render();
   scrollRowIntoView(id);
+  showMoveEffect(id,from+1,target);
 }
 
 /* ---- misc ---- */
@@ -2031,7 +2036,15 @@ function openHist(){
 }
 function closeHist(){document.getElementById('hbg').classList.remove('show');}
 function toggleFull(){if(!document.fullscreenElement){document.documentElement.requestFullscreen();document.getElementById('fsBtn').textContent='⛶ 전체화면 종료';}else{document.exitFullscreen();document.getElementById('fsBtn').textContent='⛶ 전체화면';}}
-function zoom(d){fs=Math.max(12,Math.min(22,fs+d));document.documentElement.style.setProperty('--fs',fs+'px');const pctTxt=Math.round(fs/16*100)+'%';document.getElementById('zl').textContent=pctTxt;const cz=document.getElementById('cmpZl');if(cz)cz.textContent=pctTxt;}
+function zoom(d){fs=Math.max(12,Math.min(22,fs+d));document.documentElement.style.setProperty('--fs',fs+'px');document.getElementById('zl').textContent=Math.round(fs/16*100)+'%';}
+let cmpZoomPct=100;
+function cmpZoom(d){
+  cmpZoomPct=Math.max(70,Math.min(160,cmpZoomPct+d*10));
+  const ovg=document.getElementById('ovg');
+  if(ovg)ovg.style.zoom=cmpZoomPct/100;
+  const cz=document.getElementById('cmpZl');
+  if(cz)cz.textContent=cmpZoomPct+'%';
+}
 function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
 function openPaste(){document.getElementById('mbg').classList.add('show');initUploadDropZone();updatePasteCount();}
 function closePaste(){document.getElementById('mbg').classList.remove('show');}
