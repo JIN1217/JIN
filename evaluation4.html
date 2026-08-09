@@ -77,17 +77,21 @@
   .set-field input{border:1px solid var(--line);border-radius:10px;padding:.45rem .6rem;font-size:.9rem;width:100%;font-variant-numeric:tabular-nums;transition:border-color .12s ease,box-shadow .12s ease;}
   .set-field input:focus{outline:none;border-color:var(--blue);box-shadow:0 0 0 3px color-mix(in srgb,var(--blue) 14%,transparent);}
   .set-field .unit{color:var(--muted);font-size:.82rem;}
-  .org-owner{background:#fff;border:1px solid var(--line);border-radius:10px;margin-bottom:.5rem;overflow:hidden;}
-  .org-owner-head{display:flex;align-items:center;gap:.4rem;padding:.55rem .7rem;background:var(--panel);cursor:grab;font-weight:800;font-size:.86rem;border-bottom:1px solid var(--line2);transition:box-shadow .12s ease,background-color .12s ease;}
+  .org-owner{background:#fff;border:1px solid var(--line);border-radius:10px;margin-bottom:.5rem;overflow:hidden;position:relative;}
+  .org-owner-head{display:flex;align-items:center;gap:.4rem;padding:.55rem .7rem;background:var(--panel);cursor:grab;font-weight:800;font-size:.86rem;border-bottom:1px solid var(--line2);transition:box-shadow .12s ease,background-color .12s ease;position:relative;}
   .org-owner-head:hover{background:#f5f8ff;}
   .org-owner-head.dragging{opacity:.35;}
-  .org-owner-head.over{box-shadow:inset 0 0 0 2px var(--blue)!important;}
+  .org-owner-head.drop-before{box-shadow:inset 0 3px 0 0 var(--blue)!important;}
+  .org-owner-head.drop-after{box-shadow:inset 0 -3px 0 0 var(--blue)!important;}
   .org-owner-head .cnt{margin-left:auto;font-weight:600;color:var(--muted2);font-size:.74rem;}
-  .org-team-list{padding:.35rem;display:flex;flex-direction:column;gap:.25rem;}
-  .org-team{display:flex;align-items:center;gap:.4rem;padding:.4rem .6rem;background:var(--bg);border-radius:8px;cursor:grab;font-size:.82rem;transition:box-shadow .12s ease,background-color .12s ease;}
+  .org-team-list{padding:.4rem .5rem .4rem 0;display:flex;flex-direction:column;gap:.3rem;position:relative;margin:.35rem 0 .35rem 1.3rem;padding-left:.9rem;border-left:2px solid var(--line2);}
+  .org-team-list:empty{border-left:none;margin:0;}
+  .org-team{display:flex;align-items:center;gap:.4rem;padding:.4rem .6rem;background:var(--bg);border-radius:8px;cursor:grab;font-size:.82rem;transition:box-shadow .12s ease,background-color .12s ease;position:relative;}
+  .org-team::before{content:'';position:absolute;left:-.9rem;top:50%;width:.7rem;height:2px;background:var(--line2);}
   .org-team:hover{background:#eef1fd;}
   .org-team.dragging{opacity:.35;}
-  .org-team.over{box-shadow:inset 0 0 0 2px var(--blue)!important;}
+  .org-team.drop-before{box-shadow:inset 0 3px 0 0 var(--blue)!important;}
+  .org-team.drop-after{box-shadow:inset 0 -3px 0 0 var(--blue)!important;}
   .org-team .grip{color:#c3cad6;font-size:.85rem;}
   .set-field .live{font-size:.74rem;color:var(--blue);font-weight:700;}
   .set-sum{background:var(--bg);border-radius:8px;padding:.6rem .8rem;font-size:.8rem;margin-top:.4rem;display:flex;justify-content:space-between;}
@@ -686,8 +690,8 @@
     <div class="color-grid" id="colorGrid"></div>
   </div>
   <div class="set-field" style="margin-top:1rem">
-    <label>담당·팀 표시 순서</label>
-    <div class="with"><button class="btn" onclick="openOrgOrder()">📋 담당·팀 순서 설정</button></div>
+    <label>조직도 설정</label>
+    <div class="with"><button class="btn" onclick="openOrgOrder()">📋 조직도 설정</button></div>
   </div>
   <div class="set-note">* S·A·B+·B 합은 100%가 되어야 합니다. C는 절대평가로 별도 처리됩니다.<br>* 이 설정은 모든 직급에 공통 적용됩니다.</div>
   <div class="act">
@@ -699,7 +703,7 @@
 
 <!-- org (담당/팀) order modal -->
 <div class="mbg" id="orgbg" onclick="if(event.target===this)closeOrgOrder()"><div class="modal" style="width:34rem">
-  <h2>담당·팀 순서 설정</h2>
+  <h2>조직도 설정</h2>
   <p>담당(굵은 제목)을 드래그하면 담당 순서가, 그 아래 팀 이름을 드래그하면 해당 담당 안에서의 팀 순서가 바뀝니다. 담당별/팀별 순위표에 그대로 적용됩니다.</p>
   <div id="orgList" style="max-height:26rem;overflow:auto;border:1px solid var(--line);border-radius:10px;padding:.6rem;background:var(--bg)"></div>
   <div class="act">
@@ -1960,6 +1964,18 @@ function autoScrollTick(){
       }
     }
   }
+  if(orgDragOwner!==null||orgDragTeam!==null){
+    const ol=document.getElementById('orgList');
+    if(ol){
+      const rect=ol.getBoundingClientRect();
+      const top=Math.max(rect.top,0),bottom=Math.min(rect.bottom,vh);
+      if(dragPointerY<top+threshold){
+        ol.scrollTop-=Math.min(maxSpeed,Math.max(4,(top+threshold-dragPointerY)/3));
+      }else if(dragPointerY>bottom-threshold){
+        ol.scrollTop+=Math.min(maxSpeed,Math.max(4,(dragPointerY-(bottom-threshold))/3));
+      }
+    }
+  }
   dragAutoScrollRAF=requestAnimationFrame(autoScrollTick);
 }
 function startDragAutoScroll(){ if(!dragAutoScrollRAF)dragAutoScrollRAF=requestAnimationFrame(autoScrollTick); }
@@ -2382,36 +2398,60 @@ let orgDragOwner=null,orgDragTeam=null;
 function wireOrgDrag(){
   document.querySelectorAll('.org-owner-head').forEach(head=>{
     head.addEventListener('dragstart',e=>{e.stopPropagation();orgDragOwner=head.dataset.owner;head.classList.add('dragging');});
-    head.addEventListener('dragend',()=>{head.classList.remove('dragging');document.querySelectorAll('.org-owner-head').forEach(h=>h.classList.remove('over'));orgDragOwner=null;});
-    head.addEventListener('dragover',e=>{e.preventDefault();e.stopPropagation();if(orgDragOwner!==null)head.classList.add('over');});
-    head.addEventListener('dragleave',()=>head.classList.remove('over'));
+    head.addEventListener('dragend',()=>{head.classList.remove('dragging');document.querySelectorAll('.org-owner-head').forEach(h=>h.classList.remove('drop-before','drop-after'));orgDragOwner=null;});
+    head.addEventListener('dragover',e=>{
+      e.preventDefault();e.stopPropagation();
+      if(orgDragOwner===null||orgDragOwner===head.dataset.owner)return;
+      const rect=head.getBoundingClientRect();
+      const before=(e.clientY-rect.top)<rect.height/2;
+      head.classList.toggle('drop-before',before);
+      head.classList.toggle('drop-after',!before);
+    });
+    head.addEventListener('dragleave',()=>head.classList.remove('drop-before','drop-after'));
     head.addEventListener('drop',e=>{
-      e.preventDefault();e.stopPropagation();head.classList.remove('over');
-      const target=head.dataset.owner;
-      if(orgDragOwner===null||orgDragOwner===target){orgDragOwner=null;return;}
-      const arr=draftOrgOrder.owners;
-      const f=arr.indexOf(orgDragOwner),t=arr.indexOf(target);
+      e.preventDefault();e.stopPropagation();
+      const before=head.classList.contains('drop-before');
+      head.classList.remove('drop-before','drop-after');
+      const moved=orgDragOwner,target=head.dataset.owner;
       orgDragOwner=null;
-      if(f<0||t<0)return;
-      const [moved]=arr.splice(f,1);
-      arr.splice(t,0,moved);
+      if(moved===null||moved===target)return;
+      const arr=draftOrgOrder.owners;
+      const f=arr.indexOf(moved);
+      if(f<0)return;
+      arr.splice(f,1);
+      let insertAt=arr.indexOf(target);
+      if(!before)insertAt+=1;
+      arr.splice(insertAt,0,moved);
       renderOrgOrderList();
     });
   });
   document.querySelectorAll('.org-team').forEach(row=>{
     row.addEventListener('dragstart',e=>{e.stopPropagation();orgDragTeam={owner:row.dataset.owner,team:row.dataset.team};row.classList.add('dragging');});
-    row.addEventListener('dragend',()=>{row.classList.remove('dragging');document.querySelectorAll('.org-team').forEach(r=>r.classList.remove('over'));orgDragTeam=null;});
-    row.addEventListener('dragover',e=>{e.preventDefault();e.stopPropagation();if(orgDragTeam&&orgDragTeam.owner===row.dataset.owner)row.classList.add('over');});
-    row.addEventListener('dragleave',()=>row.classList.remove('over'));
+    row.addEventListener('dragend',()=>{row.classList.remove('dragging');document.querySelectorAll('.org-team').forEach(r=>r.classList.remove('drop-before','drop-after'));orgDragTeam=null;});
+    row.addEventListener('dragover',e=>{
+      e.preventDefault();e.stopPropagation();
+      if(!orgDragTeam||orgDragTeam.owner!==row.dataset.owner)return;
+      const rect=row.getBoundingClientRect();
+      const before=(e.clientY-rect.top)<rect.height/2;
+      row.classList.toggle('drop-before',before);
+      row.classList.toggle('drop-after',!before);
+    });
+    row.addEventListener('dragleave',()=>row.classList.remove('drop-before','drop-after'));
     row.addEventListener('drop',e=>{
-      e.preventDefault();e.stopPropagation();row.classList.remove('over');
+      e.preventDefault();e.stopPropagation();
+      const before=row.classList.contains('drop-before');
+      row.classList.remove('drop-before','drop-after');
       if(!orgDragTeam||orgDragTeam.owner!==row.dataset.owner){orgDragTeam=null;return;}
-      const arr=draftOrgOrder.teams[row.dataset.owner]||[];
-      const f=arr.indexOf(orgDragTeam.team),t=arr.indexOf(row.dataset.team);
+      const movedTeam=orgDragTeam.team,target=row.dataset.team;
       orgDragTeam=null;
-      if(f<0||t<0||f===t)return;
-      const [moved]=arr.splice(f,1);
-      arr.splice(t,0,moved);
+      if(movedTeam===target)return;
+      const arr=draftOrgOrder.teams[row.dataset.owner]||[];
+      const f=arr.indexOf(movedTeam);
+      if(f<0)return;
+      arr.splice(f,1);
+      let insertAt=arr.indexOf(target);
+      if(!before)insertAt+=1;
+      arr.splice(insertAt,0,movedTeam);
       renderOrgOrderList();
     });
   });
